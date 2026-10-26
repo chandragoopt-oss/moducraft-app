@@ -713,79 +713,70 @@ poFromEst = function(po, src) {
     }
 };
 
-// 4. Update PO PDF Generation (Headers & Traceability)
-const origPoDoc_Adv = poDoc;
-poDoc = function(o) {
-    const v = BZ.vd[o.vid] || {};
-    const p = BZ.pj[o.pid] || {};
-    const q = S.q[p.qid];
+// ==========================================
+// PATCH: Advanced Purchase Order (Segregated Vendors & Payments)
+// ==========================================
+
+// 1. Override the "Add lines from estimate" function to handle all categories
+const origPoFromEst = poFromEst;
+poFromEst = function(po, src) {
+    const p = BZ.pj[po.pid], q = p && S.q[p.qid];
+    if (!q) { flash('Link this PO to a project that has a quotation first'); return; }
     
-    const getCategory = (desc) => {
-        const d = desc.toLowerCase();
-        if (d.includes('plywood') || d.includes('ply')) return 'ply';
-        if (d.includes('laminate') || d.includes('veneer') || d.includes('acrylic') || d.includes('membrane') || d.includes('duco') || d.includes('pu paint')) return 'lam';
-        if (/hinge|channel|handle|drawer|basket|rack|fitting|hardware|accessory|soft close|tandem|adhesive|fevicol|nails?|screws?|clamp|socket|clip|bracket|pin/i.test(d)) return 'hw';
-        if (/paint|gypsum|ceiling|civil|tile|plumbing|electrical|wiring|glass/i.test(d)) return 'site';
-        return 'other';
-    };
+    const L = po.lines = po.lines || [];
+    const v = BZ.vd[po.vid] || {};
+    const add = (d, qty, u, r) => { if(qty>0) L.push({d, q:qty, u, r:Math.round(vdRate(v,d)||r||0), g:+S.set.gst||18}); };
 
-    const groups = { ply: [], lam: [], hw: [], site: [], other: [] };
-    (o.lines||[]).forEach(l => { if (l.d) groups[getCategory(l.d)].push(l); });
-
-    const fmtQty = (qty) => {
-        const n = +qty || 0; const frac = n - Math.floor(n);
-        return frac > 0.1 ? Math.ceil(n) : Math.floor(n);
-    };
-
-    const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
-    const t = poTot(o);
-
-    // Page 1: Summary
-    let html = `<div class="pg">
-        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div></div>
-        <div class="sh">PURCHASE ORDER SUMMARY</div>
-        ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${fmtQty(l.q)}</td><td>${esc(l.u)}</td></tr>`).join('')}</table>` : '<p class="nt">No items added.</p>'}
-        ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
-        <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
-            <span>Vendor acknowledgement</span>
-            <span>For ${esc(co().name)}<br><br>Authorised signatory</span>
-        </div>
-    </div>`;
-
-    if (groups.ply.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">PLYWOOD</h2>${T1(['Description', 'Qty', 'Unit'], groups.ply.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
-    if (groups.lam.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH</h2>${T1(['Description', 'Qty', 'Unit'], groups.lam.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
-    if (groups.hw.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">HARDWARE & CONSUMABLES</h2>${T1(['Description', 'Qty', 'Unit'], groups.hw.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
-    if (groups.site.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">SITE WORK DETAILS</h2>${T1(['Description', 'Qty', 'Unit'], groups.site.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
-    if (groups.other.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS</h2>${T1(['Description', 'Qty', 'Unit'], groups.other.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
-
-    // THEAD Meta - Repeats on EVERY page
-    const metaHtml = `
-        <b>PO: ${esc(o.no)}</b> | Date: <b>${dmy(o.date)}</b><br>
-        Quote Ref: <b>${q ? esc(qno(q)) : 'N/A'}</b><br>
-        Vendor: <b>${esc(v.name||'—')}</b><br>
-        Delivery: <b style="color:#b00020">${dmy(o.del)}</b><br>
-        Category: ${[...new Set((o.lines||[]).map(l=>getCategory(l.d)))].join(', ').toUpperCase()}
-    `;
-    
-    // Internal only footer
-    const ft = `INTERNAL USE ONLY — PO Amount: ${fmt(t.tot)} | Paid: ${fmt((o.pays||[]).reduce((a,x)=>a+(+x.amt||0),0))} | Balance: ${fmt(t.tot - (o.pays||[]).reduce((a,x)=>a+(+x.amt||0),0))}`;
-
-    return `<div class="bar noprint">
-        <button data-a="dpdf" data-acc="1" data-fn="${esc(o.no)}.pdf">Download PDF</button>
-        <button class="g" data-a="ap">Print</button>
-        <button class="g" data-bza="docback">← Back</button>
-    </div>` + docPaper('PURCHASE ORDER', metaHtml, html).replace('<div class="ft">', '<div class="ft" style="color:#b00020;font-weight:bold">'+ft+'<br>');
+    if (src === 'ply') {
+        Object.values(est(q).ply).forEach(x => {
+            add('Plywood '+x.g+' ('+x.b+') 18 mm, 8×4 ft', x.s18, 'sheet', plyRate(x.b,x.g,'18mm'));
+            add('Plywood '+x.g+' ('+x.b+') 6 mm, 8×4 ft', x.s6, 'sheet', plyRate(x.b,x.g,'6mm'));
+        });
+    } else if (src === 'lam') {
+        Object.keys(est(q).ls).sort(lkSort).forEach(k => add(lamLbl(k)+', 8×4 ft', est(q).ls[k], 'sheet', finCost(k)));
+    } else if (src === 'hw') {
+        Object.entries(est(q).hw).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,qty]) => add(n, qty, accU(n), hwRate(n,q.hw||'Local')));
+    } else if (src === 'elec') {
+        q.rooms.forEach(rm => rm.rows.forEach(r => {
+            if (r.n && isEl(r)) add(r.n, r.q || 1, r.u || 'nos', 0);
+        }));
+    } else if (src === 'site') {
+        q.rooms.forEach(rm => rm.rows.forEach(r => {
+            if (r.n && (rm.sv || rm.w || /paint|gypsum|ceiling|civil|tile|plumbing|waterproofing|putty|primer/i.test(r.n))) {
+                if (!isEl(r) && !/granite|marble|quartz|stone|corian/i.test(r.n)) add(r.n, r.q || 1, r.u || 'nos', 0);
+            }
+        }));
+    } else if (src === 'stone') {
+        q.rooms.forEach(rm => rm.rows.forEach(r => {
+            if (r.n && /granite|marble|quartz|stone|corian/i.test(r.n)) add(r.n, r.q || 1, r.u || 'sqft', 0);
+        }));
+    }
+    bzSave('po', po.id);
+    flash('Lines added from the estimate!');
 };
 
-// 5. Update PO Edit UI to include Payment Tracking
+// 2. Update the PO Edit UI (Dropdown options & Payment Tracking)
 const origPoEdit = poEdit;
 poEdit = function(o) {
     let html = origPoEdit(o);
+    
+    // Update the dropdown to include new categories
+    const oldSel = `<select id="po_src" style="max-width:260px"><option value="ply">From estimate: plywood sheets</option><option value="lam">From estimate: laminate / finish</option><option value="hw">From estimate: hardware</option><option value="stone">From estimate: counter-top stone</option></select>`;
+    const newSel = `<select id="po_src" style="max-width:260px">
+        <option value="ply">From estimate: Plywood</option>
+        <option value="lam">From estimate: Laminate / Finish</option>
+        <option value="hw">From estimate: Hardware</option>
+        <option value="elec">From estimate: Electrical Items</option>
+        <option value="site">From estimate: Site Work (Paint/Civil/Gypsum)</option>
+        <option value="stone">From estimate: Stone / Countertop</option>
+    </select>`;
+    html = html.replace(oldSel, newSel);
+
+    // Add Payment Tracking
     const t = poTot(o);
     let paid = 0;
     (o.pays || []).forEach(p => paid += (+p.amt || 0));
     const bal = t.tot - paid;
-
     const payHtml = `
     <div class="card">
         <h3>Payment Tracking (Internal)</h3>
@@ -807,18 +798,74 @@ poEdit = function(o) {
         <div class="bar noprint">${ba('payaddpo', '+ Record Payment')}</div>
     </div>
     `;
-
-    // Inject before the final buttons at the bottom
     const anchor = '<div class="bar noprint"><button data-a="poprint"';
-    if (html.includes(anchor)) {
-        html = html.replace(anchor, payHtml + anchor);
-    } else {
-        html += payHtml;
-    }
+    if (html.includes(anchor)) html = html.replace(anchor, payHtml + anchor);
+    else html += payHtml;
     return html;
 };
 
-// 6. Wire up the buttons for Payment Tracking
+// 3. Update PO PDF Generation (Clean layout, no red text, segregated pages)
+const origPoDoc_Adv = poDoc;
+poDoc = function(o) {
+    const v = BZ.vd[o.vid] || {};
+    const p = BZ.pj[o.pid] || {};
+    const q = S.q[p.qid];
+    
+    const getCategory = (desc) => {
+        const d = desc.toLowerCase();
+        if (d.includes('plywood') || d.includes('ply') || d.includes('mdf') || d.includes('hdhmr')) return 'ply';
+        if (d.includes('laminate') || d.includes('veneer') || d.includes('acrylic') || d.includes('membrane') || d.includes('duco') || d.includes('pu paint') || d.includes('finish')) return 'lam';
+        if (/hinge|channel|handle|drawer|basket|rack|fitting|hardware|accessory|soft close|tandem|adhesive|fevicol|nails?|screws?|clamp|socket|clip|bracket|pin/i.test(d)) return 'hw';
+        if (/electrical|wiring|switch|light|fan|led|mcb|wire|cable|spot/i.test(d)) return 'elec';
+        if (/paint|gypsum|ceiling|civil|tile|plumbing|waterproofing|putty|primer/i.test(d)) return 'site';
+        if (/granite|marble|quartz|stone|corian|solid surface/i.test(d)) return 'stone';
+        return 'other';
+    };
+
+    const groups = { ply: [], lam: [], hw: [], elec: [], site: [], stone: [], other: [] };
+    (o.lines||[]).forEach(l => { if (l.d) groups[getCategory(l.d)].push(l); });
+
+    const fmtQty = (qty) => {
+        const n = +qty || 0; const frac = n - Math.floor(n);
+        return frac > 0.1 ? Math.ceil(n) : Math.floor(n);
+    };
+    const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
+
+    let html = `<div class="pg">
+        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div></div>
+        <div class="sh">PURCHASE ORDER SUMMARY</div>
+        ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${fmtQty(l.q)}</td><td>${esc(l.u)}</td></tr>`).join('')}</table>` : '<p class="nt">No items added.</p>'}
+        ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
+        <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
+            <span>Vendor acknowledgement</span>
+            <span>For ${esc(co().name)}<br><br>Authorised signatory</span>
+        </div>
+    </div>`;
+
+    if (groups.ply.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">PLYWOOD</h2>${T1(['Description', 'Qty', 'Unit'], groups.ply.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.lam.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH</h2>${T1(['Description', 'Qty', 'Unit'], groups.lam.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.hw.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">HARDWARE & CONSUMABLES</h2>${T1(['Description', 'Qty', 'Unit'], groups.hw.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.elec.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">ELECTRICAL ITEMS</h2>${T1(['Description', 'Qty', 'Unit'], groups.elec.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.site.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">SITE WORK DETAILS</h2>${T1(['Description', 'Qty', 'Unit'], groups.site.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.stone.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">STONE & COUNTERTOPS</h2>${T1(['Description', 'Qty', 'Unit'], groups.stone.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.other.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS</h2>${T1(['Description', 'Qty', 'Unit'], groups.other.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+
+    const metaHtml = `
+        <b>PO: ${esc(o.no)}</b> | Date: <b>${dmy(o.date)}</b><br>
+        Quote Ref: <b>${q ? esc(qno(q)) : 'N/A'}</b><br>
+        Vendor: <b>${esc(v.name||'—')}</b><br>
+        Delivery: <b>${dmy(o.del)}</b><br>
+        Category: ${[...new Set((o.lines||[]).map(l=>getCategory(l.d)))].join(', ').toUpperCase()}
+    `;
+    
+    return `<div class="bar noprint">
+        <button data-a="dpdf" data-acc="1" data-fn="${esc(o.no)}.pdf">Download PDF</button>
+        <button class="g" data-a="ap">Print</button>
+        <button class="g" data-bza="docback">← Back</button>
+    </div>` + docPaper('PURCHASE ORDER', metaHtml, html);
+};
+
+// 4. Wire up the Payment Tracking buttons
 document.addEventListener('click', e => {
     const bAdd = e.target.closest('[data-bza="payaddpo"]');
     if (bAdd) {
@@ -838,14 +885,11 @@ document.addEventListener('click', e => {
     }
 }, true);
 
-// 7. Ensure custom field inputs for payments save correctly
 document.addEventListener('change', e => {
     const t = e.target;
     if (t.dataset.bz && t.dataset.bz.startsWith('po|') && t.dataset.bz.includes('|pays.')) {
-        // The main app's bzSave logic handles this natively via data-bz
-        // We just need to trigger a re-render if it's an amount to update totals
         if (t.dataset.bz.includes('.amt') || t.dataset.bz.includes('.next') || t.dataset.bz.includes('.date')) {
-            setTimeout(render, 100); // Let the main app save first
+            setTimeout(render, 100);
         }
     }
 });
