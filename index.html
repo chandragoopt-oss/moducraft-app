@@ -34,7 +34,7 @@
         onSnapshot: function(callback) {
           apiCall('read', colName).then(res => {
             if (res.ok && res.data) {
-              const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'added', doc: { id: id, data: () => res.data[id] } })) };
+              const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'added', doc: { id: id, data: () => res.data[id], metadata: { hasPendingWrites: false } } })) };
               callback(snapshot);
             }
           });
@@ -45,7 +45,7 @@
                const newHash = JSON.stringify(res.data);
                if (newHash !== lastHash) {
                  lastHash = newHash;
-                 const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'modified', doc: { id: id, data: () => res.data[id] } })) };
+                 const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'modified', doc: { id: id, data: () => res.data[id], metadata: { hasPendingWrites: false } } })) };
                  callback(snapshot);
                }
             }
