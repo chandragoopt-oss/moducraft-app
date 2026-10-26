@@ -8,16 +8,59 @@ todayCard = function() {
     return html.replace("Today —", "Welcome Back! Today is");
 };
 // ==========================================
-// PATCH: Follow Up System & Reminders
+// PATCH: Advanced Follow Up System & Today Dashboard
 // ==========================================
 
-// 1. Create the Popup Modal
-function openFupModal(qid) {
-    const q = S.q[qid];
-    if (!q || q.st !== 'shared') return;
+// 1. Calculate pending follow ups (defaults to 4 days if no date set)
+function getDueCount() {
+    let count = 0;
+    const t = today();
+    const linked = new Set(Object.values(BZ.pj).map(p=>p.qid).filter(Boolean));
     
-    // Default to 4 days from now
-    const defDate = q.nfu ? q.nfu : addDays(today(), 4);
+    Object.values(S.q).forEach(q => {
+        if (q.st == 'shared' && !q.unl && q.out !== 'lost' && !linked.has(q.id)) {
+            const base = q.lfu || q.shAt || q.date;
+            if (q.nfu && q.nfu <= t) count++;
+            else if (!q.nfu && base && (Date.now() - new Date(base).getTime())/864e5 >= 4) count++;
+        }
+    });
+    
+    Object.values(BZ.pj).forEach(p => {
+        if (p.stage != 'Closed') {
+            const base = p.lfu || p.cr;
+            if (p.nfu && p.nfu <= t) count++;
+            else if (!p.nfu && base && (Date.now() - new Date(base).getTime())/864e5 >= 4) count++;
+        }
+    });
+    return count;
+}
+
+// 2. Update the Tab text with the count
+const navObserver = new MutationObserver(() => {
+    const btn = document.querySelector('#nav button[data-a="tab"][data-v="h"]');
+    if (btn) {
+        const c = getDueCount();
+        const currentText = btn.innerHTML.replace(/<span.*?<\/span>/, '').trim();
+        if (btn.dataset.count !== String(c)) {
+            btn.dataset.count = String(c);
+            btn.innerHTML = currentText + (c > 0 ? ` <span style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;font-weight:bold">${c}</span>` : '');
+        }
+    }
+});
+navObserver.observe(document.getElementById('nav'), {childList: true, subtree: true});
+
+// 3. The Follow Up Modal
+function openFupModal(id, type) {
+    const isP = type === 'p';
+    const obj = isP ? BZ.pj[id] : S.q[id];
+    if (!obj) return;
+    
+    const defDate = obj.nfu ? obj.nfu : addDays(today(), 4);
+    const historyHtml = (obj.fups || []).map(f => `
+        <div style="font-size:11px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--line)">
+            <b>${dmy(f.date)}:</b> ${esc(f.note)} <br><span class="mut" style="font-size:10px">Next scheduled: ${dmy(f.next)}</span>
+        </div>
+    `).join('');
 
     const o = document.createElement('div');
     o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px';
@@ -25,18 +68,12 @@ function openFupModal(qid) {
     const bx = document.createElement('div');
     bx.style.cssText = 'background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:18px;max-width:420px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.35);border:1px solid var(--line)';
     
-    const historyHtml = (q.fups || []).map(f => `
-        <div style="font-size:11px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed var(--line)">
-            <b>${dmy(f.date)}:</b> ${esc(f.note)} <br><span class="mut" style="font-size:10px">Next scheduled: ${dmy(f.next)}</span>
-        </div>
-    `).join('');
-
     bx.innerHTML = `
-        <h3 style="margin-top:0;color:var(--gr)">Follow Up: ${esc(q.name)}</h3>
-        <p class="mut" style="font-size:12px;margin-bottom:12px">Quotation: ${esc(qno(q))}</p>
+        <h3 style="margin-top:0;color:var(--gr)">Follow Up: ${esc(obj.name)}</h3>
+        <p class="mut" style="font-size:12px;margin-bottom:12px">${isP ? 'Project' : 'Quotation'} • ${esc(obj.client || '')}</p>
         
         <label style="font-size:12px;color:var(--mut);display:block;margin-bottom:4px">What was the result of the follow up?</label>
-        <textarea id="fup_note" style="width:100%;height:80px;margin-bottom:12px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--in);color:var(--ink);font-family:inherit" placeholder="e.g. Called client. They need 2 more days to review. Next call on Friday."></textarea>
+        <textarea id="fup_note" style="width:100%;height:80px;margin-bottom:12px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--in);color:var(--ink);font-family:inherit" placeholder="e.g. Called client. They need 2 more days to review."></textarea>
         
         <label style="font-size:12px;color:var(--mut);display:block;margin-bottom:4px">Next follow-up date (defaults to 4 days)</label>
         <input type="date" id="fup_date" value="${defDate}" style="width:100%;margin-bottom:16px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--in);color:var(--ink);font-family:inherit">
@@ -57,78 +94,89 @@ function openFupModal(qid) {
     document.getElementById('fup_save').onclick = () => {
         const note = document.getElementById('fup_note').value.trim();
         const next = document.getElementById('fup_date').value;
-        if (!next) { alert('Please select a date for the next follow up.'); return; }
+        if (!next) { alert('Please select a date.'); return; }
         
-        q.fups = q.fups || [];
-        q.fups.unshift({ date: today(), note: note || 'Followed up (no notes)', next });
-        q.nfu = next;
-        q.lfu = today();
+        obj.fups = obj.fups || [];
+        obj.fups.unshift({ date: today(), note: note || 'Followed up', next });
+        obj.nfu = next;
+        obj.lfu = today();
         
-        save('q', q.id);
+        if (isP) bzSave('pj', id); else save('q', id);
         o.remove();
-        render();
+        render(); 
         flash('Follow-up recorded! Reminder set for ' + dmy(next));
     };
 }
 
-// Catch clicks on the Follow Up button (prevents the main app from throwing an error)
+// Catch clicks on Follow Up buttons
 document.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('[data-fup]');
     if (b) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        openFupModal(b.dataset.fup);
+        openFupModal(b.dataset.fup, b.dataset.fuptype || 'q');
     }
 }, true);
 
-// 2. Override the Today Page to show Follow Up Reminders
+// 4. Override the Today Page to show the new grouped dashboard
 const origTodayCard = todayCard;
 todayCard = function() {
     let html = origTodayCard();
     
+    // Remove the old basic follow-up block (whether it says 'all clear' or lists clients)
+    html = html.replace(/<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:(?:#fffaf0|#f4fbf4)"><b>📞 Clients to follow up.*?<\/div><\/div>/s, '');
+
+    let newHtml = '';
     const t = today();
-    const pj = Object.values(BZ.pj).filter(p=>p.stage!='Closed');
-    const all = Object.values(S.q);
-    const newest = q=>!all.some(x=>G(x)==G(q)&&(x.rev||0)>(q.rev||0));
-    const linked = new Set(pj.map(p=>p.qid));
-    
-    // Find shared quotations that are due for follow up (or overdue)
-    // Default is 4 days from sharing if no specific date is set
-    const fu = all.filter(q => 
-        q.st == 'shared' && !q.unl && !linked.has(q.id) && q.out !== 'lost' && newest(q) && 
-        ((q.nfu && q.nfu <= t) || (!q.nfu && (Date.now()-(q.shAt||new Date(q.date||t).getTime()))/864e5 >= 4))
-    );
+    const linked = new Set(Object.values(BZ.pj).map(p=>p.qid).filter(Boolean));
 
-    // Only replace the section if there are follow-ups to show
-    if (fu.length) {
-        let rows = fu.map(q => {
-            const nextDate = q.nfu ? `<span style="color:#b00020;font-weight:bold">Due: ${dmy(q.nfu)}</span>` : '<span style="color:#b00020;font-weight:bold">No date set</span>';
-            return `<tr>
-                <td>${esc(q.name)}<br><span class="mut">${esc(q.project||'')}</span>
-                <td>${esc(qno(q))}
-                <td>${nextDate}
-                <td style="white-space:nowrap">
-                    <button class="g" data-tdy="fwa" data-id="${q.id}">WhatsApp</button>
-                    <button class="g" data-fup="${q.id}" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd">📞 Log Follow Up</button>
-                    <button class="g" data-tdy="flost" data-id="${q.id}">Lost</button>
-                    <button class="g" data-chk="open" data-id="${q.id}">Open</button>
-                </td>
-            </tr>`;
-        }).join('');
+    // --- Section A: Overdue / Due Today ---
+    const dueQ = Object.values(S.q).filter(q => {
+        if (q.st !== 'shared' || q.unl || q.out === 'lost' || linked.has(q.id)) return false;
+        const base = q.lfu || q.shAt || q.date;
+        return (q.nfu && q.nfu <= t) || (!q.nfu && base && (Date.now() - new Date(base).getTime())/864e5 >= 4);
+    });
+    const dueP = Object.values(BZ.pj).filter(p => {
+        if (p.stage === 'Closed') return false;
+        const base = p.lfu || p.cr;
+        return (p.nfu && p.nfu <= t) || (!p.nfu && base && (Date.now() - new Date(base).getTime())/864e5 >= 4);
+    });
 
-        const newSec = `<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fffaf0"><b>📞 Clients to follow up</b> <span class="mut">(${fu.length})</span>
-            <div class="sc"><table class="g" style="min-width:700px"><tr><th>Client</th><th>Quotation</th><th>Next Follow Up</th><th></th></tr>${rows}</table></div>
-        </div>`;
-
-        // Replace the original basic follow-up block with our enhanced version
-        const regex = /<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fffaf0"><b>📞 Clients to follow up.*?<\/table><\/div><\/div>/s;
-        html = html.replace(regex, newSec);
+    if (dueQ.length || dueP.length) {
+        let r = '';
+        dueP.forEach(p => {
+            r += `<tr><td><span class="mut">Project</span><br><b>${esc(p.name)}</b><td>${esc(p.client)}<td style="color:#b00020;font-weight:bold">${p.nfu ? dmy(p.nfu) : 'Overdue'}<td><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></tr>`;
+        });
+        dueQ.forEach(q => {
+            r += `<tr><td><span class="mut">Quotation</span><br><b>${esc(q.name)}</b><td>${esc(qno(q))}<td style="color:#b00020;font-weight:bold">${q.nfu ? dmy(q.nfu) : 'Overdue'}<td><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></tr>`;
+        });
+        newHtml += `<div style="border:1px solid #f0b4b4;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fff5f5"><b style="color:#b00020">⏰ Overdue Follow Ups</b><div class="sc"><table class="g" style="min-width:600px"><tr><th>Details</th><th>Client/Quote</th><th>Due</th><th></th></tr>${r}</table></div></div>`;
     }
-    
+
+    // --- Section B: Running Projects ---
+    const runP = Object.values(BZ.pj).filter(p=>p.stage!='Closed');
+    if (runP.length) {
+        let r = runP.map(p => `<tr><td><b>${esc(p.name)}</b><td>${esc(p.client)}<td>${esc(p.stage)}<td>${p.nfu ? dmy(p.nfu) : '—'}<td><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></tr>`).join('');
+        newHtml += `<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fffaf0"><b>🏗️ Running Projects</b><div class="sc"><table class="g" style="min-width:700px"><tr><th>Project</th><th>Client</th><th>Stage</th><th>Next Follow Up</th><th></th></tr>${r}</table></div></div>`;
+    }
+
+    // --- Section C: Shared Quotations ---
+    const sharedQ = Object.values(S.q).filter(q=>q.st==='shared' && !q.unl && q.out!=='lost' && !linked.has(q.id));
+    if (sharedQ.length) {
+        let r = sharedQ.map(q => `<tr><td><b>${esc(q.name)}</b><br><span class="mut">${esc(qno(q))}</span><td>${esc(q.project||'')}<td>${q.nfu ? dmy(q.nfu) : '—'}<td><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></tr>`).join('');
+        newHtml += `<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fffaf0"><b>📄 Shared Quotations</b><div class="sc"><table class="g" style="min-width:700px"><tr><th>Client</th><th>Project</th><th>Next Follow Up</th><th></th></tr>${r}</table></div></div>`;
+    }
+
+    // Inject everything right after the top summary chips
+    const chipEnd = html.indexOf('</div>', html.indexOf('<h2>Today'));
+    if (chipEnd !== -1) {
+        html = html.substring(0, chipEnd + 6) + newHtml + html.substring(chipEnd + 6);
+    }
+
     return html;
 };
 
-// 3. Add the "Follow Up" button to the main Quotations list
+// 5. Add the "Follow Up" button to the main Quotations list
 const origVList = vList;
 vList = function() {
     let html = origVList();
@@ -136,7 +184,7 @@ vList = function() {
         if (q.st === 'shared') {
             const target = `<button class="g" data-a="pq" data-i="${q.id}">Preview</button>`;
             const nextTxt = q.nfu ? 'Next follow up: ' + dmy(q.nfu) : 'No follow up scheduled';
-            const replacement = target + ` <button class="g" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" data-fup="${q.id}" title="${nextTxt}">📞 Follow Up</button>`;
+            const replacement = target + ` <button class="g" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" data-fup="${q.id}" data-fuptype="q" title="${nextTxt}">📞 Follow Up</button>`;
             
             if (html.includes(target) && !html.includes(`data-fup="${q.id}"`)) {
                 html = html.replace(target, replacement);
