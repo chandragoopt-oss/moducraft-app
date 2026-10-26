@@ -369,3 +369,155 @@ clientHtml = function() {
         if (injected) removeWarranty();
     }
 };
+// ==========================================
+// PATCH: Advanced Pricing Bases & Material Summary
+// ==========================================
+
+// 1. Patch the Pricing Basis dropdown & UI labels
+const pricingObserver = new MutationObserver(() => {
+    const pmoSel = document.querySelector('select[data-p="pmo"]');
+    if (pmoSel && !pmoSel.dataset.patched) {
+        pmoSel.dataset.patched = '1';
+        pmoSel.innerHTML = `
+            <option value="Module rates" ${pmoSel.value==='Module rates'?'selected':''}>Module rates (auto-calculated)</option>
+            <option value="Room base" ${pmoSel.value==='Room base'?'selected':''}>Room base (per sq.ft)</option>
+            <option value="Package" ${pmoSel.value==='Package'?'selected':''}>Package (flat price per room)</option>
+            <option value="Material costing" ${pmoSel.value==='Material costing'?'selected':''}>Material costing (Internal only)</option>
+        `;
+    }
+
+    const q = T();
+    if (q) {
+        const h3 = [...document.querySelectorAll('h3')].find(el => el.textContent.includes('Rate per sq.ft by area') || el.textContent.includes('Package Price (₹) per room'));
+        if (h3) {
+            if (q.pmo === 'Package') {
+                h3.textContent = 'Package Price (₹) per room';
+                document.querySelectorAll('input[data-p^="rooms|"][data-p$="|rate"]').forEach(inp => {
+                    inp.placeholder = 'e.g. 150000';
+                    const lbl = inp.previousElementSibling;
+                    if (lbl && lbl.tagName === 'LABEL') {
+                        lbl.textContent = lbl.textContent.replace(/\(.*?\)/, '(Package Price)');
+                    }
+                });
+            } else {
+                h3.textContent = 'Rate per sq.ft by area';
+                document.querySelectorAll('input[data-p^="rooms|"][data-p$="|rate"]').forEach(inp => {
+                    inp.placeholder = 'standard';
+                    const lbl = inp.previousElementSibling;
+                    if (lbl && lbl.tagName === 'LABEL' && lbl.textContent.includes('Package Price')) {
+                        lbl.textContent = lbl.textContent.replace(/\(.*?\)/, '(standard)');
+                    }
+                });
+            }
+        }
+    }
+});
+pricingObserver.observe(document.getElementById('app'), {childList: true, subtree: true});
+
+// 2. Override vPrev to handle Package mode display (recalculating totals without touching core code)
+const origVPrev = vPrev;
+vPrev = function() {
+    let html = origVPrev();
+    const q = T();
+    if (q && q.pmo === 'Package') {
+        // Replace item prices with "Included"
+        html = html.replace(/<td class="r">₹[\d,]+<\/td>/g, '<td class="r" style="color:#777">Included</td>');
+        
+        // Replace room totals and calculate grand total
+        let grand = 0;
+        q.rooms.forEach((rm) => {
+            if (used(rm).length) {
+                const oldTotalStr = `<tr class="tot"><td colspan="5" class="r">${rm.w?'Section':'Room'} Total<td class="r">${fmt(roomT(q,rm))}</tr>`;
+                const newTotalStr = `<tr class="tot"><td colspan="5" class="r">${rm.w?'Section':'Room'} Package Price<td class="r">${fmt(rm.rate || 0)}</tr>`;
+                if (html.includes(oldTotalStr)) {
+                    html = html.replace(oldTotalStr, newTotalStr);
+                }
+                grand += (+rm.rate || 0);
+            }
+        });
+        
+        // Replace Grand Total
+        const oldGrandStr = `<tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(gt(q))}</tr>`;
+        const newGrandStr = `<tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(grand)}</tr>`;
+        html = html.replace(oldGrandStr, newGrandStr);
+        
+        // Replace Payment Terms amounts
+        const payHtmlOld = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(gt(q)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
+        const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(grand*(parseFloat(p.p)||0)/100)}</tr>`).join('');
+        html = html.replace(payHtmlOld, payHtmlNew);
+    }
+    return html;
+};
+
+// 3. Material Summary Injection Function
+function injectMaterialSummary() {
+    const paper = document.querySelector('.paper');
+    // Only inject if it's the main quotation and hasn't been injected yet
+    if (paper && paper.querySelector('.hero') && !paper.querySelector('#material-summary')) {
+        const tbody = paper.querySelector('table.doc > tbody > tr > td');
+        if (tbody) {
+            const q = T();
+            if (!q) return false;
+
+            let accessories = new Set();
+            q.rooms.forEach(rm => {
+                rm.rows.forEach(r => {
+                    rowAcc(r).forEach(a => {
+                        if (!HWX.test(a.n)) accessories.add(a.n);
+                    });
+                });
+            });
+
+            const html = `
+            <div class="pg" id="material-summary" style="break-before: page;">
+                <h2 style="text-align:center;letter-spacing:3px">PROJECT MATERIAL &amp; HARDWARE SUMMARY</h2>
+                <p class="nt" style="text-align:center;margin-bottom:20px">This summary outlines the core materials, hardware and accessories selected for this project.</p>
+                
+                <table class="t">
+                    <tr><th style="width:25%">Plywood Manufacturers</th><td>${GR3.map(g => `<b>${g}:</b> ${brandFor(q, g)}`).join(' &nbsp;|&nbsp; ')}</td></tr>
+                    <tr><th>Outer Finish (Shutters)</th><td>${q.fo || FIN0}</td></tr>
+                    <tr><th>Inner Finish / Carcass</th><td>${q.fi || FIN0} (Carcass: BSL ${q.cf || FIN0})</td></tr>
+                    <tr><th>Hardware Company</th><td>${q.hw || 'Local'}</td></tr>
+                    <tr><th>Accessories Included</th><td>${Array.from(accessories).sort().join(', ') || 'Standard fittings included'}</td></tr>
+                </table>
+            </div>
+            `;
+            // Insert right before the warranty page
+            const warranty = tbody.querySelector('#warranty-page');
+            if (warranty) warranty.insertAdjacentHTML('beforebegin', html);
+            else tbody.insertAdjacentHTML('beforeend', html);
+            return true;
+        }
+    }
+    return false;
+}
+
+function removeMaterialSummary() {
+    const el = document.getElementById('material-summary');
+    if (el) el.remove();
+}
+
+// 4. Wrap PDF and HTML generation to include the Material Summary
+const origPaperToPdf_Mat = paperToPdf;
+paperToPdf = async function(mode) {
+    const wInj = injectWarranty();
+    const mInj = injectMaterialSummary();
+    try {
+        return await origPaperToPdf_Mat.apply(this, arguments);
+    } finally {
+        if (wInj) removeWarranty();
+        if (mInj) removeMaterialSummary();
+    }
+};
+
+const origClientHtml_Mat = clientHtml;
+clientHtml = function() {
+    const wInj = injectWarranty();
+    const mInj = injectMaterialSummary();
+    try {
+        return origClientHtml_Mat.apply(this, arguments);
+    } finally {
+        if (wInj) removeWarranty();
+        if (mInj) removeMaterialSummary();
+    }
+};
