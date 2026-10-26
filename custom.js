@@ -282,7 +282,6 @@ function removeWarranty() { const wp = document.getElementById('warranty-page');
 // ==========================================
 // PATCH: Advanced Pricing Bases & Material Summary
 // ==========================================
-
 const origVEdit = vEdit;
 vEdit = function() {
     let html = origVEdit();
@@ -486,14 +485,18 @@ paperToPdf = async function(mode) {
     }
 };
 
-const origClientHtml_Master = clientHtml;
-clientHtml = function() {
-    const wInj = injectWarranty();
-    const mInj = injectMaterialSummary();
-    try {
-        return await origClientHtml_Master.apply(this, arguments);
-    } finally {
-        if (wInj) removeWarranty();
-        if (mInj) removeMaterialSummary();
+// Safe interception for Download File (HTML)
+document.addEventListener('click', e => {
+    const b = e.target.closest('[data-a="dh"]');
+    if (b) {
+        const paper = document.querySelector('.paper');
+        if (paper && paper.querySelector('.hero')) {
+            injectWarranty();
+            injectMaterialSummary();
+            setTimeout(() => {
+                removeWarranty();
+                removeMaterialSummary();
+            }, 1000);
+        }
     }
-};
+}, true);
