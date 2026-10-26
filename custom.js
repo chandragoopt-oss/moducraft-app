@@ -21,7 +21,7 @@ function getDueCount() {
     const linked = new Set(Object.values(BZ.pj).map(p=>p.qid).filter(Boolean));
     
     Object.values(S.q).forEach(q => {
-        // Ignore dead leads (q.out === 'lost')
+        // Ignore lost leads (q.out === 'lost')
         if (q.st == 'shared' && !q.unl && q.out !== 'lost' && !linked.has(q.id)) {
             const base = q.lfu || q.shAt || q.date;
             if (q.nfu && q.nfu <= t) count++;
@@ -85,7 +85,7 @@ function openFupModal(id, type) {
         ${historyHtml ? `<div style="margin-bottom:16px;max-height:120px;overflow-y:auto"><label style="font-size:12px;color:var(--mut);display:block;margin-bottom:4px">Previous Follow Ups</label>${historyHtml}</div>` : ''}
 
         <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
-            ${!isP ? `<button class="g" id="fup_dead" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;margin-right:auto">Mark as Dead Lead</button>` : ''}
+            ${!isP ? `<button class="g" id="fup_lost" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;margin-right:auto">Mark as Lost Lead</button>` : ''}
             <button class="g" id="fup_cancel">Cancel</button>
             <button id="fup_save" style="background:var(--gold);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:bold">Save Follow Up</button>
         </div>
@@ -96,9 +96,9 @@ function openFupModal(id, type) {
 
     document.getElementById('fup_cancel').onclick = () => o.remove();
     
-    // Handle Dead Lead inside modal
+    // Handle Lost Lead inside modal
     if (!isP) {
-        document.getElementById('fup_dead').onclick = () => {
+        document.getElementById('fup_lost').onclick = () => {
             askPick('Why was this lead lost?', [
                 ['Price too high', 'Price too high'],
                 ['Chose another designer', 'Chose another designer'],
@@ -111,7 +111,7 @@ function openFupModal(id, type) {
                 save('q', id);
                 o.remove();
                 render();
-                flash('Marked as Dead Lead');
+                flash('Marked as Lost Lead');
             }, () => {}); 
         };
     }
@@ -133,7 +133,7 @@ function openFupModal(id, type) {
     };
 }
 
-// 4. Global Event Listeners for Follow Up, Dead Lead, & Complete buttons
+// 4. Global Event Listeners for Follow Up, Lost Lead, & Complete buttons
 document.addEventListener('click', e => {
     // Follow Up
     const bFup = e.target.closest && e.target.closest('[data-fup]');
@@ -144,17 +144,17 @@ document.addEventListener('click', e => {
         return;
     }
     
-    // Dead Lead
-    const bDead = e.target.closest && e.target.closest('[data-dead]');
-    if (bDead) {
+    // Lost Lead
+    const bLost = e.target.closest && e.target.closest('[data-lost]');
+    if (bLost) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        const id = bDead.dataset.dead;
+        const id = bLost.dataset.lost;
         const obj = S.q[id];
         if (!obj) return;
         
         askPick('Why was this lead lost?', [
-            ['Price too high', 'Pricetoo high'],
+            ['Price too high', 'Price too high'],
             ['Chose another designer', 'Chose another designer'],
             ['Postponed', 'Postponed / not now'],
             ['No response', 'No response'],
@@ -164,7 +164,7 @@ document.addEventListener('click', e => {
             obj.lr = v;
             save('q', id);
             render();
-            flash('Marked as Dead Lead');
+            flash('Marked as Lost Lead');
         }, () => {}); 
     }
 
@@ -216,7 +216,7 @@ todayCard = function() {
             r += `<tr><td><span class="mut">Project</span><br><b>${esc(p.name)}</b><td>${esc(p.client)}<td style="color:#b00020;font-weight:bold">${p.nfu ? dmy(p.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-complete="${p.id}" style="background:#dcfce7;color:#166534;border-color:#bbf7d0;padding:4px 10px;margin-left:4px">✅ Complete</button></td></tr>`;
         });
         dueQ.forEach(q => {
-            r += `<tr><td><span class="mut">Quotation</span><br><b>${esc(q.name)}</b><td>${esc(qno(q))}<td style="color:#b00020;font-weight:bold">${q.nfu ? dmy(q.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-dead="${q.id}" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;padding:4px 10px;margin-left:4px">❌ Dead</button></td></tr>`;
+            r += `<tr><td><span class="mut">Quotation</span><br><b>${esc(q.name)}</b><td>${esc(qno(q))}<td style="color:#b00020;font-weight:bold">${q.nfu ? dmy(q.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-lost="${q.id}" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;padding:4px 10px;margin-left:4px">❌ Lost</button></td></tr>`;
         });
         newHtml += `<div style="border:1px solid #f0b4b4;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fff5f5"><b style="color:#b00020">⏰ Overdue Follow Ups</b><div class="sc"><table class="g" style="min-width:600px"><tr><th>Details</th><th>Client/Quote</th><th>Due</th><th></th></tr>${r}</table></div></div>`;
     }
@@ -231,7 +231,7 @@ todayCard = function() {
     // --- Section C: Shared Quotations ---
     const sharedQ = Object.values(S.q).filter(q=>q.st==='shared' && !q.unl && q.out!=='lost' && !linked.has(q.id));
     if (sharedQ.length) {
-        let r = sharedQ.map(q => `<tr><td><b>${esc(q.name)}</b><br><span class="mut">${esc(qno(q))}</span><td>${esc(q.project||'')}<td>${q.nfu ? dmy(q.nfu) : '—'}<td style="white-space:nowrap"><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-dead="${q.id}" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;padding:4px 10px;margin-left:4px">❌ Dead</button></td></tr>`).join('');
+        let r = sharedQ.map(q => `<tr><td><b>${esc(q.name)}</b><br><span class="mut">${esc(qno(q))}</span><td>${esc(q.project||'')}<td>${q.nfu ? dmy(q.nfu) : '—'}<td style="white-space:nowrap"><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-lost="${q.id}" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;padding:4px 10px;margin-left:4px">❌ Lost</button></td></tr>`).join('');
         newHtml += `<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fffaf0"><b>📄 Shared Quotations</b><div class="sc"><table class="g" style="min-width:700px"><tr><th>Client</th><th>Project</th><th>Next Follow Up</th><th></th></tr>${r}</table></div></div>`;
     }
 
@@ -252,7 +252,7 @@ vList = function() {
         if (q.st === 'shared' && q.out !== 'lost') {
             const target = `<button class="g" data-a="pq" data-i="${q.id}">Preview</button>`;
             const nextTxt = q.nfu ? 'Next follow up: ' + dmy(q.nfu) : 'No follow up scheduled';
-            const replacement = target + ` <button class="g" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" data-fup="${q.id}" data-fuptype="q" title="${nextTxt}">📞 Follow Up</button> <button class="g" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5" data-dead="${q.id}" title="Mark as Dead Lead">❌ Dead</button>`;
+            const replacement = target + ` <button class="g" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" data-fup="${q.id}" data-fuptype="q" title="${nextTxt}">📞 Follow Up</button> <button class="g" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5" data-lost="${q.id}" title="Mark as Lost Lead">❌ Lost</button>`;
             
             if (html.includes(target) && !html.includes(`data-fup="${q.id}"`)) {
                 html = html.replace(target, replacement);
