@@ -18,6 +18,7 @@ function getDueCount() {
     const linked = new Set(Object.values(BZ.pj).map(p=>p.qid).filter(Boolean));
     
     Object.values(S.q).forEach(q => {
+        // Ignore dead leads (q.out === 'lost')
         if (q.st == 'shared' && !q.unl && q.out !== 'lost' && !linked.has(q.id)) {
             const base = q.lfu || q.shAt || q.date;
             if (q.nfu && q.nfu <= t) count++;
@@ -80,7 +81,8 @@ function openFupModal(id, type) {
         
         ${historyHtml ? `<div style="margin-bottom:16px;max-height:120px;overflow-y:auto"><label style="font-size:12px;color:var(--mut);display:block;margin-bottom:4px">Previous Follow Ups</label>${historyHtml}</div>` : ''}
 
-        <div style="display:flex;justify-content:flex-end;gap:8px">
+        <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+            ${!isP ? `<button class="g" id="fup_dead" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;margin-right:auto">Mark as Dead Lead</button>` : ''}
             <button class="g" id="fup_cancel">Cancel</button>
             <button id="fup_save" style="background:var(--gold);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:bold">Save Follow Up</button>
         </div>
@@ -90,6 +92,26 @@ function openFupModal(id, type) {
     document.body.appendChild(o);
 
     document.getElementById('fup_cancel').onclick = () => o.remove();
+    
+    // Handle Dead Lead
+    if (!isP) {
+        document.getElementById('fup_dead').onclick = () => {
+            askPick('Why was this lead lost?', [
+                ['Price too high', 'Price too high'],
+                ['Chose another designer', 'Chose another designer'],
+                ['Postponed', 'Postponed / not now'],
+                ['No response', 'No response'],
+                ['Other', 'Other']
+            ], v => {
+                obj.out = 'lost';
+                obj.lr = v;
+                save('q', id);
+                o.remove();
+                render();
+                flash('Marked as Dead Lead');
+            }, () => {}); 
+        };
+    }
     
     document.getElementById('fup_save').onclick = () => {
         const note = document.getElementById('fup_note').value.trim();
@@ -123,7 +145,7 @@ const origTodayCard = todayCard;
 todayCard = function() {
     let html = origTodayCard();
     
-    // Remove the old basic follow-up block (whether it says 'all clear' or lists clients)
+    // Remove the old basic follow-up block
     html = html.replace(/<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:(?:#fffaf0|#f4fbf4)"><b>📞 Clients to follow up.*?<\/div><\/div>/s, '');
 
     let newHtml = '';
@@ -132,6 +154,7 @@ todayCard = function() {
 
     // --- Section A: Overdue / Due Today ---
     const dueQ = Object.values(S.q).filter(q => {
+        // Ignore dead leads
         if (q.st !== 'shared' || q.unl || q.out === 'lost' || linked.has(q.id)) return false;
         const base = q.lfu || q.shAt || q.date;
         return (q.nfu && q.nfu <= t) || (!q.nfu && base && (Date.now() - new Date(base).getTime())/864e5 >= 4);
@@ -161,6 +184,7 @@ todayCard = function() {
     }
 
     // --- Section C: Shared Quotations ---
+    // Note the q.out !== 'lost' filter here as well
     const sharedQ = Object.values(S.q).filter(q=>q.st==='shared' && !q.unl && q.out!=='lost' && !linked.has(q.id));
     if (sharedQ.length) {
         let r = sharedQ.map(q => `<tr><td><b>${esc(q.name)}</b><br><span class="mut">${esc(qno(q))}</span><td>${esc(q.project||'')}<td>${q.nfu ? dmy(q.nfu) : '—'}<td><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></tr>`).join('');
@@ -181,7 +205,8 @@ const origVList = vList;
 vList = function() {
     let html = origVList();
     Object.values(S.q).forEach(q => {
-        if (q.st === 'shared') {
+        // Only show for shared, non-lost quotations
+        if (q.st === 'shared' && q.out !== 'lost') {
             const target = `<button class="g" data-a="pq" data-i="${q.id}">Preview</button>`;
             const nextTxt = q.nfu ? 'Next follow up: ' + dmy(q.nfu) : 'No follow up scheduled';
             const replacement = target + ` <button class="g" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" data-fup="${q.id}" data-fuptype="q" title="${nextTxt}">📞 Follow Up</button>`;
@@ -191,5 +216,7 @@ vList = function() {
             }
         }
     });
+    return html;
+};
     return html;
 };
