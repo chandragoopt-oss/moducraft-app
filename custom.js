@@ -572,7 +572,6 @@ document.addEventListener('click', e => {
 // PATCH: Advanced Purchase Order, Consumables & Payments
 // ==========================================
 
-// 1. Helper to calculate Consumables based on the Quotation
 function calcConsumables(q) {
     if (!q) return [];
     const estData = est(q);
@@ -603,7 +602,6 @@ function calcConsumables(q) {
     return cons;
 }
 
-// 2. Add Consumables to the Estimate Page UI
 const origVEst = vEst;
 vEst = function() {
     let html = origVEst();
@@ -623,7 +621,6 @@ vEst = function() {
     return html;
 };
 
-// 3. Advanced Segregated Line Pulling for Purchase Order
 const origPoFromEst = poFromEst;
 poFromEst = function(po, src) {
     const p = BZ.pj[po.pid], q = p && S.q[p.qid];
@@ -660,7 +657,17 @@ poFromEst = function(po, src) {
     flash('Lines added from the estimate!');
 };
 
-// 4. Update the PO Edit UI (Dropdown options & Payment Tracking)
+const getCatName = (desc) => {
+    const d = desc.toLowerCase();
+    if (d.includes('plywood') || d.includes('ply') || d.includes('mdf') || d.includes('hdhmr')) return 'Plywood';
+    if (d.includes('laminate') || d.includes('veneer') || d.includes('acrylic') || d.includes('membrane') || d.includes('duco') || d.includes('pu paint') || d.includes('finish')) return 'Laminate';
+    if (/hinge|channel|handle|drawer|basket|rack|fitting|hardware|accessory|soft close|tandem|adhesive|fevicol|nails?|screws?|clamp|socket|clip|bracket|pin/i.test(d)) return 'Hardware';
+    if (/electrical|wiring|switch|light|fan|led|mcb|wire|cable|spot/i.test(d)) return 'Electrical';
+    if (/paint|gypsum|ceiling|civil|tile|plumbing|waterproofing|putty|primer/i.test(d)) return 'Site Work';
+    if (/granite|marble|quartz|stone|corian|solid surface/i.test(d)) return 'Stone';
+    return 'Other';
+};
+
 const origPoEdit = poEdit;
 poEdit = function(o) {
     let html = origPoEdit(o);
@@ -681,53 +688,93 @@ poEdit = function(o) {
     (o.pays || []).forEach(p => paid += (+p.amt || 0));
     const bal = t.tot - paid;
     
+    const catTotals = {};
+    (o.lines||[]).forEach(l => {
+        if(!l.d) return;
+        const c = getCatName(l.d);
+        const amt = (l.q||0) * (l.r||0) * (1 + (l.g||0)/100);
+        catTotals[c] = (catTotals[c]||0) + amt;
+    });
+
+    const catPaid = {};
+    (o.pays||[]).forEach(p => {
+        const c = p.cat || 'General';
+        catPaid[c] = (catPaid[c]||0) + (+p.amt||0);
+    });
+
+    let summaryRows = '';
+    Object.keys(catTotals).forEach(c => {
+        if(catTotals[c] > 0.01) {
+            const cp = catPaid[c] || 0;
+            summaryRows += `<tr><td>${c}</td><td class="ro">${fmt(catTotals[c])}</td><td class="ro" style="color:#15803d">${fmt(cp)}</td><td class="ro" style="color:#b00020">${fmt(catTotals[c] - cp)}</td></tr>`;
+            delete catPaid[c];
+        }
+    });
+    Object.keys(catPaid).forEach(c => {
+        if(catPaid[c] > 0.01) {
+             summaryRows += `<tr><td>${c}</td><td class="ro">-</td><td class="ro" style="color:#15803d">${fmt(catPaid[c])}</td><td class="ro">-</td></tr>`;
+        }
+    });
+
+    const CATE_OPTS = ['General', 'Plywood', 'Laminate', 'Hardware', 'Electrical', 'Site Work', 'Stone', 'Other'];
+
     const payHtml = `
     <div class="card">
         <h3>Payment Tracking (Internal)</h3>
-        <p class="mut">Total PO Value: <b>${fmt(t.tot)}</b> • Paid: <b style="color:#15803d">${fmt(paid)}</b> • Remaining: <b style="color:#b00020">${fmt(bal)}</b></p>
+        
+        <div class="dgrid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 15px; background: var(--in); padding: 10px; border-radius: 8px;">
+            <div><span class="mut">Total PO Value</span><br><b>${fmt(t.tot)}</b></div>
+            <div><span class="mut">Total Paid</span><br><b style="color:#15803d">${fmt(paid)}</b></div>
+            <div><span class="mut">Remaining Balance</span><br><b style="color:#b00020">${fmt(bal)}</b></div>
+        </div>
+
+        <div class="sc">
+            <table class="g" style="margin-bottom: 15px;">
+                <tr><th>Category Breakdown</th><th class="ro">Total in PO</th><th class="ro">Paid</th><th class="ro">Balance</th></tr>
+                ${summaryRows || '<tr><td colspan="4" class="mut">No items in PO.</td></tr>'}
+            </table>
+        </div>
+
+        <h4 style="margin-top: 15px;">Payment History</h4>
         <div class="sc">
             <table class="g" style="min-width:600px">
-                <tr><th>Date Paid</th><th>Amount (₹)</th><th>Mode</th><th>Reference</th><th>Next Payment Due</th><th></th></tr>
+                <tr><th>Date</th><th>Amount (₹)</th><th>Category</th><th>Mode</th><th>Ref</th><th>Next Due</th><th></th></tr>
                 ${(o.pays||[]).map((p, i) => `
                 <tr>
                     <td>${bdt('po', o.id, 'pays.'+i+'.date', p.date)}</td>
                     <td>${bn('po', o.id, 'pays.'+i+'.amt', p.amt, 'style="width:100px"')}</td>
+                    <td>${bs('po', o.id, 'pays.'+i+'.cat', p.cat || 'General', CATE_OPTS)}</td>
                     <td>${bs('po', o.id, 'pays.'+i+'.mode', p.mode, ['UPI', 'Bank transfer', 'Cheque', 'Cash'])}</td>
-                    <td>${bi('po', o.id, 'pays.'+i+'.ref', p.ref)}</td>
+                    <td>${bi('po', o.id, 'pays.'+i+'.ref', p.ref, 'style="width:80px"')}</td>
                     <td>${bdt('po', o.id, 'pays.'+i+'.next', p.next)}</td>
                     <td>${ba('paydelpo', '✕', 'data-i="'+i+'"')}</td>
-                </tr>`).join('') || '<tr><td colspan="6" class="mut">No payments recorded yet.</td></tr>'}
+                </tr>`).join('') || '<tr><td colspan="7" class="mut">No payments recorded yet.</td></tr>'}
             </table>
         </div>
         <div class="bar noprint">${ba('payaddpo', '+ Record Payment')}</div>
     </div>
     `;
+    
     const anchor = '<div class="bar noprint"><button data-a="poprint"';
     if (html.includes(anchor)) html = html.replace(anchor, payHtml + anchor);
     else html += payHtml;
     return html;
 };
 
-// 5. Update PO PDF Generation (No Prices, Segregated Pages, Clear Headers)
 const origPoDoc_Adv = poDoc;
 poDoc = function(o) {
     const v = BZ.vd[o.vid] || {};
     const p = BZ.pj[o.pid] || {};
     const q = S.q[p.qid];
     
-    const getCategory = (desc) => {
-        const d = desc.toLowerCase();
-        if (d.includes('plywood') || d.includes('ply') || d.includes('mdf') || d.includes('hdhmr')) return 'ply';
-        if (d.includes('laminate') || d.includes('veneer') || d.includes('acrylic') || d.includes('membrane') || d.includes('duco') || d.includes('pu paint') || d.includes('finish')) return 'lam';
-        if (/hinge|channel|handle|drawer|basket|rack|fitting|hardware|accessory|soft close|tandem|adhesive|fevicol|nails?|screws?|clamp|socket|clip|bracket|pin/i.test(d)) return 'hw';
-        if (/electrical|wiring|switch|light|fan|led|mcb|wire|cable|spot/i.test(d)) return 'elec';
-        if (/paint|gypsum|ceiling|civil|tile|plumbing|waterproofing|putty|primer/i.test(d)) return 'site';
-        if (/granite|marble|quartz|stone|corian|solid surface/i.test(d)) return 'stone';
-        return 'other';
-    };
-
     const groups = { ply: [], lam: [], hw: [], elec: [], site: [], stone: [], other: [] };
-    (o.lines||[]).forEach(l => { if (l.d) groups[getCategory(l.d)].push(l); });
+    (o.lines||[]).forEach(l => { 
+        if (l.d) {
+            const c = getCatName(l.d);
+            const key = c === 'Plywood' ? 'ply' : c === 'Laminate' ? 'lam' : c === 'Hardware' ? 'hw' : c === 'Electrical' ? 'elec' : c === 'Site Work' ? 'site' : c === 'Stone' ? 'stone' : 'other';
+            groups[key].push(l);
+        }
+    });
 
     const fmtQty = (qty) => {
         const n = +qty || 0; const frac = n - Math.floor(n);
@@ -736,7 +783,6 @@ poDoc = function(o) {
 
     const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
 
-    // Page 1: Cover
     let html = `<div class="pg">
         <div class="kv">
             <div><b>VENDOR DETAILS</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')}</div>
@@ -774,14 +820,13 @@ poDoc = function(o) {
     </div>` + docPaper('PURCHASE ORDER', metaHtml, html);
 };
 
-// 6. Wire up the Payment Tracking buttons
 document.addEventListener('click', e => {
     const bAdd = e.target.closest('[data-bza="payaddpo"]');
     if (bAdd) {
         e.preventDefault(); e.stopImmediatePropagation();
         const O = BZ.po[S.po]; if (!O) return;
         O.pays = O.pays || [];
-        O.pays.push({ date: today(), amt: 0, mode: 'UPI', ref: '', next: '' });
+        O.pays.push({ date: today(), amt: 0, cat: 'General', mode: 'UPI', ref: '', next: '' });
         bzSave('po', O.id); render(); return;
     }
     const bDel = e.target.closest('[data-bza="paydelpo"]');
@@ -796,7 +841,7 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
     const t = e.target;
     if (t.dataset.bz && t.dataset.bz.startsWith('po|') && t.dataset.bz.includes('|pays.')) {
-        if (t.dataset.bz.includes('.amt') || t.dataset.bz.includes('.next') || t.dataset.bz.includes('.date')) {
+        if (t.dataset.bz.includes('.amt') || t.dataset.bz.includes('.next') || t.dataset.bz.includes('.date') || t.dataset.bz.includes('.cat')) {
             setTimeout(render, 100);
         }
     }
