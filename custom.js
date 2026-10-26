@@ -387,21 +387,24 @@ const origVSet = vSet;
 vSet = function() {
     let html = origVSet();
     
-    // Find the old "Outer / inner finishes" card and remove it
     const regex = /<div class="card"><h2>Outer \/ inner finishes.*?<button data-a="sa" data-k="fin">\+ Add row<\/button><\/div><\/div>/s;
     if (!regex.test(html)) return html;
 
     const selM = S.set.selFinMaker || S.set.finm[0];
     
-    // Get finishes for the selected maker
-    const makerFins = S.set.fin.filter(f => f.n.startsWith(selM + ' — '));
+    // FIX: Added f.n.includes instead of f.includes
+    const makerFins = S.set.fin.filter(f => {
+        if (f.n.includes(' — ')) {
+            return f.n.startsWith(selM + ' — ');
+        }
+        return selM === 'Standard';
+    });
     
-    // Get PU / Deco finishes (No maker)
     const puFins = S.set.fin.filter(f => !f.n.includes(' — ') && /PU|Duco|Deco/i.test(f.n));
 
-    // Helper to render a table for a specific group of finishes
     const renderGroup = (title, filterFn) => {
-        const fins = makerFins.filter(filterFn);
+        // FIX: Added f.n.includes instead of f.includes
+        const fins = makerFins.filter(f => filterFn(f.n));
         if (!fins.length) return '';
         return `
             <div class="sh" style="margin-top: 15px; background: var(--in); color: var(--ink); border: 1px solid var(--line)">${title}</div>
@@ -474,7 +477,7 @@ document.addEventListener('click', e => {
     const bMk = e.target.closest('[data-fp="add-maker"]');
     if (bMk) {
         e.preventDefault();
-        e.stopImmediatePropagation(); // Prevents double-adding if old listener is still active
+        e.stopImmediatePropagation();
         
         const name = prompt("Enter the new Maker / Brand name (e.g., Merino, Century, Greenlam):");
         if (!name || !name.trim()) return;
