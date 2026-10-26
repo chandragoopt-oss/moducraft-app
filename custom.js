@@ -366,66 +366,116 @@ function removeMaterialSummary() { const el = document.getElementById('material-
 
 
 // ==========================================
-// PATCH: Group Finishes by Maker in Settings
+// PATCH: Structured Finishes (Laminate, Acrylic, etc.)
 // ==========================================
 const origFixSet = fixSet;
 fixSet = function() {
     origFixSet();
-    if (!S.set.finm) S.set.finm = ['Standard'];
+    if (!S.set.finm) S.set.finm = ['Standard', 'Merino', 'Century', 'Greenlam']; // Default makers
 };
+
+// The standard finishes generated for every new maker
+const STD_FINS = [
+    '0.8mm Matt', '0.8mm Gloss', '0.8mm High Gloss', '0.8mm Texture', '0.8mm Special', '0.8mm Stone Finish',
+    '1mm Matt', '1mm Gloss', '1mm High Gloss', '1mm Texture', '1mm Special', '1mm Stone Finish',
+    'Acrylic Matt', 'Acrylic Gloss',
+    'Membrane Matt', 'Membrane Gloss',
+    'Veneer'
+];
 
 const origVSet = vSet;
 vSet = function() {
     let html = origVSet();
     
+    // Find the old "Outer / inner finishes" card and remove it
     const regex = /<div class="card"><h2>Outer \/ inner finishes.*?<button data-a="sa" data-k="fin">\+ Add row<\/button><\/div><\/div>/s;
+    if (!regex.test(html)) return html;
+
+    const selM = S.set.selFinMaker || S.set.finm[0];
     
-    if (regex.test(html)) {
-        const selM = S.set.selFinMaker || S.set.finm[0];
-        let newFinHtml = `
-        <div class="card" id="custom-fin-card">
-            <h2>Outer / Inner Finishes (Grouped by Maker)</h2>
-            <p class="mut">Select a maker to view and edit their rates. When you add a new maker, standard finishes (0.8mm/1mm Laminate, Acrylics) will be auto-generated for you.</p>
-            
-            <div class="bar">
-                <label>Maker / Brand:</label>
-                <select id="fin_maker_sel" style="max-width:250px">
-                    ${S.set.finm.map(m => `<option value="${esc(m)}" ${m===selM?'selected':''}>${esc(m)}</option>`).join('')}
-                </select>
-                <button data-fp="add-maker" style="background:var(--gold);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">+ Add New Maker</button>
-            </div>
-            
-            <div class="sc">
-                <table class="g" style="min-width:600px">
-                    <tr><th>Finish</th><th>Client add-on ₹ per sq.ft</th><th>Our cost ₹ per sheet</th><th></th></tr>
-                    ${S.set.fin.filter(f => {
-                        if (f.n.includes(' — ')) {
-                            return f.n.startsWith(selM + ' — ');
-                        }
-                        return selM === 'Standard';
-                    }).map((f, i) => {
-                        const actualIdx = S.set.fin.findIndex(x => x.n === f.n);
-                        return `
-                        <tr>
-                            <td>${esc(f.n)}</td>
-                            <td>${RB('s',`fin|${actualIdx}|r`,f.r||'')}</td>
-                            <td>${RB('s',`fin|${actualIdx}|c`,f.c||'')}</td>
-                            <td><button class="g" data-a="sd" data-k="fin" data-i="${actualIdx}">×</button></td>
-                        </tr>`;
-                    }).join('')}
-                </table>
-            </div>
-            <div class="bar"><button class="g" data-fp="add-fin-row">+ Add custom row to ${esc(selM)}</button></div>
-        </div>
+    // Get finishes for the selected maker
+    const makerFins = S.set.fin.filter(f => f.n.startsWith(selM + ' — '));
+    
+    // Get PU / Deco finishes (No maker)
+    const puFins = S.set.fin.filter(f => !f.n.includes(' — ') && /PU|Duco|Deco/i.test(f.n));
+
+    // Helper to render a table for a specific group of finishes
+    const renderGroup = (title, filterFn) => {
+        const fins = makerFins.filter(filterFn);
+        if (!fins.length) return '';
+        return `
+            <div class="sh" style="margin-top: 15px; background: var(--in); color: var(--ink); border: 1px solid var(--line)">${title}</div>
+            <table class="g" style="margin-bottom: 10px;">
+                <tr><th>Finish Variant</th><th>Client add-on ₹ per sq.ft</th><th>Our cost ₹ per sheet</th><th></th></tr>
+                ${fins.map(f => {
+                    const actualIdx = S.set.fin.findIndex(x => x.n === f.n);
+                    const shortName = f.n.replace(selM + ' — ', '');
+                    return `
+                    <tr>
+                        <td>${esc(shortName)}</td>
+                        <td>${RB('s',`fin|${actualIdx}|r`,f.r||'')}</td>
+                        <td>${RB('s',`fin|${actualIdx}|c`,f.c||'')}</td>
+                        <td><button class="g" data-a="sd" data-k="fin" data-i="${actualIdx}">×</button></td>
+                    </tr>`;
+                }).join('')}
+            </table>
         `;
-        html = html.replace(regex, newFinHtml);
-    }
-    return html;
+    };
+
+    let newFinHtml = `
+    <div class="card" id="custom-fin-card">
+        <h2>Finishes &amp; Acrylics (Grouped by Maker)</h2>
+        <p class="mut">Select a maker to view and edit their rates. When you add a new maker, standard finishes (0.8mm/1mm Laminate, Acrylics, etc.) will be auto-generated for you.</p>
+        
+        <div class="bar">
+            <label>Maker / Brand:</label>
+            <select id="fin_maker_sel" style="max-width:250px">
+                ${S.set.finm.map(m => `<option value="${esc(m)}" ${m===selM?'selected':''}>${esc(m)}</option>`).join('')}
+            </select>
+            <button data-fp="add-maker" style="background:var(--gold);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">+ Add New Maker</button>
+        </div>
+        
+        <div class="sc">
+            ${renderGroup('0.8mm Laminate', f => f.includes('0.8mm'))}
+            ${renderGroup('1mm Laminate', f => f.includes('1mm'))}
+            ${renderGroup('Acrylic', f => f.includes('Acrylic'))}
+            ${renderGroup('Membrane', f => f.includes('Membrane'))}
+            ${renderGroup('Veneer', f => f.includes('Veneer'))}
+            ${renderGroup('Other Finishes', f => !/0.8mm|1mm|Acrylic|Membrane|Veneer/.test(f))}
+        </div>
+        <div class="bar"><button class="g" data-fp="add-fin-row">+ Add custom row to ${esc(selM)}</button></div>
+    </div>
+
+    <div class="card">
+        <h2>PU / Deco Paint (No Maker Required)</h2>
+        <div class="sc">
+            <table class="g">
+                <tr><th>Finish</th><th>Client add-on ₹ per sq.ft</th><th>Our cost ₹ per sheet</th><th></th></tr>
+                ${puFins.map(f => {
+                    const actualIdx = S.set.fin.findIndex(x => x.n === f.n);
+                    return `
+                    <tr>
+                        <td>${esc(f.n)}</td>
+                        <td>${RB('s',`fin|${actualIdx}|r`,f.r||'')}</td>
+                        <td>${RB('s',`fin|${actualIdx}|c`,f.c||'')}</td>
+                        <td><button class="g" data-a="sd" data-k="fin" data-i="${actualIdx}">×</button></td>
+                    </tr>`;
+                }).join('')}
+            </table>
+        </div>
+    </div>
+    `;
+    
+    return html.replace(regex, newFinHtml);
 };
 
+// Handler for adding new makers & custom rows
 document.addEventListener('click', e => {
     const bMk = e.target.closest('[data-fp="add-maker"]');
     if (bMk) {
+        e.preventDefault();
+        e.stopImmediatePropagation(); // Prevents double-adding if old listener is still active
+        
         const name = prompt("Enter the new Maker / Brand name (e.g., Merino, Century, Greenlam):");
         if (!name || !name.trim()) return;
         const cleanName = name.trim();
@@ -439,8 +489,7 @@ document.addEventListener('click', e => {
         S.set.finm.push(cleanName);
         S.set.selFinMaker = cleanName;
         
-        const stds = ['0.8mm Laminate', '1.0mm Laminate', 'Acrylic – Glossy', 'Acrylic – Matt', 'Acrylic – High gloss'];
-        stds.forEach(s => {
+        STD_FINS.forEach(s => {
             const fullName = cleanName + ' — ' + s;
             if (!S.set.fin.find(x => x.n === fullName)) {
                 S.set.fin.push({ n: fullName, r: 0, c: 0 });
@@ -455,12 +504,14 @@ document.addEventListener('click', e => {
 
     const bRow = e.target.closest('[data-fp="add-fin-row"]');
     if (bRow) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
         const m = S.set.selFinMaker || S.set.finm[0];
         S.set.fin.push({ n: (m==='Standard'?'':m+' — '), r: 0, c: 0 });
         save('s');
         render();
     }
-});
+}, true);
 
 document.addEventListener('change', e => {
     if (e.target.id === 'fin_maker_sel') {
