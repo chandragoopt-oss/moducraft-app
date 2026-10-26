@@ -240,5 +240,3 @@ vList = function() {
     });
     return html;
 };
-    return html;
-};
