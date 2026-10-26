@@ -1,12 +1,5 @@
 // ModuCraft Custom Patch File
 // Paste any new features from Claude below this line.
-// --- PATCH: Change Today Page Title ---
-const originalTodayCard = todayCard;
-todayCard = function() {
-    let html = originalTodayCard();
-    // Find the old title and replace it with the new one
-    return html.replace("Today —", "Welcome Back! Today is");
-};
 // ==========================================
 // PATCH: Advanced Follow Up System & Today Dashboard
 // ==========================================
@@ -191,6 +184,12 @@ const origTodayCard = todayCard;
 todayCard = function() {
     let html = origTodayCard();
     
+    // --- PATCH: Welcome Back Name ---
+    const u = (typeof uName === 'function') ? uName() : (localStorage.getItem('msq_me') || 'User');
+    const displayName = u.includes('@') ? u.split('@')[0] : u;
+    html = html.replace("Today —", `Welcome Back, ${displayName}! Today is`);
+    // --------------------------------
+
     // Remove the old basic follow-up block
     html = html.replace(/<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:(?:#fffaf0|#f4fbf4)"><b>📞 Clients to follow up.*?<\/div><\/div>/s, '');
 
@@ -236,7 +235,7 @@ todayCard = function() {
     }
 
     // Inject everything right after the top summary chips
-    const chipEnd = html.indexOf('</div>', html.indexOf('<h2>Today'));
+    const chipEnd = html.indexOf('</div>', html.indexOf('<h2>'));
     if (chipEnd !== -1) {
         html = html.substring(0, chipEnd + 6) + newHtml + html.substring(chipEnd + 6);
     }
