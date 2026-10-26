@@ -633,228 +633,70 @@ document.addEventListener('click', e => {
     }
 }, true);
 // ==========================================
-// PATCH: Multi-Page Detailed Purchase Order (No Prices)
+// PATCH: Advanced Purchase Order, Consumables & Payments
 // ==========================================
 
-const origPoDoc = poDoc;
-poDoc = function(o) {
-    const v = BZ.vd[o.vid] || {};
-    const p = BZ.pj[o.pid] || {};
+// 1. Helper to calculate Consumables based on the Quotation
+function calcConsumables(q) {
+    if (!q) return [];
+    const estData = est(q);
+    let plyS = 0, lamS = 0;
+    Object.values(estData.ply).forEach(x => plyS += x.s18 + x.s6);
+    Object.values(estData.ls).forEach(x => lamS += x);
     
-    const getCategory = (desc) => {
-        const d = desc.toLowerCase();
-        if (d.includes('plywood') || d.includes('ply')) return 'ply';
-        if (d.includes('laminate') || d.includes('veneer') || d.includes('acrylic') || d.includes('membrane') || d.includes('duco') || d.includes('pu paint')) return 'lam';
-        if (d.includes('hinge') || d.includes('channel') || d.includes('handle') || d.includes('drawer') || d.includes('basket') || d.includes('rack') || d.includes('fitting') || d.includes('hardware') || d.includes('accessory') || d.includes('soft close') || d.includes('tandem')) return 'hw';
-        if (d.includes('paint') || d.includes('gypsum') || d.includes('ceiling') || d.includes('civil') || d.includes('tile') || d.includes('plumbing') || d.includes('electrical') || d.includes('wiring') || d.includes('glass')) return 'site';
-        return 'other';
-    };
+    let skirtLen = 0, moduleCount = 0;
+    q.rooms.forEach(rm => rm.rows.forEach(r => {
+        if (r.n) {
+            const m = MOD[r.mk];
+            if (m && !m.au) moduleCount++;
+            if (r.n.includes('PVC Skirting') && r.q) skirtLen += (+r.q || 0);
+        }
+    }));
 
-    const groups = { ply: [], lam: [], hw: [], site: [], other: [] };
-    (o.lines||[]).forEach(l => {
-        if (!l.d) return;
-        groups[getCategory(l.d)].push(l);
-    });
-
-    // Helper to format quantity (No decimal, round up if > 0.1)
-    const fmtQty = (q) => {
-        const n = +q || 0;
-        const frac = n - Math.floor(n);
-        return frac > 0.1 ? Math.ceil(n) : Math.floor(n);
-    };
-
-    const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
-
-    // --- PAGE 1: Standard PO Header & Summary ---
-    let html = `<div class="pg">
-        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')} ${v.gst?'<br>GST: '+esc(v.gst):''}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div></div>
-        
-        <div class="sh">PURCHASE ORDER SUMMARY</div>
-        ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${fmtQty(l.q)}</td><td>${esc(l.u)}</td></tr>`).join('')}</table>` : '<p class="nt">No items added to this PO yet.</p>'}
-        
-        ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
-        <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
-            <span>Vendor acknowledgement</span>
-            <span>For ${esc(co().name)}<br><br>Authorised signatory</span>
-        </div>
-    </div>`;
-
-    // --- PAGE 2: Plywood ---
-    if (groups.ply.length) {
-        html += `<div class="pg" style="break-before: page;">
-            <h2 style="text-align:center;letter-spacing:3px">PLYWOOD PURCHASE DETAILS</h2>
-            ${T1(['Description (Maker & Grade)', 'Qty', 'Unit'], groups.ply.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
-        </div>`;
+    const cons = [];
+    if (plyS > 0) {
+        cons.push({ d: 'Wood Adhesive (Fevicol / equivalent)', q: Math.max(1, Math.ceil(lamS * 0.5)), u: 'kg' });
+        cons.push({ d: 'Nails - Headless / Brad (Assorted)', q: Math.max(1, Math.ceil(plyS * 0.2)), u: 'kg' });
+        cons.push({ d: 'Screws - Assorted (Drywall / Wood)', q: Math.max(1, Math.ceil(plyS * 0.5)), u: 'box' });
+        cons.push({ d: 'L-Clamps (Corner Braces)', q: Math.max(1, Math.ceil(moduleCount / 2)), u: 'nos' });
+        cons.push({ d: 'Wall PVC Sockets', q: Math.max(1, Math.ceil(moduleCount * 0.5)), u: 'nos' });
     }
-
-    // --- PAGE 3: Laminate ---
-    if (groups.lam.length) {
-        html += `<div class="pg" style="break-before: page;">
-            <h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH PURCHASE DETAILS</h2>
-            ${T1(['Description (Maker & Finish)', 'Qty', 'Unit'], groups.lam.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
-        </div>`;
+    if (skirtLen > 0) {
+        cons.push({ d: 'Skirting Clips', q: Math.ceil(skirtLen * 3.33), u: 'nos' });
     }
+    return cons;
+}
 
-    // --- PAGE 4: Hardware ---
-    if (groups.hw.length) {
-        html += `<div class="pg" style="break-before: page;">
-            <h2 style="text-align:center;letter-spacing:3px">HARDWARE & ACCESSORIES PURCHASE DETAILS</h2>
-            ${T1(['Description', 'Qty', 'Unit'], groups.hw.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
-        </div>`;
-    }
-
-    // --- PAGE 5: Paint, Gypsum & Civil ---
-    if (groups.site.length) {
-        html += `<div class="pg" style="break-before: page;">
-            <h2 style="text-align:center;letter-spacing:3px">PAINT, GYPSUM & SITE WORK DETAILS</h2>
-            ${T1(['Description', 'Qty', 'Unit'], groups.site.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
-        </div>`;
-    }
-
-    // --- PAGE 6: Other Items ---
-    if (groups.other.length) {
-        html += `<div class="pg" style="break-before: page;">
-            <h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS PURCHASE DETAILS</h2>
-            ${T1(['Description', 'Qty', 'Unit'], groups.other.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
-        </div>`;
-    }
-
-    // The meta block is placed inside the <thead>, so it repeats on EVERY page
-    const metaHtml = `
-        PO No.: <b>${esc(o.no)}</b><br>
-        Order Date: <b>${dmy(o.date)}</b><br>
-        Delivery Req.: <b style="color:#b00020">${dmy(o.del)}</b><br>
-        Project: ${esc(p.name||'—')}<br>
-        Addr: ${esc(p.addr||'—')}
-    `;
-
-    return `<div class="bar noprint">
-        <button data-a="dpdf" data-acc="1" data-fn="${esc(o.no)}.pdf">Download PDF</button>
-        <button class="g" data-a="ap">Print</button>
-        <button class="g" data-bza="docback">← Back</button>
-    </div>` + docPaper('PURCHASE ORDER', metaHtml, html);
-};
-// ==========================================
-// PATCH: Auto-Calculate Consumables for Purchase Order
-// ==========================================
-
-// 1. Update the Category matcher in the PO Patch so it catches Consumables
-const origPoDoc_Consumables = poDoc;
-poDoc = function(o) {
-    const v = BZ.vd[o.vid] || {};
-    const p = BZ.pj[o.pid] || {};
+// 2. Add Consumables to the Estimate Page UI
+const origVEst = vEst;
+vEst = function() {
+    let html = origVEst();
+    const q = T();
+    if (!q) return html;
     
-    const getCategory = (desc) => {
-        const d = desc.toLowerCase();
-        if (d.includes('plywood') || d.includes('ply')) return 'ply';
-        if (d.includes('laminate') || d.includes('veneer') || d.includes('acrylic') || d.includes('membrane') || d.includes('duco') || d.includes('pu paint')) return 'lam';
-        // Added regex to catch glue, nails, screws, clips, sockets, brackets
-        if (/hinge|channel|handle|drawer|basket|rack|fitting|hardware|accessory|soft close|tandem|adhesive|fevicol|nails?|screws?|clamp|socket|clip|bracket|pin/i.test(d)) return 'hw';
-        if (/paint|gypsum|ceiling|civil|tile|plumbing|electrical|wiring|glass/i.test(d)) return 'site';
-        return 'other';
-    };
-
-    const groups = { ply: [], lam: [], hw: [], site: [], other: [] };
-    (o.lines||[]).forEach(l => {
-        if (!l.d) return;
-        groups[getCategory(l.d)].push(l);
-    });
-
-    const fmtQty = (q) => {
-        const n = +q || 0;
-        const frac = n - Math.floor(n);
-        return frac > 0.1 ? Math.ceil(n) : Math.floor(n);
-    };
-
-    const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
-
-    let html = `<div class="pg">
-        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')} ${v.gst?'<br>GST: '+esc(v.gst):''}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div></div>
+    const cons = calcConsumables(q);
+    if (cons.length) {
+        const tableHtml = `<div class="card" style="border-left: 4px solid var(--gold)"><h2>Site Consumables (Auto-Estimated)</h2><p class="mut">Based on the total plywood, laminate sheets, and modules in this quotation.</p>
+        <div class="sc"><table class="g" style="min-width: 400px;"><tr><th>Item</th><th class="ro">Qty</th><th>Unit</th></tr>
+        ${cons.map(c => `<tr><td>${esc(c.d)}</td><td class="ro">${c.q}</td><td>${esc(c.u)}</td></tr>`).join('')}
+        </table></div></div>`;
         
-        <div class="sh">PURCHASE ORDER SUMMARY</div>
-        ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${fmtQty(l.q)}</td><td>${esc(l.u)}</td></tr>`).join('')}</table>` : '<p class="nt">No items added to this PO yet.</p>'}
-        
-        ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
-        <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
-            <span>Vendor acknowledgement</span>
-            <span>For ${esc(co().name)}<br><br>Authorised signatory</span>
-        </div>
-    </div>`;
-
-    if (groups.ply.length) {
-        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">PLYWOOD PURCHASE DETAILS</h2>${T1(['Description (Maker & Grade)', 'Qty', 'Unit'], groups.ply.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+        // Inject right after the "Our cost vs customer price" or before it
+        const anchor = html.indexOf('<div class="card"><h2>Our cost vs customer price</h2>');
+        if (anchor !== -1) html = html.substring(0, anchor) + tableHtml + html.substring(anchor);
+        else html += tableHtml;
     }
-    if (groups.lam.length) {
-        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH PURCHASE DETAILS</h2>${T1(['Description (Maker & Finish)', 'Qty', 'Unit'], groups.lam.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
-    }
-    if (groups.hw.length) {
-        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">HARDWARE, ACCESSORIES & CONSUMABLES</h2>${T1(['Description', 'Qty', 'Unit'], groups.hw.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
-    }
-    if (groups.site.length) {
-        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">PAINT, GYPSUM & SITE WORK DETAILS</h2>${T1(['Description', 'Qty', 'Unit'], groups.site.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
-    }
-    if (groups.other.length) {
-        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS PURCHASE DETAILS</h2>${T1(['Description', 'Qty', 'Unit'], groups.other.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
-    }
-
-    const metaHtml = `
-        PO No.: <b>${esc(o.no)}</b><br>
-        Order Date: <b>${dmy(o.date)}</b><br>
-        Delivery Req.: <b style="color:#b00020">${dmy(o.del)}</b><br>
-        Project: ${esc(p.name||'—')}<br>
-        Addr: ${esc(p.addr||'—')}
-    `;
-
-    return `<div class="bar noprint">
-        <button data-a="dpdf" data-acc="1" data-fn="${esc(o.no)}.pdf">Download PDF</button>
-        <button class="g" data-a="ap">Print</button>
-        <button class="g" data-bza="docback">← Back</button>
-    </div>` + docPaper('PURCHASE ORDER', metaHtml, html);
+    return html;
 };
 
-// 2. Intercept the "Add lines from estimate" function
+// 3. Auto-Add Consumables to PO when pulling from Estimate
 const origPoFromEst = poFromEst;
 poFromEst = function(po, src) {
-    // Run the original logic first
     origPoFromEst(po, src);
-    
-    // If we just added hardware, let's calculate consumables
     if (src === 'hw') {
-        const p = BZ.pj[po.pid];
-        const q = p && S.q[p.qid];
+        const p = BZ.pj[po.pid], q = p && S.q[p.qid];
         if (q) {
-            const estData = est(q);
-            
-            // Calculate total ply sheets and laminate sheets
-            let plyS = 0, lamS = 0;
-            Object.values(estData.ply).forEach(x => plyS += x.s18 + x.s6);
-            Object.values(estData.ls).forEach(x => lamS += x);
-            
-            // Calculate skirting length (in meters) and module count
-            let skirtLen = 0, moduleCount = 0;
-            q.rooms.forEach(rm => rm.rows.forEach(r => {
-                if (r.n) {
-                    const m = MOD[r.mk];
-                    if (m && !m.au) moduleCount++;
-                    if (r.n.includes('PVC Skirting') && r.q) skirtLen += (+r.q || 0);
-                }
-            }));
-
-            const cons = [];
-            if (plyS > 0) {
-                // Rule of thumb calculations
-                cons.push({ d: 'Wood Adhesive (Fevicol / equivalent)', q: Math.max(1, Math.ceil(lamS * 0.5)), u: 'kg' });
-                cons.push({ d: 'Nails - Headless / Brad (Assorted)', q: Math.max(1, Math.ceil(plyS * 0.2)), u: 'kg' });
-                cons.push({ d: 'Screws - Assorted (Drywall / Wood)', q: Math.max(1, Math.ceil(plyS * 0.5)), u: 'box' });
-                cons.push({ d: 'L-Clamps (Corner Braces)', q: Math.max(1, Math.ceil(moduleCount / 2)), u: 'nos' });
-                cons.push({ d: 'Wall PVC Sockets', q: Math.max(1, Math.ceil(moduleCount * 0.5)), u: 'nos' });
-            }
-            if (skirtLen > 0) {
-                // 1 clip every 300mm (3.33 clips per meter)
-                cons.push({ d: 'Skirting Clips', q: Math.ceil(skirtLen * 3.33), u: 'nos' });
-            }
-            
-            // Add to PO if not already there
+            const cons = calcConsumables(q);
             let added = false;
             cons.forEach(c => {
                 if (!po.lines.some(l => l.d === c.d)) {
@@ -862,12 +704,148 @@ poFromEst = function(po, src) {
                     added = true;
                 }
             });
-            
             if (added) {
                 bzSave('po', po.id);
-                flash('Consumables (glue, screws, clips) auto-added to PO!');
+                flash('Consumables (glue, screws, clips) auto-added!');
                 render();
             }
         }
     }
 };
+
+// 4. Update PO PDF Generation (Headers & Traceability)
+const origPoDoc_Adv = poDoc;
+poDoc = function(o) {
+    const v = BZ.vd[o.vid] || {};
+    const p = BZ.pj[o.pid] || {};
+    const q = S.q[p.qid];
+    
+    const getCategory = (desc) => {
+        const d = desc.toLowerCase();
+        if (d.includes('plywood') || d.includes('ply')) return 'ply';
+        if (d.includes('laminate') || d.includes('veneer') || d.includes('acrylic') || d.includes('membrane') || d.includes('duco') || d.includes('pu paint')) return 'lam';
+        if (/hinge|channel|handle|drawer|basket|rack|fitting|hardware|accessory|soft close|tandem|adhesive|fevicol|nails?|screws?|clamp|socket|clip|bracket|pin/i.test(d)) return 'hw';
+        if (/paint|gypsum|ceiling|civil|tile|plumbing|electrical|wiring|glass/i.test(d)) return 'site';
+        return 'other';
+    };
+
+    const groups = { ply: [], lam: [], hw: [], site: [], other: [] };
+    (o.lines||[]).forEach(l => { if (l.d) groups[getCategory(l.d)].push(l); });
+
+    const fmtQty = (qty) => {
+        const n = +qty || 0; const frac = n - Math.floor(n);
+        return frac > 0.1 ? Math.ceil(n) : Math.floor(n);
+    };
+
+    const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
+    const t = poTot(o);
+
+    // Page 1: Summary
+    let html = `<div class="pg">
+        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div></div>
+        <div class="sh">PURCHASE ORDER SUMMARY</div>
+        ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${fmtQty(l.q)}</td><td>${esc(l.u)}</td></tr>`).join('')}</table>` : '<p class="nt">No items added.</p>'}
+        ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
+        <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
+            <span>Vendor acknowledgement</span>
+            <span>For ${esc(co().name)}<br><br>Authorised signatory</span>
+        </div>
+    </div>`;
+
+    if (groups.ply.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">PLYWOOD</h2>${T1(['Description', 'Qty', 'Unit'], groups.ply.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.lam.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH</h2>${T1(['Description', 'Qty', 'Unit'], groups.lam.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.hw.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">HARDWARE & CONSUMABLES</h2>${T1(['Description', 'Qty', 'Unit'], groups.hw.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.site.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">SITE WORK DETAILS</h2>${T1(['Description', 'Qty', 'Unit'], groups.site.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    if (groups.other.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS</h2>${T1(['Description', 'Qty', 'Unit'], groups.other.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+
+    // THEAD Meta - Repeats on EVERY page
+    const metaHtml = `
+        <b>PO: ${esc(o.no)}</b> | Date: <b>${dmy(o.date)}</b><br>
+        Quote Ref: <b>${q ? esc(qno(q)) : 'N/A'}</b><br>
+        Vendor: <b>${esc(v.name||'—')}</b><br>
+        Delivery: <b style="color:#b00020">${dmy(o.del)}</b><br>
+        Category: ${[...new Set((o.lines||[]).map(l=>getCategory(l.d)))].join(', ').toUpperCase()}
+    `;
+    
+    // Internal only footer
+    const ft = `INTERNAL USE ONLY — PO Amount: ${fmt(t.tot)} | Paid: ${fmt((o.pays||[]).reduce((a,x)=>a+(+x.amt||0),0))} | Balance: ${fmt(t.tot - (o.pays||[]).reduce((a,x)=>a+(+x.amt||0),0))}`;
+
+    return `<div class="bar noprint">
+        <button data-a="dpdf" data-acc="1" data-fn="${esc(o.no)}.pdf">Download PDF</button>
+        <button class="g" data-a="ap">Print</button>
+        <button class="g" data-bza="docback">← Back</button>
+    </div>` + docPaper('PURCHASE ORDER', metaHtml, html).replace('<div class="ft">', '<div class="ft" style="color:#b00020;font-weight:bold">'+ft+'<br>');
+};
+
+// 5. Update PO Edit UI to include Payment Tracking
+const origPoEdit = poEdit;
+poEdit = function(o) {
+    let html = origPoEdit(o);
+    const t = poTot(o);
+    let paid = 0;
+    (o.pays || []).forEach(p => paid += (+p.amt || 0));
+    const bal = t.tot - paid;
+
+    const payHtml = `
+    <div class="card">
+        <h3>Payment Tracking (Internal)</h3>
+        <p class="mut">Total PO Value: <b>${fmt(t.tot)}</b> • Paid: <b style="color:#15803d">${fmt(paid)}</b> • Remaining: <b style="color:#b00020">${fmt(bal)}</b></p>
+        <div class="sc">
+            <table class="g" style="min-width:600px">
+                <tr><th>Date Paid</th><th>Amount (₹)</th><th>Mode</th><th>Reference</th><th>Next Payment Due</th><th></th></tr>
+                ${(o.pays||[]).map((p, i) => `
+                <tr>
+                    <td>${bdt('po', o.id, 'pays.'+i+'.date', p.date)}</td>
+                    <td>${bn('po', o.id, 'pays.'+i+'.amt', p.amt, 'style="width:100px"')}</td>
+                    <td>${bs('po', o.id, 'pays.'+i+'.mode', p.mode, ['UPI', 'Bank transfer', 'Cheque', 'Cash'])}</td>
+                    <td>${bi('po', o.id, 'pays.'+i+'.ref', p.ref)}</td>
+                    <td>${bdt('po', o.id, 'pays.'+i+'.next', p.next)}</td>
+                    <td>${ba('paydelpo', '✕', 'data-i="'+i+'"')}</td>
+                </tr>`).join('') || '<tr><td colspan="6" class="mut">No payments recorded yet.</td></tr>'}
+            </table>
+        </div>
+        <div class="bar noprint">${ba('payaddpo', '+ Record Payment')}</div>
+    </div>
+    `;
+
+    // Inject before the final buttons at the bottom
+    const anchor = '<div class="bar noprint"><button data-a="poprint"';
+    if (html.includes(anchor)) {
+        html = html.replace(anchor, payHtml + anchor);
+    } else {
+        html += payHtml;
+    }
+    return html;
+};
+
+// 6. Wire up the buttons for Payment Tracking
+document.addEventListener('click', e => {
+    const bAdd = e.target.closest('[data-bza="payaddpo"]');
+    if (bAdd) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        const O = BZ.po[S.po]; if (!O) return;
+        O.pays = O.pays || [];
+        O.pays.push({ date: today(), amt: 0, mode: 'UPI', ref: '', next: '' });
+        bzSave('po', O.id); render(); return;
+    }
+    
+    const bDel = e.target.closest('[data-bza="paydelpo"]');
+    if (bDel) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        const O = BZ.po[S.po]; if (!O) return;
+        O.pays.splice(+bDel.dataset.i, 1);
+        bzSave('po', O.id); render(); return;
+    }
+}, true);
+
+// 7. Ensure custom field inputs for payments save correctly
+document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset.bz && t.dataset.bz.startsWith('po|') && t.dataset.bz.includes('|pays.')) {
+        // The main app's bzSave logic handles this natively via data-bz
+        // We just need to trigger a re-render if it's an amount to update totals
+        if (t.dataset.bz.includes('.amt') || t.dataset.bz.includes('.next') || t.dataset.bz.includes('.date')) {
+            setTimeout(render, 100); // Let the main app save first
+        }
+    }
+});
