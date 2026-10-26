@@ -225,6 +225,38 @@ button,select{min-height:38px}input[type=checkbox]{min-height:0}
 }
 @media print{main .paper{zoom:1!important;width:auto!important}}
 </style>
+<style id="dark-mode-fix">
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme=light]) #app div[style*="background:#fff"],
+  :root:not([data-theme=light]) #app div[style*="background:#fffaf0"],
+  :root:not([data-theme=light]) #app div[style*="background:#f4fbf4"],
+  :root:not([data-theme=light]) #app div[style*="background:#f1f5f9"],
+  :root:not([data-theme=light]) #app div[style*="background:#faf6ec"],
+  :root:not([data-theme=light]) #app div[style*="background:#fff5f5"],
+  :root:not([data-theme=light]) #app div[style*="background:#fff7e0"] {
+    background-color: var(--card) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+  }
+  :root:not([data-theme=light]) #app div[style*="background:#fff"] *,
+  :root:not([data-theme=light]) #app div[style*="background:#fffaf0"] *,
+  :root:not([data-theme=light]) #app div[style*="background:#f4fbf4"] *,
+  :root:not([data-theme=light]) #app div[style*="background:#f1f5f9"] *,
+  :root:not([data-theme=light]) #app div[style*="background:#faf6ec"] *,
+  :root:not([data-theme=light]) #app div[style*="background:#fff5f5"] *,
+  :root:not([data-theme=light]) #app div[style*="background:#fff7e0"] * {
+    color: var(--ink) !important;
+    border-color: var(--line) !important;
+  }
+  :root:not([data-theme=light]) #app span[style*="background:#fde8e8"],
+  :root:not([data-theme=light]) #app span[style*="background:#fff3d6"],
+  :root:not([data-theme=light]) #app span[style*="background:#e7f6e7"] {
+    background-color: var(--in) !important;
+    border: 1px solid var(--line) !important;
+    color: var(--ink) !important;
+  }
+}
+</style>
 </head><body>
 <div class="top"><div class="lg"><img id="tl" alt="MODULE STUDIO"></div><div><b>ModuCraft ERP</b><small id="ci"></small><small style="display:block;color:#F59E0B;font-weight:bold">Design • BOQ • Execute • Deliver</small></div><nav id="nav"></nav><span id="st" class="noprint" style="font-size:12px;width:100%;text-align:right"></span></div><div id="err" class="warn noprint" style="display:none;margin:8px 16px"></div>
 <main id="app"></main><div id="fl"></div>
