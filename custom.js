@@ -632,3 +632,101 @@ document.addEventListener('click', e => {
         }
     }
 }, true);
+// ==========================================
+// PATCH: Multi-Page Detailed Purchase Order
+// ==========================================
+
+const origPoDoc = poDoc;
+poDoc = function(o) {
+    const v = BZ.vd[o.vid] || {};
+    const p = BZ.pj[o.pid] || {};
+    const q = S.q[p.qid];
+    
+    // If no quotation is linked, fallback to the standard PO layout
+    if (!q) return origPoDoc(o);
+
+    const estData = est(q);
+    const t = poTot(o);
+    
+    // Helper to generate tables
+    const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}`).join('')}</tr>`).join('')}</table>`;
+
+    // --- PAGE 1: Standard PO Header & Details ---
+    const page1 = `
+    <div class="pg">
+        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')} ${v.gst?'<br>GST: '+esc(v.gst):''}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}<br>Delivery required by: <b>${dmy(o.del)}</b></div></div>
+        <div class="sh">PURCHASE ORDER DETAILS</div>
+        ${T1(['#','Description','Qty','Unit','Rate','GST %','Amount'],(o.lines||[]).map((l,i)=>[i+1,esc(l.d),l.q,esc(l.u),fmt(l.r),(+l.g||0)+'%',fmt((+l.q||0)*(+l.r||0))]))}
+        <table class="t" style="margin-top:8px;width:50%;margin-left:auto">
+            <tr><td>Sub-total<td style="text-align:right">${fmt(t.sub)}</tr>
+            <tr><td>GST<td style="text-align:right">${fmt(t.gst)}</tr>
+            ${t.fr?`<tr><td>Freight / other<td style="text-align:right">${fmt(t.fr)}</tr>`:''}
+            <tr><td><b>Total</b><td style="text-align:right"><b>${fmt(t.tot)}</b></tr>
+        </table>
+        ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
+        <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
+            <span>Vendor acknowledgement</span>
+            <span>For ${esc(co().name)}<br><br>Authorised signatory</span>
+        </div>
+    </div>`;
+
+    // --- PAGE 2: Plywood Details ---
+    const plyRows = Object.values(estData.ply).map(x => [
+        `<b>${x.g}</b>`, esc(x.b), x.s18, x.s6
+    ]);
+    const page2 = `
+    <div class="pg" style="break-before: page;">
+        <h2 style="text-align:center;letter-spacing:3px">PLYWOOD PURCHASE DETAILS</h2>
+        <p class="nt" style="text-align:center;margin-bottom:20px">As per BOQ dated ${dmy(q.date)}</p>
+        <div class="sh">PLYWOOD SHEETS REQUIRED</div>
+        ${plyRows.length ? T1(['Grade', 'Maker / Brand', '18mm Sheets (8x4 ft)', '6mm Sheets (8x4 ft)'], plyRows) : '<p class="nt">No plywood required for this project.</p>'}
+    </div>`;
+
+    // --- PAGE 3: Laminate Details ---
+    const lamRows = Object.keys(estData.ls).sort(lkSort).map(k => {
+        const role = roleOf(k);
+        const fin = finOf(k);
+        const code = codeOf(k);
+        // Extract maker from the finish string (e.g., "Merino — 0.8mm Matt" -> Maker: Merino)
+        let maker = 'Standard';
+        let variant = fin;
+        if (fin.includes(' — ')) {
+            const parts = fin.split(' — ');
+            maker = parts[0];
+            variant = parts[1];
+        }
+        return [
+            `<b>${role}</b>`, esc(maker), esc(variant), esc(code || '—'), estData.ls[k]
+        ];
+    });
+    const page3 = `
+    <div class="pg" style="break-before: page;">
+        <h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH PURCHASE DETAILS</h2>
+        <p class="nt" style="text-align:center;margin-bottom:20px">As per BOQ dated ${dmy(q.date)}</p>
+        <div class="sh">LAMINATE SHEETS REQUIRED</div>
+        ${lamRows.length ? T1(['Role', 'Maker / Brand', 'Finish Variant', 'Shade / Code', 'Sheets (8x4 ft)'], lamRows) : '<p class="nt">No laminates required for this project.</p>'}
+    </div>`;
+
+    // --- PAGE 4: Hardware & Accessories Details ---
+    const hwRows = Object.entries(estData.hw).sort((a,b) => a[0].localeCompare(b[0])).map(([n, qty]) => {
+        const acc = S.set.acc.find(a => a.n === n) || {};
+        return [
+            esc(acc.c || 'Accessories'), `<b>${esc(n)}</b>`, esc(q.hw || 'Local'), qty, esc(accU(n))
+        ];
+    });
+    const page4 = `
+    <div class="pg" style="break-before: page;">
+        <h2 style="text-align:center;letter-spacing:3px">HARDWARE & ACCESSORIES PURCHASE DETAILS</h2>
+        <p class="nt" style="text-align:center;margin-bottom:20px">As per BOQ dated ${dmy(q.date)}</p>
+        <div class="sh">HARDWARE & ACCESSORIES REQUIRED</div>
+        ${hwRows.length ? T1(['Category', 'Item Description', 'Maker / Brand', 'Qty', 'Unit'], hwRows) : '<p class="nt">No hardware required for this project.</p>'}
+    </div>`;
+
+    const body = page1 + page2 + page3 + page4;
+
+    return `<div class="bar noprint">
+        <button data-a="dpdf" data-acc="1" data-fn="${esc(o.no)}.pdf">Download PDF</button>
+        <button class="g" data-a="ap">Print</button>
+        <button class="g" data-bza="docback">← Back</button>
+    </div>` + docPaper('PURCHASE ORDER', `PO No.: <b>${esc(o.no)}</b><br>Date: ${dmy(o.date)}<br>Project: ${esc(p.name||'—')}`, body);
+};
