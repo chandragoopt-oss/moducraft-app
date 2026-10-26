@@ -633,7 +633,7 @@ document.addEventListener('click', e => {
     }
 }, true);
 // ==========================================
-// PATCH: Multi-Page Detailed Purchase Order
+// PATCH: Multi-Page Detailed Purchase Order (Internal Use)
 // ==========================================
 
 const origPoDoc = poDoc;
@@ -641,22 +641,35 @@ poDoc = function(o) {
     const v = BZ.vd[o.vid] || {};
     const p = BZ.pj[o.pid] || {};
     const q = S.q[p.qid];
-    
-    // If no quotation is linked, fallback to the standard PO layout
-    if (!q) return origPoDoc(o);
-
-    const estData = est(q);
     const t = poTot(o);
     
-    // Helper to generate tables
-    const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}`).join('')}</tr>`).join('')}</table>`;
+    const getCategory = (desc) => {
+        const d = desc.toLowerCase();
+        if (d.includes('plywood') || d.includes('ply')) return 'ply';
+        if (d.includes('laminate') || d.includes('veneer') || d.includes('acrylic') || d.includes('membrane') || d.includes('duco') || d.includes('pu paint')) return 'lam';
+        if (d.includes('hinge') || d.includes('channel') || d.includes('handle') || d.includes('drawer') || d.includes('basket') || d.includes('rack') || d.includes('fitting') || d.includes('hardware') || d.includes('accessory') || d.includes('soft close') || d.includes('tandem')) return 'hw';
+        if (d.includes('paint') || d.includes('gypsum') || d.includes('ceiling') || d.includes('civil') || d.includes('tile') || d.includes('plumbing') || d.includes('electrical') || d.includes('wiring') || d.includes('glass')) return 'site';
+        return 'other';
+    };
 
-    // --- PAGE 1: Standard PO Header & Details ---
-    const page1 = `
-    <div class="pg">
-        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')} ${v.gst?'<br>GST: '+esc(v.gst):''}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}<br>Delivery required by: <b>${dmy(o.del)}</b></div></div>
-        <div class="sh">PURCHASE ORDER DETAILS</div>
-        ${T1(['#','Description','Qty','Unit','Rate','GST %','Amount'],(o.lines||[]).map((l,i)=>[i+1,esc(l.d),l.q,esc(l.u),fmt(l.r),(+l.g||0)+'%',fmt((+l.q||0)*(+l.r||0))]))}
+    const groups = { ply: [], lam: [], hw: [], site: [], other: [] };
+    (o.lines||[]).forEach(l => {
+        if (!l.d) return;
+        groups[getCategory(l.d)].push(l);
+    });
+
+    const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
+
+    // --- PAGE 1: Standard PO Header & Summary ---
+    let html = `<div class="pg">
+        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')} ${v.gst?'<br>GST: '+esc(v.gst):''}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div></div>
+        
+        <div style="background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:8px;text-align:center;font-weight:bold;border-radius:6px;margin-bottom:15px;font-size:12px;letter-spacing:1px">
+            INTERNAL USE ONLY — CONTAINS VENDOR RATES & COSTS
+        </div>
+
+        <div class="sh">PURCHASE ORDER SUMMARY</div>
+        ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>GST %</th><th>Amount</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${l.q}</td><td>${esc(l.u)}</td><td>${fmt(l.r)}</td><td>${(+l.g||0)}%</td><td>${fmt((+l.q||0)*(+l.r||0))}</td></tr>`).join('')}</table>` : '<p class="nt">No items added to this PO yet.</p>'}
         <table class="t" style="margin-top:8px;width:50%;margin-left:auto">
             <tr><td>Sub-total<td style="text-align:right">${fmt(t.sub)}</tr>
             <tr><td>GST<td style="text-align:right">${fmt(t.gst)}</tr>
@@ -670,63 +683,58 @@ poDoc = function(o) {
         </div>
     </div>`;
 
-    // --- PAGE 2: Plywood Details ---
-    const plyRows = Object.values(estData.ply).map(x => [
-        `<b>${x.g}</b>`, esc(x.b), x.s18, x.s6
-    ]);
-    const page2 = `
-    <div class="pg" style="break-before: page;">
-        <h2 style="text-align:center;letter-spacing:3px">PLYWOOD PURCHASE DETAILS</h2>
-        <p class="nt" style="text-align:center;margin-bottom:20px">As per BOQ dated ${dmy(q.date)}</p>
-        <div class="sh">PLYWOOD SHEETS REQUIRED</div>
-        ${plyRows.length ? T1(['Grade', 'Maker / Brand', '18mm Sheets (8x4 ft)', '6mm Sheets (8x4 ft)'], plyRows) : '<p class="nt">No plywood required for this project.</p>'}
-    </div>`;
+    // --- PAGE 2: Plywood ---
+    if (groups.ply.length) {
+        html += `<div class="pg" style="break-before: page;">
+            <h2 style="text-align:center;letter-spacing:3px">PLYWOOD PURCHASE DETAILS</h2>
+            ${T1(['Description (Maker & Grade)', 'Qty', 'Unit', 'Rate', 'Amount'], groups.ply.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+        </div>`;
+    }
 
-    // --- PAGE 3: Laminate Details ---
-    const lamRows = Object.keys(estData.ls).sort(lkSort).map(k => {
-        const role = roleOf(k);
-        const fin = finOf(k);
-        const code = codeOf(k);
-        // Extract maker from the finish string (e.g., "Merino — 0.8mm Matt" -> Maker: Merino)
-        let maker = 'Standard';
-        let variant = fin;
-        if (fin.includes(' — ')) {
-            const parts = fin.split(' — ');
-            maker = parts[0];
-            variant = parts[1];
-        }
-        return [
-            `<b>${role}</b>`, esc(maker), esc(variant), esc(code || '—'), estData.ls[k]
-        ];
-    });
-    const page3 = `
-    <div class="pg" style="break-before: page;">
-        <h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH PURCHASE DETAILS</h2>
-        <p class="nt" style="text-align:center;margin-bottom:20px">As per BOQ dated ${dmy(q.date)}</p>
-        <div class="sh">LAMINATE SHEETS REQUIRED</div>
-        ${lamRows.length ? T1(['Role', 'Maker / Brand', 'Finish Variant', 'Shade / Code', 'Sheets (8x4 ft)'], lamRows) : '<p class="nt">No laminates required for this project.</p>'}
-    </div>`;
+    // --- PAGE 3: Laminate ---
+    if (groups.lam.length) {
+        html += `<div class="pg" style="break-before: page;">
+            <h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH PURCHASE DETAILS</h2>
+            ${T1(['Description (Maker & Finish)', 'Qty', 'Unit', 'Rate', 'Amount'], groups.lam.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+        </div>`;
+    }
 
-    // --- PAGE 4: Hardware & Accessories Details ---
-    const hwRows = Object.entries(estData.hw).sort((a,b) => a[0].localeCompare(b[0])).map(([n, qty]) => {
-        const acc = S.set.acc.find(a => a.n === n) || {};
-        return [
-            esc(acc.c || 'Accessories'), `<b>${esc(n)}</b>`, esc(q.hw || 'Local'), qty, esc(accU(n))
-        ];
-    });
-    const page4 = `
-    <div class="pg" style="break-before: page;">
-        <h2 style="text-align:center;letter-spacing:3px">HARDWARE & ACCESSORIES PURCHASE DETAILS</h2>
-        <p class="nt" style="text-align:center;margin-bottom:20px">As per BOQ dated ${dmy(q.date)}</p>
-        <div class="sh">HARDWARE & ACCESSORIES REQUIRED</div>
-        ${hwRows.length ? T1(['Category', 'Item Description', 'Maker / Brand', 'Qty', 'Unit'], hwRows) : '<p class="nt">No hardware required for this project.</p>'}
-    </div>`;
+    // --- PAGE 4: Hardware ---
+    if (groups.hw.length) {
+        html += `<div class="pg" style="break-before: page;">
+            <h2 style="text-align:center;letter-spacing:3px">HARDWARE & ACCESSORIES PURCHASE DETAILS</h2>
+            ${T1(['Description', 'Qty', 'Unit', 'Rate', 'Amount'], groups.hw.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+        </div>`;
+    }
 
-    const body = page1 + page2 + page3 + page4;
+    // --- PAGE 5: Paint, Gypsum & Civil ---
+    if (groups.site.length) {
+        html += `<div class="pg" style="break-before: page;">
+            <h2 style="text-align:center;letter-spacing:3px">PAINT, GYPSUM & SITE WORK DETAILS</h2>
+            ${T1(['Description', 'Qty', 'Unit', 'Rate', 'Amount'], groups.site.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+        </div>`;
+    }
+
+    // --- PAGE 6: Other Items ---
+    if (groups.other.length) {
+        html += `<div class="pg" style="break-before: page;">
+            <h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS PURCHASE DETAILS</h2>
+            ${T1(['Description', 'Qty', 'Unit', 'Rate', 'Amount'], groups.other.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+        </div>`;
+    }
+
+    // The meta block is placed inside the <thead>, so it will repeat on EVERY page automatically!
+    const metaHtml = `
+        PO No.: <b>${esc(o.no)}</b><br>
+        Order Date: <b>${dmy(o.date)}</b><br>
+        Delivery Req.: <b style="color:#b00020">${dmy(o.del)}</b><br>
+        Project: ${esc(p.name||'—')}<br>
+        Addr: ${esc(p.addr||'—')}
+    `;
 
     return `<div class="bar noprint">
         <button data-a="dpdf" data-acc="1" data-fn="${esc(o.no)}.pdf">Download PDF</button>
         <button class="g" data-a="ap">Print</button>
         <button class="g" data-bza="docback">← Back</button>
-    </div>` + docPaper('PURCHASE ORDER', `PO No.: <b>${esc(o.no)}</b><br>Date: ${dmy(o.date)}<br>Project: ${esc(p.name||'—')}`, body);
+    </div>` + docPaper('PURCHASE ORDER', metaHtml, html);
 };
