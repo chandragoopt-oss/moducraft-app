@@ -93,7 +93,7 @@ function openFupModal(id, type) {
 
     document.getElementById('fup_cancel').onclick = () => o.remove();
     
-    // Handle Dead Lead
+    // Handle Dead Lead inside modal
     if (!isP) {
         document.getElementById('fup_dead').onclick = () => {
             askPick('Why was this lead lost?', [
@@ -130,17 +130,41 @@ function openFupModal(id, type) {
     };
 }
 
-// Catch clicks on Follow Up buttons
+// 4. Global Event Listeners for Follow Up & Dead Lead buttons
 document.addEventListener('click', e => {
-    const b = e.target.closest && e.target.closest('[data-fup]');
-    if (b) {
+    const bFup = e.target.closest && e.target.closest('[data-fup]');
+    if (bFup) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        openFupModal(b.dataset.fup, b.dataset.fuptype || 'q');
+        openFupModal(bFup.dataset.fup, bFup.dataset.fuptype || 'q');
+        return;
+    }
+    
+    const bDead = e.target.closest && e.target.closest('[data-dead]');
+    if (bDead) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const id = bDead.dataset.dead;
+        const obj = S.q[id];
+        if (!obj) return;
+        
+        askPick('Why was this lead lost?', [
+            ['Price too high', 'Price too high'],
+            ['Chose another designer', 'Chose another designer'],
+            ['Postponed', 'Postponed / not now'],
+            ['No response', 'No response'],
+            ['Other', 'Other']
+        ], v => {
+            obj.out = 'lost';
+            obj.lr = v;
+            save('q', id);
+            render();
+            flash('Marked as Dead Lead');
+        }, () => {}); 
     }
 }, true);
 
-// 4. Override the Today Page to show the new grouped dashboard
+// 5. Override the Today Page to show the new grouped dashboard
 const origTodayCard = todayCard;
 todayCard = function() {
     let html = origTodayCard();
@@ -168,10 +192,10 @@ todayCard = function() {
     if (dueQ.length || dueP.length) {
         let r = '';
         dueP.forEach(p => {
-            r += `<tr><td><span class="mut">Project</span><br><b>${esc(p.name)}</b><td>${esc(p.client)}<td style="color:#b00020;font-weight:bold">${p.nfu ? dmy(p.nfu) : 'Overdue'}<td><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></tr>`;
+            r += `<tr><td><span class="mut">Project</span><br><b>${esc(p.name)}</b><td>${esc(p.client)}<td style="color:#b00020;font-weight:bold">${p.nfu ? dmy(p.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></td></tr>`;
         });
         dueQ.forEach(q => {
-            r += `<tr><td><span class="mut">Quotation</span><br><b>${esc(q.name)}</b><td>${esc(qno(q))}<td style="color:#b00020;font-weight:bold">${q.nfu ? dmy(q.nfu) : 'Overdue'}<td><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></tr>`;
+            r += `<tr><td><span class="mut">Quotation</span><br><b>${esc(q.name)}</b><td>${esc(qno(q))}<td style="color:#b00020;font-weight:bold">${q.nfu ? dmy(q.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-dead="${q.id}" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;padding:4px 10px;margin-left:4px">❌ Dead</button></td></tr>`;
         });
         newHtml += `<div style="border:1px solid #f0b4b4;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fff5f5"><b style="color:#b00020">⏰ Overdue Follow Ups</b><div class="sc"><table class="g" style="min-width:600px"><tr><th>Details</th><th>Client/Quote</th><th>Due</th><th></th></tr>${r}</table></div></div>`;
     }
@@ -184,10 +208,9 @@ todayCard = function() {
     }
 
     // --- Section C: Shared Quotations ---
-    // Note the q.out !== 'lost' filter here as well
     const sharedQ = Object.values(S.q).filter(q=>q.st==='shared' && !q.unl && q.out!=='lost' && !linked.has(q.id));
     if (sharedQ.length) {
-        let r = sharedQ.map(q => `<tr><td><b>${esc(q.name)}</b><br><span class="mut">${esc(qno(q))}</span><td>${esc(q.project||'')}<td>${q.nfu ? dmy(q.nfu) : '—'}<td><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></tr>`).join('');
+        let r = sharedQ.map(q => `<tr><td><b>${esc(q.name)}</b><br><span class="mut">${esc(qno(q))}</span><td>${esc(q.project||'')}<td>${q.nfu ? dmy(q.nfu) : '—'}<td style="white-space:nowrap"><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-dead="${q.id}" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;padding:4px 10px;margin-left:4px">❌ Dead</button></td></tr>`).join('');
         newHtml += `<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fffaf0"><b>📄 Shared Quotations</b><div class="sc"><table class="g" style="min-width:700px"><tr><th>Client</th><th>Project</th><th>Next Follow Up</th><th></th></tr>${r}</table></div></div>`;
     }
 
@@ -200,21 +223,22 @@ todayCard = function() {
     return html;
 };
 
-// 5. Add the "Follow Up" button to the main Quotations list
+// 6. Add buttons to the main Quotations list
 const origVList = vList;
 vList = function() {
     let html = origVList();
     Object.values(S.q).forEach(q => {
-        // Only show for shared, non-lost quotations
         if (q.st === 'shared' && q.out !== 'lost') {
             const target = `<button class="g" data-a="pq" data-i="${q.id}">Preview</button>`;
             const nextTxt = q.nfu ? 'Next follow up: ' + dmy(q.nfu) : 'No follow up scheduled';
-            const replacement = target + ` <button class="g" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" data-fup="${q.id}" data-fuptype="q" title="${nextTxt}">📞 Follow Up</button>`;
+            const replacement = target + ` <button class="g" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" data-fup="${q.id}" data-fuptype="q" title="${nextTxt}">📞 Follow Up</button> <button class="g" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5" data-dead="${q.id}" title="Mark as Dead Lead">❌ Dead</button>`;
             
             if (html.includes(target) && !html.includes(`data-fup="${q.id}"`)) {
                 html = html.replace(target, replacement);
             }
         }
     });
+    return html;
+};
     return html;
 };
