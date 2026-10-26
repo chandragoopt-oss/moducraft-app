@@ -227,6 +227,7 @@ button,select{min-height:38px}input[type=checkbox]{min-height:0}
 </style>
 <style id="dark-mode-fix">
 @media(prefers-color-scheme:dark){
+  /* Fix card backgrounds */
   :root:not([data-theme=light]) #app div[style*="background:#fff"],
   :root:not([data-theme=light]) #app div[style*="background:#fffaf0"],
   :root:not([data-theme=light]) #app div[style*="background:#f4fbf4"],
@@ -238,6 +239,8 @@ button,select{min-height:38px}input[type=checkbox]{min-height:0}
     border-color: var(--line) !important;
     color: var(--ink) !important;
   }
+  
+  /* Fix card text */
   :root:not([data-theme=light]) #app div[style*="background:#fff"] *,
   :root:not([data-theme=light]) #app div[style*="background:#fffaf0"] *,
   :root:not([data-theme=light]) #app div[style*="background:#f4fbf4"] *,
@@ -248,6 +251,19 @@ button,select{min-height:38px}input[type=checkbox]{min-height:0}
     color: var(--ink) !important;
     border-color: var(--line) !important;
   }
+
+  /* Fix the white buttons inside these cards */
+  :root:not([data-theme=light]) #app div[style*="background:#fff"] button.g,
+  :root:not([data-theme=light]) #app div[style*="background:#faf6ec"] button.g,
+  :root:not([data-theme=light]) #app div[style*="background:#fffaf0"] button.g,
+  :root:not([data-theme=light]) #app div[style*="background:#f4fbf4"] button.g,
+  :root:not([data-theme=light]) #app div[style*="background:#f1f5f9"] button.g {
+    background-color: transparent !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--line) !important;
+  }
+
+  /* Fix the chips (top summary pills) */
   :root:not([data-theme=light]) #app span[style*="background:#fde8e8"],
   :root:not([data-theme=light]) #app span[style*="background:#fff3d6"],
   :root:not([data-theme=light]) #app span[style*="background:#e7f6e7"] {
