@@ -633,15 +633,13 @@ document.addEventListener('click', e => {
     }
 }, true);
 // ==========================================
-// PATCH: Multi-Page Detailed Purchase Order (Internal Use)
+// PATCH: Multi-Page Detailed Purchase Order (No Prices)
 // ==========================================
 
 const origPoDoc = poDoc;
 poDoc = function(o) {
     const v = BZ.vd[o.vid] || {};
     const p = BZ.pj[o.pid] || {};
-    const q = S.q[p.qid];
-    const t = poTot(o);
     
     const getCategory = (desc) => {
         const d = desc.toLowerCase();
@@ -658,24 +656,22 @@ poDoc = function(o) {
         groups[getCategory(l.d)].push(l);
     });
 
+    // Helper to format quantity (No decimal, round up if > 0.1)
+    const fmtQty = (q) => {
+        const n = +q || 0;
+        const frac = n - Math.floor(n);
+        return frac > 0.1 ? Math.ceil(n) : Math.floor(n);
+    };
+
     const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
 
     // --- PAGE 1: Standard PO Header & Summary ---
     let html = `<div class="pg">
         <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')} ${v.gst?'<br>GST: '+esc(v.gst):''}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div></div>
         
-        <div style="background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:8px;text-align:center;font-weight:bold;border-radius:6px;margin-bottom:15px;font-size:12px;letter-spacing:1px">
-            INTERNAL USE ONLY — CONTAINS VENDOR RATES & COSTS
-        </div>
-
         <div class="sh">PURCHASE ORDER SUMMARY</div>
-        ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>GST %</th><th>Amount</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${l.q}</td><td>${esc(l.u)}</td><td>${fmt(l.r)}</td><td>${(+l.g||0)}%</td><td>${fmt((+l.q||0)*(+l.r||0))}</td></tr>`).join('')}</table>` : '<p class="nt">No items added to this PO yet.</p>'}
-        <table class="t" style="margin-top:8px;width:50%;margin-left:auto">
-            <tr><td>Sub-total<td style="text-align:right">${fmt(t.sub)}</tr>
-            <tr><td>GST<td style="text-align:right">${fmt(t.gst)}</tr>
-            ${t.fr?`<tr><td>Freight / other<td style="text-align:right">${fmt(t.fr)}</tr>`:''}
-            <tr><td><b>Total</b><td style="text-align:right"><b>${fmt(t.tot)}</b></tr>
-        </table>
+        ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${fmtQty(l.q)}</td><td>${esc(l.u)}</td></tr>`).join('')}</table>` : '<p class="nt">No items added to this PO yet.</p>'}
+        
         ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
         <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
             <span>Vendor acknowledgement</span>
@@ -687,7 +683,7 @@ poDoc = function(o) {
     if (groups.ply.length) {
         html += `<div class="pg" style="break-before: page;">
             <h2 style="text-align:center;letter-spacing:3px">PLYWOOD PURCHASE DETAILS</h2>
-            ${T1(['Description (Maker & Grade)', 'Qty', 'Unit', 'Rate', 'Amount'], groups.ply.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+            ${T1(['Description (Maker & Grade)', 'Qty', 'Unit'], groups.ply.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
         </div>`;
     }
 
@@ -695,7 +691,7 @@ poDoc = function(o) {
     if (groups.lam.length) {
         html += `<div class="pg" style="break-before: page;">
             <h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH PURCHASE DETAILS</h2>
-            ${T1(['Description (Maker & Finish)', 'Qty', 'Unit', 'Rate', 'Amount'], groups.lam.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+            ${T1(['Description (Maker & Finish)', 'Qty', 'Unit'], groups.lam.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
         </div>`;
     }
 
@@ -703,7 +699,7 @@ poDoc = function(o) {
     if (groups.hw.length) {
         html += `<div class="pg" style="break-before: page;">
             <h2 style="text-align:center;letter-spacing:3px">HARDWARE & ACCESSORIES PURCHASE DETAILS</h2>
-            ${T1(['Description', 'Qty', 'Unit', 'Rate', 'Amount'], groups.hw.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+            ${T1(['Description', 'Qty', 'Unit'], groups.hw.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
         </div>`;
     }
 
@@ -711,7 +707,7 @@ poDoc = function(o) {
     if (groups.site.length) {
         html += `<div class="pg" style="break-before: page;">
             <h2 style="text-align:center;letter-spacing:3px">PAINT, GYPSUM & SITE WORK DETAILS</h2>
-            ${T1(['Description', 'Qty', 'Unit', 'Rate', 'Amount'], groups.site.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+            ${T1(['Description', 'Qty', 'Unit'], groups.site.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
         </div>`;
     }
 
@@ -719,11 +715,11 @@ poDoc = function(o) {
     if (groups.other.length) {
         html += `<div class="pg" style="break-before: page;">
             <h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS PURCHASE DETAILS</h2>
-            ${T1(['Description', 'Qty', 'Unit', 'Rate', 'Amount'], groups.other.map(l => [esc(l.d), l.q, esc(l.u), fmt(l.r), fmt((+l.q||0)*(+l.r||0))]))}
+            ${T1(['Description', 'Qty', 'Unit'], groups.other.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}
         </div>`;
     }
 
-    // The meta block is placed inside the <thead>, so it will repeat on EVERY page automatically!
+    // The meta block is placed inside the <thead>, so it repeats on EVERY page
     const metaHtml = `
         PO No.: <b>${esc(o.no)}</b><br>
         Order Date: <b>${dmy(o.date)}</b><br>
