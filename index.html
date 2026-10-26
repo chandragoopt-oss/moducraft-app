@@ -1,4 +1,98 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="author" content="Module Studio"><meta name="application-name" content="ModuCraft"><meta name="copyright" content="© 2026 Module Studio. All rights reserved."><title>--- ModuCraft ---</title>
+<!DOCTYPE html><html lang="en"><head>
+<script>
+// ==========================================
+// GOOGLE SHEETS DATABASE ADAPTER
+// ==========================================
+(function() {
+  const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
+  
+  if (!GOOGLE_WEB_APP_URL || GOOGLE_WEB_APP_URL.includes("YOUR_WEB_APP_URL_HERE")) {
+    console.warn("Google DB URL not set. App will run in local-only mode.");
+    return;
+  }
+
+  async function apiCall(action, collection, id, data) {
+    const payload = { action, collection, id, data };
+    const res = await fetch(GOOGLE_WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  }
+
+  const GoogleDB = {
+    collection: function(colName) {
+      return {
+        doc: function(id) {
+          return {
+            set: async function(data) {
+              return apiCall('write', colName, id, data);
+            },
+            delete: async function() {
+              return apiCall('delete', colName, id);
+            }
+          };
+        },
+        onSnapshot: function(callback) {
+          apiCall('read', colName).then(res => {
+            if (res.ok && res.data) {
+              const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'added', doc: { id: id, data: () => res.data[id] } })) };
+              callback(snapshot);
+            }
+          });
+
+          let lastHash = "";
+          setInterval(async () => {
+            const res = await apiCall('read', colName);
+            if (res.ok && res.data) {
+               const newHash = JSON.stringify(res.data);
+               if (newHash !== lastHash) {
+                 lastHash = newHash;
+                 const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'modified', doc: { id: id, data: () => res.data[id] } })) };
+                 callback(snapshot);
+               }
+            }
+          }, 5000);
+        }
+      };
+    },
+    doc: function(path) {
+      const parts = path.split('/');
+      const colName = parts[0];
+      const id = parts[1];
+      return {
+        set: async function(data) {
+          return apiCall('write', colName, id, data);
+        },
+        onSnapshot: function(callback) {
+          GoogleDB.collection(colName).onSnapshot(snap => {
+            const changes = snap.docChanges().filter(c => c.doc.id === id);
+            if (changes.length > 0) {
+              callback({ exists: true, data: () => changes[0].doc.data(), metadata: {hasPendingWrites: false} });
+            }
+          });
+        }
+      };
+    }
+  };
+
+  window.claude = window.claude || {};
+  window.claude.use = async function(type) {
+    if (type === 'db') return GoogleDB;
+    if (type === 'user') return { 
+      can: async () => true, 
+      id: async () => 'user-' + Math.random().toString(36).substring(7),
+      email: async () => 'user@example.com',
+      isOwner: async () => true
+    };
+    throw new Error("Google Adapter only supports 'db' and 'user'");
+  };
+
+  console.log("Google DB Adapter loaded. App is now connected to Google Sheets.");
+})();
+</script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="author" content="Module Studio"><meta name="application-name" content="ModuCraft"><meta name="copyright" content="© 2026 Module Studio. All rights reserved."><title>--- ModuCraft ---</title>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#F5F1EA;--card:#fff;--ink:#24313A;--mut:#6b7280;--line:#E2DACB;--gold:#B08D57;--sand:#B7A17A;--dk:#1F2937;--gr:#4D5A4A;--in:#faf8f4}
 :root:not([data-theme=light]){color-scheme:light}
@@ -1788,100 +1882,6 @@ else if(a=='bk'){const x=document.querySelector('[data-a=ex]');if(x)x.click()}})
 if(db){S.db=db;const typing=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName);
 db.collection('quotes').onSnapshot(sn=>{sn.docChanges().forEach(c=>{if(c.doc.metadata.hasPendingWrites||pend['q'+c.doc.id]||fly['q'+c.doc.id]>0)return;if(c.type=='removed'){delete S.q[c.doc.id];if(S.cur==c.doc.id)S.cur=null}else S.q[c.doc.id]=cl(c.doc.data())});if(!typing())render()},e=>{saveErr='Cannot read cloud data: '+((e&&e.message)||'');setSt()});
 db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(!d.metadata.hasPendingWrites&&!pend.s&&!(fly.s>0)){S.set=Object.assign(cl(DEF),cl(d.data()));if(!typing())render()}},e=>{saveErr='Cannot read cloud data: '+((e&&e.message)||'');setSt()});bzInit(db);erpInit(db);db.doc('access/main').onSnapshot(d=>{S.acl=d.exists?cl(d.data().list||[]):[];applyLvl();if(!typing())render()},()=>0)}}catch(x){}render()})();
-</script>
-
-<script>
-// ==========================================
-// GOOGLE SHEETS DATABASE ADAPTER
-// ==========================================
-(function() {
-  const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
-  
-  if (!GOOGLE_WEB_APP_URL || GOOGLE_WEB_APP_URL.includes("YOUR_WEB_APP_URL_HERE")) {
-    console.warn("Google DB URL not set. App will run in local-only mode.");
-    return;
-  }
-
-  async function apiCall(action, collection, id, data) {
-    const payload = { action, collection, id, data };
-    const res = await fetch(GOOGLE_WEB_APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    });
-    return await res.json();
-  }
-
-  const GoogleDB = {
-    collection: function(colName) {
-      return {
-        doc: function(id) {
-          return {
-            set: async function(data) {
-              return apiCall('write', colName, id, data);
-            },
-            delete: async function() {
-              return apiCall('delete', colName, id);
-            }
-          };
-        },
-        onSnapshot: function(callback) {
-          apiCall('read', colName).then(res => {
-            if (res.ok && res.data) {
-              const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'added', doc: { id: id, data: () => res.data[id] } })) };
-              callback(snapshot);
-            }
-          });
-
-          let lastHash = "";
-          setInterval(async () => {
-            const res = await apiCall('read', colName);
-            if (res.ok && res.data) {
-               const newHash = JSON.stringify(res.data);
-               if (newHash !== lastHash) {
-                 lastHash = newHash;
-                 const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'modified', doc: { id: id, data: () => res.data[id] } })) };
-                 callback(snapshot);
-               }
-            }
-          }, 5000);
-        }
-      };
-    },
-    doc: function(path) {
-      const parts = path.split('/');
-      const colName = parts[0];
-      const id = parts[1];
-      return {
-        set: async function(data) {
-          return apiCall('write', colName, id, data);
-        },
-        onSnapshot: function(callback) {
-          GoogleDB.collection(colName).onSnapshot(snap => {
-            const changes = snap.docChanges().filter(c => c.doc.id === id);
-            if (changes.length > 0) {
-              callback({ exists: true, data: () => changes[0].doc.data(), metadata: {hasPendingWrites: false} });
-            }
-          });
-        }
-      };
-    }
-  };
-
-  window.claude = window.claude || {};
-  window.claude.use = async function(type) {
-    if (type === 'db') return GoogleDB;
-    if (type === 'user') return { 
-      can: async () => true, 
-      id: async () => 'user-' + Math.random().toString(36).substring(7),
-      email: async () => 'user@example.com',
-      isOwner: async () => true
-    };
-    throw new Error("Google Adapter only supports 'db' and 'user'");
-  };
-
-  console.log("Google DB Adapter loaded. App is now connected to Google Sheets.");
-})();
 </script>
 </body>
 </html>
