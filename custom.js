@@ -734,3 +734,140 @@ poDoc = function(o) {
         <button class="g" data-bza="docback">← Back</button>
     </div>` + docPaper('PURCHASE ORDER', metaHtml, html);
 };
+// ==========================================
+// PATCH: Auto-Calculate Consumables for Purchase Order
+// ==========================================
+
+// 1. Update the Category matcher in the PO Patch so it catches Consumables
+const origPoDoc_Consumables = poDoc;
+poDoc = function(o) {
+    const v = BZ.vd[o.vid] || {};
+    const p = BZ.pj[o.pid] || {};
+    
+    const getCategory = (desc) => {
+        const d = desc.toLowerCase();
+        if (d.includes('plywood') || d.includes('ply')) return 'ply';
+        if (d.includes('laminate') || d.includes('veneer') || d.includes('acrylic') || d.includes('membrane') || d.includes('duco') || d.includes('pu paint')) return 'lam';
+        // Added regex to catch glue, nails, screws, clips, sockets, brackets
+        if (/hinge|channel|handle|drawer|basket|rack|fitting|hardware|accessory|soft close|tandem|adhesive|fevicol|nails?|screws?|clamp|socket|clip|bracket|pin/i.test(d)) return 'hw';
+        if (/paint|gypsum|ceiling|civil|tile|plumbing|electrical|wiring|glass/i.test(d)) return 'site';
+        return 'other';
+    };
+
+    const groups = { ply: [], lam: [], hw: [], site: [], other: [] };
+    (o.lines||[]).forEach(l => {
+        if (!l.d) return;
+        groups[getCategory(l.d)].push(l);
+    });
+
+    const fmtQty = (q) => {
+        const n = +q || 0;
+        const frac = n - Math.floor(n);
+        return frac > 0.1 ? Math.ceil(n) : Math.floor(n);
+    };
+
+    const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
+
+    let html = `<div class="pg">
+        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')} ${v.gst?'<br>GST: '+esc(v.gst):''}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div></div>
+        
+        <div class="sh">PURCHASE ORDER SUMMARY</div>
+        ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${fmtQty(l.q)}</td><td>${esc(l.u)}</td></tr>`).join('')}</table>` : '<p class="nt">No items added to this PO yet.</p>'}
+        
+        ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
+        <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
+            <span>Vendor acknowledgement</span>
+            <span>For ${esc(co().name)}<br><br>Authorised signatory</span>
+        </div>
+    </div>`;
+
+    if (groups.ply.length) {
+        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">PLYWOOD PURCHASE DETAILS</h2>${T1(['Description (Maker & Grade)', 'Qty', 'Unit'], groups.ply.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    }
+    if (groups.lam.length) {
+        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH PURCHASE DETAILS</h2>${T1(['Description (Maker & Finish)', 'Qty', 'Unit'], groups.lam.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    }
+    if (groups.hw.length) {
+        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">HARDWARE, ACCESSORIES & CONSUMABLES</h2>${T1(['Description', 'Qty', 'Unit'], groups.hw.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    }
+    if (groups.site.length) {
+        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">PAINT, GYPSUM & SITE WORK DETAILS</h2>${T1(['Description', 'Qty', 'Unit'], groups.site.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    }
+    if (groups.other.length) {
+        html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS PURCHASE DETAILS</h2>${T1(['Description', 'Qty', 'Unit'], groups.other.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
+    }
+
+    const metaHtml = `
+        PO No.: <b>${esc(o.no)}</b><br>
+        Order Date: <b>${dmy(o.date)}</b><br>
+        Delivery Req.: <b style="color:#b00020">${dmy(o.del)}</b><br>
+        Project: ${esc(p.name||'—')}<br>
+        Addr: ${esc(p.addr||'—')}
+    `;
+
+    return `<div class="bar noprint">
+        <button data-a="dpdf" data-acc="1" data-fn="${esc(o.no)}.pdf">Download PDF</button>
+        <button class="g" data-a="ap">Print</button>
+        <button class="g" data-bza="docback">← Back</button>
+    </div>` + docPaper('PURCHASE ORDER', metaHtml, html);
+};
+
+// 2. Intercept the "Add lines from estimate" function
+const origPoFromEst = poFromEst;
+poFromEst = function(po, src) {
+    // Run the original logic first
+    origPoFromEst(po, src);
+    
+    // If we just added hardware, let's calculate consumables
+    if (src === 'hw') {
+        const p = BZ.pj[po.pid];
+        const q = p && S.q[p.qid];
+        if (q) {
+            const estData = est(q);
+            
+            // Calculate total ply sheets and laminate sheets
+            let plyS = 0, lamS = 0;
+            Object.values(estData.ply).forEach(x => plyS += x.s18 + x.s6);
+            Object.values(estData.ls).forEach(x => lamS += x);
+            
+            // Calculate skirting length (in meters) and module count
+            let skirtLen = 0, moduleCount = 0;
+            q.rooms.forEach(rm => rm.rows.forEach(r => {
+                if (r.n) {
+                    const m = MOD[r.mk];
+                    if (m && !m.au) moduleCount++;
+                    if (r.n.includes('PVC Skirting') && r.q) skirtLen += (+r.q || 0);
+                }
+            }));
+
+            const cons = [];
+            if (plyS > 0) {
+                // Rule of thumb calculations
+                cons.push({ d: 'Wood Adhesive (Fevicol / equivalent)', q: Math.max(1, Math.ceil(lamS * 0.5)), u: 'kg' });
+                cons.push({ d: 'Nails - Headless / Brad (Assorted)', q: Math.max(1, Math.ceil(plyS * 0.2)), u: 'kg' });
+                cons.push({ d: 'Screws - Assorted (Drywall / Wood)', q: Math.max(1, Math.ceil(plyS * 0.5)), u: 'box' });
+                cons.push({ d: 'L-Clamps (Corner Braces)', q: Math.max(1, Math.ceil(moduleCount / 2)), u: 'nos' });
+                cons.push({ d: 'Wall PVC Sockets', q: Math.max(1, Math.ceil(moduleCount * 0.5)), u: 'nos' });
+            }
+            if (skirtLen > 0) {
+                // 1 clip every 300mm (3.33 clips per meter)
+                cons.push({ d: 'Skirting Clips', q: Math.ceil(skirtLen * 3.33), u: 'nos' });
+            }
+            
+            // Add to PO if not already there
+            let added = false;
+            cons.forEach(c => {
+                if (!po.lines.some(l => l.d === c.d)) {
+                    po.lines.push({ ...c, r: 0, g: +S.set.gst || 18 });
+                    added = true;
+                }
+            });
+            
+            if (added) {
+                bzSave('po', po.id);
+                flash('Consumables (glue, screws, clips) auto-added to PO!');
+                render();
+            }
+        }
+    }
+};
