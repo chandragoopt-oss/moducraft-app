@@ -4,10 +4,8 @@
 // PATCH: Advanced Follow Up System & Today Dashboard
 // ==========================================
 
-// Helper to check if a project is active (not closed)
 const isProjectActive = p => p && !['Closed', 'Closure'].includes(p.stage);
 
-// 1. Calculate pending follow ups (defaults to 4 days if no date set)
 function getDueCount() {
     let count = 0;
     const t = today();
@@ -31,7 +29,6 @@ function getDueCount() {
     return count;
 }
 
-// 2. Update the Tab text with the count
 const navObserver = new MutationObserver(() => {
     const btn = document.querySelector('#nav button[data-a="tab"][data-v="h"]');
     if (btn) {
@@ -45,7 +42,6 @@ const navObserver = new MutationObserver(() => {
 });
 navObserver.observe(document.getElementById('nav'), {childList: true, subtree: true});
 
-// 3. The Follow Up Modal
 function openFupModal(id, type) {
     const isP = type === 'p';
     const obj = isP ? BZ.pj[id] : S.q[id];
@@ -124,7 +120,6 @@ function openFupModal(id, type) {
     };
 }
 
-// 4. Global Event Listeners
 document.addEventListener('click', e => {
     const bFup = e.target.closest && e.target.closest('[data-fup]');
     if (bFup) { e.preventDefault(); e.stopImmediatePropagation(); openFupModal(bFup.dataset.fup, bFup.dataset.fuptype || 'q'); return; }
@@ -151,13 +146,12 @@ document.addEventListener('click', e => {
     }
 }, true);
 
-// 5. Override the Today Page
 const origTodayCard = todayCard;
 todayCard = function() {
     let html = origTodayCard();
     
-    const u = (typeof uName === 'function') ? uName() : (localStorage.getItem('msq_me') || 'User');
-    const displayName = u.includes('@') ? u.split('@')[0] : u;
+    const u = (typeof uName === 'function') ? uName() : (localStorage.getItem('msq_me') || '');
+    const displayName = u ? (u.includes('@') ? u.split('@')[0] : u) : 'User';
     html = html.replace("Today —", `Welcome Back, ${displayName}! Today is`);
 
     html = html.replace(/<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:(?:#fffaf0|#f4fbf4)"><b>📞 Clients to follow up.*?<\/div><\/div>/s, '');
@@ -206,7 +200,6 @@ todayCard = function() {
     return html;
 };
 
-// 6. Add buttons to main Quotations list
 const origVList = vList;
 vList = function() {
     let html = origVList();
@@ -289,40 +282,32 @@ function removeWarranty() { const wp = document.getElementById('warranty-page');
 // ==========================================
 // PATCH: Advanced Pricing Bases & Material Summary
 // ==========================================
-const pricingObserver = new MutationObserver(() => {
-    const pmoSel = document.querySelector('select[data-p="pmo"]');
-    if (pmoSel && !pmoSel.dataset.patched) {
-        pmoSel.dataset.patched = '1';
-        pmoSel.innerHTML = `
-            <option value="Module rates" ${pmoSel.value==='Module rates'?'selected':''}>Module rates (auto-calculated)</option>
-            <option value="Room base" ${pmoSel.value==='Room base'?'selected':''}>Room base (per sq.ft)</option>
-            <option value="Package" ${pmoSel.value==='Package'?'selected':''}>Package (flat price per room)</option>
-            <option value="Material costing" ${pmoSel.value==='Material costing'?'selected':''}>Material costing (Internal only)</option>
-        `;
-    }
+
+const origVEdit = vEdit;
+vEdit = function() {
+    let html = origVEdit();
     const q = T();
-    if (q) {
-        const h3 = [...document.querySelectorAll('h3')].find(el => el.textContent.includes('Rate per sq.ft by area') || el.textContent.includes('Package Price (₹) per room'));
-        if (h3) {
-            if (q.pmo === 'Package') {
-                h3.textContent = 'Package Price (₹) per room';
-                document.querySelectorAll('input[data-p^="rooms|"][data-p$="|rate"]').forEach(inp => {
-                    inp.placeholder = 'e.g. 150000';
-                    const lbl = inp.previousElementSibling;
-                    if (lbl && lbl.tagName === 'LABEL') lbl.textContent = lbl.textContent.replace(/\(.*?\)/, '(Package Price)');
-                });
-            } else {
-                h3.textContent = 'Rate per sq.ft by area';
-                document.querySelectorAll('input[data-p^="rooms|"][data-p$="|rate"]').forEach(inp => {
-                    inp.placeholder = 'standard';
-                    const lbl = inp.previousElementSibling;
-                    if (lbl && lbl.tagName === 'LABEL' && lbl.textContent.includes('Package Price')) lbl.textContent = lbl.textContent.replace(/\(.*?\)/, '(standard)');
-                });
-            }
-        }
+    if (!q) return html;
+
+    const oldPmoStr = `<div><label>Pricing basis</label>${SEL('q','pmo',q.pmo||'Module rates',['Module rates','Material costing'])}</div>`;
+    const newPmoStr = `<div><label>Pricing basis</label>
+        <select data-d="q" data-p="pmo">
+            <option value="Module rates" ${q.pmo==='Module rates'||!q.pmo?'selected':''}>Module rates (auto-calculated)</option>
+            <option value="Room base" ${q.pmo==='Room base'?'selected':''}>Room base (per sq.ft)</option>
+            <option value="Package" ${q.pmo==='Package'?'selected':''}>Package (flat price per room)</option>
+            <option value="Material costing" ${q.pmo==='Material costing'?'selected':''}>Material costing (Internal only)</option>
+        </select>
+    </div>`;
+    html = html.replace(oldPmoStr, newPmoStr);
+
+    if (q.pmo === 'Package') {
+        html = html.replace('<h3>Rate per sq.ft by area</h3>', '<h3>Package Price (₹) per room</h3>');
+        html = html.replace(/\(standard ₹[\d,]+\)/g, '(Package Price)');
+        html = html.replace(/placeholder=standard/g, 'placeholder="e.g. 150000"');
     }
-});
-pricingObserver.observe(document.getElementById('app'), {childList: true, subtree: true});
+
+    return html;
+};
 
 const origVPrev = vPrev;
 vPrev = function() {
@@ -439,7 +424,6 @@ vSet = function() {
     return html;
 };
 
-// Handler for adding new makers & custom rows
 document.addEventListener('click', e => {
     const bMk = e.target.closest('[data-fp="add-maker"]');
     if (bMk) {
