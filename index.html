@@ -68,20 +68,58 @@
     }
   };
 
-  window.claude = window.claude || {};
+    window.claude = window.claude || {};
   window.claude.use = async function(type) {
     if (type === 'db') return GoogleDB;
+    
     if (type === 'user') {
       let email = localStorage.getItem('mc_user_email');
+      
+      // 1. Ask for email if they don't have one saved
       if (!email) {
         email = prompt("Welcome to ModuCraft ERP.\nPlease enter your email address to log in:");
-        if (email) { localStorage.setItem('mc_user_email', email.toLowerCase().trim()); } 
-        else { window.location.reload(); return; }
+        if (email) { 
+          email = email.toLowerCase().trim();
+          localStorage.setItem('mc_user_email', email); 
+        } else { 
+          window.location.reload(); 
+          return; 
+        }
       }
       
       email = email.toLowerCase().trim();
       const isOwner = (email === OWNER_EMAIL.toLowerCase());
 
+      // 2. If they are NOT the owner, check if they are in the Google Sheet Access List
+      if (!isOwner) {
+         try {
+            // Fetch the access list from Google Sheets
+            const res = await apiCall('read', 'access', 'main');
+            let allowed = false;
+            
+            // Check if their email exists in the list
+            if (res.ok && res.data && res.data.main && res.data.main.list) {
+                const userEntry = res.data.main.list.find(u => 
+                    (u.em && u.em.toLowerCase() === email) || 
+                    (u.id && u.id === 'user-' + email.replace(/[^a-z0-9]/g, ''))
+                );
+                if (userEntry) allowed = true;
+            }
+            
+            // If not found, block them completely
+            if (!allowed) {
+                alert("Access Denied.\n\nYour email (" + email + ") has not been given permission to use this app.\n\nPlease contact the Admin (" + OWNER_EMAIL + ") to request access.");
+                localStorage.removeItem('mc_user_email');
+                window.location.reload();
+                return; 
+            }
+         } catch(e) {
+            alert("Could not connect to the database to verify your email. Please check your internet connection.");
+            return;
+         }
+      }
+
+      // 3. Let them in
       return { 
         can: async () => true, 
         id: async () => 'user-' + email.replace(/[^a-z0-9]/g, ''),
