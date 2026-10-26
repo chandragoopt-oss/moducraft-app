@@ -280,7 +280,7 @@ function removeWarranty() { const wp = document.getElementById('warranty-page');
 
 
 // ==========================================
-// PATCH: Advanced Pricing Bases & Material Summary
+// PATCH: Advanced Pricing Bases & Material Summary & Discounts
 // ==========================================
 const origVEdit = vEdit;
 vEdit = function() {
@@ -305,31 +305,113 @@ vEdit = function() {
         html = html.replace(/placeholder=standard/g, 'placeholder="e.g. 150000"');
     }
 
+    const oldDiscStr = `<div><label>Discount on the quotation</label><div style="display:flex;gap:6px">${SEL('q','dct',q.dct||'%',['%','₹'])}${N('q','dcv',q.dcv||0)}</div></div>`;
+    const newDiscStr = `
+    <div style="grid-column: 1 / -1; border-top: 1px dashed var(--line); margin-top: 10px; padding-top: 10px;">
+        <label style="font-weight: bold; color: var(--gold);">Discounts by Section (%)</label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+            <div><label>Wooden Work %</label>${N('q','dw',q.dw||0)}</div>
+            <div><label>Hardware & Accessories %</label>${N('q','dh',q.dh||0)}</div>
+            <div><label>Site / Civil Work %</label>${N('q','ds',q.ds||0)}</div>
+        </div>
+    </div>
+    `;
+    html = html.replace(oldDiscStr, newDiscStr);
+
     return html;
 };
+
+// Helper to calculate the totals for each category
+function calcCatTotals(q) {
+    let wood = 0, hard = 0, site = 0;
+    if (q.pmo === 'Package') {
+        q.rooms.forEach(rm => { if (used(rm).length) wood += (+rm.rate || 0); });
+        return { wood, hard, site };
+    }
+    q.rooms.forEach(rm => {
+        const isSiteRoom = rm.w || rm.sv || /site service|civil|paint|plumbing|electrical/i.test(rm.name);
+        rm.rows.forEach(r => {
+            if (!r.n) return;
+            const c = rowC(q, rm, r);
+            const acc = accP(r, q);
+            if (isSiteRoom || r.sv || isEl(r)) {
+                site += c.p;
+            } else if (HWX.test(r.n) || RKX.test(r.n) || /hardware|accessory/i.test(r.n)) {
+                hard += c.p;
+            } else {
+                wood += (c.p - acc);
+                hard += acc;
+            }
+        });
+    });
+    return { wood, hard, site };
+}
+
+function customDisc(q) {
+    const T = calcCatTotals(q);
+    let d = 0;
+    if (+q.dw > 0) d += T.wood * q.dw / 100;
+    if (+q.dh > 0) d += T.hard * q.dh / 100;
+    if (+q.ds > 0) d += T.site * q.ds / 100;
+    
+    // Fallback to old discount if new ones aren't used
+    if (d === 0 && +q.dcv > 0) {
+        const g = gt0(q);
+        d = Math.min(g, q.dct == '₹' ? +q.dcv : g * (+q.dcv) / 100);
+    }
+    return d;
+}
+
+function customGt(q) { return gt0(q) - customDisc(q); }
 
 const origVPrev = vPrev;
 vPrev = function() {
     let html = origVPrev();
     const q = T();
-    if (q && q.pmo === 'Package') {
-        html = html.replace(/<td class="r">₹[\d,]+<\/td>/g, '<td class="r" style="color:#777">Included</td>');
-        let grand = 0;
-        q.rooms.forEach((rm) => {
-            if (used(rm).length) {
-                const oldTotalStr = `<tr class="tot"><td colspan="5" class="r">${rm.w?'Section':'Room'} Total<td class="r">${fmt(roomT(q,rm))}</tr>`;
-                const newTotalStr = `<tr class="tot"><td colspan="5" class="r">${rm.w?'Section':'Room'} Package Price<td class="r">${fmt(rm.rate || 0)}</tr>`;
-                if (html.includes(oldTotalStr)) html = html.replace(oldTotalStr, newTotalStr);
-                grand += (+rm.rate || 0);
-            }
-        });
-        const oldGrandStr = `<tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(gt(q))}</tr>`;
-        const newGrandStr = `<tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(grand)}</tr>`;
-        html = html.replace(oldGrandStr, newGrandStr);
+    if (!q) return html;
+
+    const T = calcCatTotals(q);
+    const cDisc = customDisc(q);
+    const cGt = customGt(q);
+    const dw = +q.dw || 0, dh = +q.dh || 0, ds = +q.ds || 0;
+    const dW = T.wood * dw / 100, dH = T.hard * dh / 100, dS = T.site * ds / 100;
+
+    let discRows = '';
+    if (dW > 0) discRows += `<tr><td>Discount on Wooden Work (${dw}%)<td class="r">− ${fmt(dW)}</tr>`;
+    if (dH > 0) discRows += `<tr><td>Discount on Hardware & Accessories (${dh}%)<td class="r">− ${fmt(dH)}</tr>`;
+    if (dS > 0) discRows += `<tr><td>Discount on Site / Civil Work (${ds}%)<td class="r">− ${fmt(dS)}</tr>`;
+
+    if (cDisc === 0 && +q.dcv > 0) {
+        const g0 = gt0(q);
+        const od = Math.min(g0, q.dct == '₹' ? +q.dcv : g0 * (+q.dcv) / 100);
+        if (od > 0) discRows += `<tr><td>Discount${q.dct=='₹'?'':' ('+(+q.dcv)+'%)'}<td class="r">− ${fmt(od)}</tr>`;
+    }
+
+    let newTotTable = '';
+    if (q.pmo === 'Package') {
+        const grand = T.wood;
+        const dW = grand * dw / 100;
+        newTotTable = `<table class="t">
+            <tr><td>Sub-total<td class="r">${fmt(grand)}</tr>
+            ${dW > 0 ? `<tr><td>Discount on Package (${dw}%)<td class="r">− ${fmt(dW)}</tr>` : ''}
+            <tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(grand - dW)}</tr>
+        </table>`;
+        html = html.replace(/<table class="t">\s*<tr><td>Sub-total.*?GRAND TOTAL.*?<\/table>/s, newTotTable);
         const payHtmlOld = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(gt(q)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
-        const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(grand*(parseFloat(p.p)||0)/100)}</tr>`).join('');
+        const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt((grand - dW)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
+        html = html.replace(payHtmlOld, payHtmlNew);
+    } else {
+        newTotTable = `<table class="t">
+            <tr><td>Sub-total<td class="r">${fmt(gt0(q))}</tr>
+            ${discRows}
+            <tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(cGt)}</tr>
+        </table>`;
+        html = html.replace(/<table class="t">\s*<tr><td>Sub-total.*?GRAND TOTAL.*?<\/table>/s, newTotTable);
+        const payHtmlOld = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(gt(q)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
+        const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(cGt*(parseFloat(p.p)||0)/100)}</tr>`).join('');
         html = html.replace(payHtmlOld, payHtmlNew);
     }
+
     return html;
 };
 
@@ -374,7 +456,6 @@ fixSet = function() {
     if (!S.set.finm) S.set.finm = ['Standard', 'Merino', 'Century', 'Greenlam']; // Default makers
 };
 
-// The standard finishes generated for every new maker
 const STD_FINS = [
     '0.8mm Matt', '0.8mm Gloss', '0.8mm High Gloss', '0.8mm Texture', '0.8mm Special', '0.8mm Stone Finish',
     '1mm Matt', '1mm Gloss', '1mm High Gloss', '1mm Texture', '1mm Special', '1mm Stone Finish',
@@ -392,7 +473,6 @@ vSet = function() {
 
     const selM = S.set.selFinMaker || S.set.finm[0];
     
-    // FIX: Added f.n.includes instead of f.includes
     const makerFins = S.set.fin.filter(f => {
         if (f.n.includes(' — ')) {
             return f.n.startsWith(selM + ' — ');
@@ -403,7 +483,6 @@ vSet = function() {
     const puFins = S.set.fin.filter(f => !f.n.includes(' — ') && /PU|Duco|Deco/i.test(f.n));
 
     const renderGroup = (title, filterFn) => {
-        // FIX: Added f.n.includes instead of f.includes
         const fins = makerFins.filter(f => filterFn(f.n));
         if (!fins.length) return '';
         return `
@@ -472,7 +551,6 @@ vSet = function() {
     return html.replace(regex, newFinHtml);
 };
 
-// Handler for adding new makers & custom rows
 document.addEventListener('click', e => {
     const bMk = e.target.closest('[data-fp="add-maker"]');
     if (bMk) {
