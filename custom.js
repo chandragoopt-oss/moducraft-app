@@ -1,5 +1,3 @@
-// ModuCraft Custom Patch File
-// Paste any new features from Claude below this line.
 // ==========================================
 // PATCH: Advanced Follow Up System & Today Dashboard
 // ==========================================
@@ -321,7 +319,6 @@ vEdit = function() {
     return html;
 };
 
-// Helper to calculate the totals for each category
 function calcCatTotals(q) {
     let wood = 0, hard = 0, site = 0;
     if (q.pmo === 'Package') {
@@ -354,14 +351,12 @@ function customDisc(q) {
     if (+q.dh > 0) d += T.hard * q.dh / 100;
     if (+q.ds > 0) d += T.site * q.ds / 100;
     
-    // Fallback to old discount if new ones aren't used
     if (d === 0 && +q.dcv > 0) {
         const g = gt0(q);
         d = Math.min(g, q.dct == '₹' ? +q.dcv : g * (+q.dcv) / 100);
     }
     return d;
 }
-
 function customGt(q) { return gt0(q) - customDisc(q); }
 
 const origVPrev = vPrev;
@@ -390,15 +385,15 @@ vPrev = function() {
     let newTotTable = '';
     if (q.pmo === 'Package') {
         const grand = T.wood;
-        const dW = grand * dw / 100;
+        const dW_pkg = grand * dw / 100;
         newTotTable = `<table class="t">
             <tr><td>Sub-total<td class="r">${fmt(grand)}</tr>
-            ${dW > 0 ? `<tr><td>Discount on Package (${dw}%)<td class="r">− ${fmt(dW)}</tr>` : ''}
-            <tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(grand - dW)}</tr>
+            ${dW_pkg > 0 ? `<tr><td>Discount on Package (${dw}%)<td class="r">− ${fmt(dW_pkg)}</tr>` : ''}
+            <tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(grand - dW_pkg)}</tr>
         </table>`;
         html = html.replace(/<table class="t">\s*<tr><td>Sub-total.*?GRAND TOTAL.*?<\/table>/s, newTotTable);
         const payHtmlOld = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(gt(q)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
-        const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt((grand - dW)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
+        const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt((grand - dW_pkg)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
         html = html.replace(payHtmlOld, payHtmlNew);
     } else {
         newTotTable = `<table class="t">
@@ -411,7 +406,6 @@ vPrev = function() {
         const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(cGt*(parseFloat(p.p)||0)/100)}</tr>`).join('');
         html = html.replace(payHtmlOld, payHtmlNew);
     }
-
     return html;
 };
 
@@ -453,7 +447,7 @@ function removeMaterialSummary() { const el = document.getElementById('material-
 const origFixSet = fixSet;
 fixSet = function() {
     origFixSet();
-    if (!S.set.finm) S.set.finm = ['Standard', 'Merino', 'Century', 'Greenlam']; // Default makers
+    if (!S.set.finm) S.set.finm = ['Standard', 'Merino', 'Century', 'Greenlam'];
 };
 
 const STD_FINS = [
@@ -467,19 +461,11 @@ const STD_FINS = [
 const origVSet = vSet;
 vSet = function() {
     let html = origVSet();
-    
     const regex = /<div class="card"><h2>Outer \/ inner finishes.*?<button data-a="sa" data-k="fin">\+ Add row<\/button><\/div><\/div>/s;
     if (!regex.test(html)) return html;
 
     const selM = S.set.selFinMaker || S.set.finm[0];
-    
-    const makerFins = S.set.fin.filter(f => {
-        if (f.n.includes(' — ')) {
-            return f.n.startsWith(selM + ' — ');
-        }
-        return selM === 'Standard';
-    });
-    
+    const makerFins = S.set.fin.filter(f => { if (f.n.includes(' — ')) return f.n.startsWith(selM + ' — '); return selM === 'Standard'; });
     const puFins = S.set.fin.filter(f => !f.n.includes(' — ') && /PU|Duco|Deco/i.test(f.n));
 
     const renderGroup = (title, filterFn) => {
@@ -492,13 +478,7 @@ vSet = function() {
                 ${fins.map(f => {
                     const actualIdx = S.set.fin.findIndex(x => x.n === f.n);
                     const shortName = f.n.replace(selM + ' — ', '');
-                    return `
-                    <tr>
-                        <td>${esc(shortName)}</td>
-                        <td>${RB('s',`fin|${actualIdx}|r`,f.r||'')}</td>
-                        <td>${RB('s',`fin|${actualIdx}|c`,f.c||'')}</td>
-                        <td><button class="g" data-a="sd" data-k="fin" data-i="${actualIdx}">×</button></td>
-                    </tr>`;
+                    return `<tr><td>${esc(shortName)}</td><td>${RB('s',`fin|${actualIdx}|r`,f.r||'')}</td><td>${RB('s',`fin|${actualIdx}|c`,f.c||'')}</td><td><button class="g" data-a="sd" data-k="fin" data-i="${actualIdx}">×</button></td></tr>`;
                 }).join('')}
             </table>
         `;
@@ -507,16 +487,12 @@ vSet = function() {
     let newFinHtml = `
     <div class="card" id="custom-fin-card">
         <h2>Finishes &amp; Acrylics (Grouped by Maker)</h2>
-        <p class="mut">Select a maker to view and edit their rates. When you add a new maker, standard finishes (0.8mm/1mm Laminate, Acrylics, etc.) will be auto-generated for you.</p>
-        
+        <p class="mut">Select a maker to view and edit their rates. When you add a new maker, standard finishes will be auto-generated.</p>
         <div class="bar">
             <label>Maker / Brand:</label>
-            <select id="fin_maker_sel" style="max-width:250px">
-                ${S.set.finm.map(m => `<option value="${esc(m)}" ${m===selM?'selected':''}>${esc(m)}</option>`).join('')}
-            </select>
+            <select id="fin_maker_sel" style="max-width:250px">${S.set.finm.map(m => `<option value="${esc(m)}" ${m===selM?'selected':''}>${esc(m)}</option>`).join('')}</select>
             <button data-fp="add-maker" style="background:var(--gold);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer">+ Add New Maker</button>
         </div>
-        
         <div class="sc">
             ${renderGroup('0.8mm Laminate', f => f.includes('0.8mm'))}
             ${renderGroup('1mm Laminate', f => f.includes('1mm'))}
@@ -527,7 +503,6 @@ vSet = function() {
         </div>
         <div class="bar"><button class="g" data-fp="add-fin-row">+ Add custom row to ${esc(selM)}</button></div>
     </div>
-
     <div class="card">
         <h2>PU / Deco Paint (No Maker Required)</h2>
         <div class="sc">
@@ -535,103 +510,64 @@ vSet = function() {
                 <tr><th>Finish</th><th>Client add-on ₹ per sq.ft</th><th>Our cost ₹ per sheet</th><th></th></tr>
                 ${puFins.map(f => {
                     const actualIdx = S.set.fin.findIndex(x => x.n === f.n);
-                    return `
-                    <tr>
-                        <td>${esc(f.n)}</td>
-                        <td>${RB('s',`fin|${actualIdx}|r`,f.r||'')}</td>
-                        <td>${RB('s',`fin|${actualIdx}|c`,f.c||'')}</td>
-                        <td><button class="g" data-a="sd" data-k="fin" data-i="${actualIdx}">×</button></td>
-                    </tr>`;
+                    return `<tr><td>${esc(f.n)}</td><td>${RB('s',`fin|${actualIdx}|r`,f.r||'')}</td><td>${RB('s',`fin|${actualIdx}|c`,f.c||'')}</td><td><button class="g" data-a="sd" data-k="fin" data-i="${actualIdx}">×</button></td></tr>`;
                 }).join('')}
             </table>
         </div>
-    </div>
-    `;
-    
+    </div>`;
     return html.replace(regex, newFinHtml);
 };
 
 document.addEventListener('click', e => {
     const bMk = e.target.closest('[data-fp="add-maker"]');
     if (bMk) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        
+        e.preventDefault(); e.stopImmediatePropagation();
         const name = prompt("Enter the new Maker / Brand name (e.g., Merino, Century, Greenlam):");
         if (!name || !name.trim()) return;
         const cleanName = name.trim();
-        
         if (!S.set.finm) S.set.finm = ['Standard'];
-        if (S.set.finm.includes(cleanName)) {
-            alert("This maker already exists.");
-            return;
-        }
-        
-        S.set.finm.push(cleanName);
-        S.set.selFinMaker = cleanName;
-        
-        STD_FINS.forEach(s => {
-            const fullName = cleanName + ' — ' + s;
-            if (!S.set.fin.find(x => x.n === fullName)) {
-                S.set.fin.push({ n: fullName, r: 0, c: 0 });
-            }
-        });
-        
-        save('s');
-        render();
-        flash('Maker "' + cleanName + '" added with standard finishes.');
-        return;
+        if (S.set.finm.includes(cleanName)) { alert("This maker already exists."); return; }
+        S.set.finm.push(cleanName); S.set.selFinMaker = cleanName;
+        STD_FINS.forEach(s => { const fullName = cleanName + ' — ' + s; if (!S.set.fin.find(x => x.n === fullName)) S.set.fin.push({ n: fullName, r: 0, c: 0 }); });
+        save('s'); render(); flash('Maker "' + cleanName + '" added with standard finishes.'); return;
     }
-
     const bRow = e.target.closest('[data-fp="add-fin-row"]');
     if (bRow) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
+        e.preventDefault(); e.stopImmediatePropagation();
         const m = S.set.selFinMaker || S.set.finm[0];
         S.set.fin.push({ n: (m==='Standard'?'':m+' — '), r: 0, c: 0 });
-        save('s');
-        render();
+        save('s'); render();
     }
 }, true);
 
 document.addEventListener('change', e => {
-    if (e.target.id === 'fin_maker_sel') {
-        S.set.selFinMaker = e.target.value;
-        render();
-    }
+    if (e.target.id === 'fin_maker_sel') { S.set.selFinMaker = e.target.value; render(); }
 });
 
 
 // ==========================================
-// Master Interceptors for PDF & HTML Generation
+// PATCH: Master Interceptors for PDF & HTML
 // ==========================================
 const origPaperToPdf_Master = paperToPdf;
 paperToPdf = async function(mode) {
     const wInj = injectWarranty();
     const mInj = injectMaterialSummary();
-    try {
-        return await origPaperToPdf_Master.apply(this, arguments);
-    } finally {
-        if (wInj) removeWarranty();
-        if (mInj) removeMaterialSummary();
-    }
+    try { return await origPaperToPdf_Master.apply(this, arguments); } 
+    finally { if (wInj) removeWarranty(); if (mInj) removeMaterialSummary(); }
 };
 
-// Safe interception for Download File (HTML)
 document.addEventListener('click', e => {
     const b = e.target.closest('[data-a="dh"]');
     if (b) {
         const paper = document.querySelector('.paper');
         if (paper && paper.querySelector('.hero')) {
-            injectWarranty();
-            injectMaterialSummary();
-            setTimeout(() => {
-                removeWarranty();
-                removeMaterialSummary();
-            }, 1000);
+            injectWarranty(); injectMaterialSummary();
+            setTimeout(() => { removeWarranty(); removeMaterialSummary(); }, 1000);
         }
     }
 }, true);
+
+
 // ==========================================
 // PATCH: Advanced Purchase Order, Consumables & Payments
 // ==========================================
@@ -680,8 +616,6 @@ vEst = function() {
         <div class="sc"><table class="g" style="min-width: 400px;"><tr><th>Item</th><th class="ro">Qty</th><th>Unit</th></tr>
         ${cons.map(c => `<tr><td>${esc(c.d)}</td><td class="ro">${c.q}</td><td>${esc(c.u)}</td></tr>`).join('')}
         </table></div></div>`;
-        
-        // Inject right after the "Our cost vs customer price" or before it
         const anchor = html.indexOf('<div class="card"><h2>Our cost vs customer price</h2>');
         if (anchor !== -1) html = html.substring(0, anchor) + tableHtml + html.substring(anchor);
         else html += tableHtml;
@@ -689,35 +623,7 @@ vEst = function() {
     return html;
 };
 
-// 3. Auto-Add Consumables to PO when pulling from Estimate
-const origPoFromEst = poFromEst;
-poFromEst = function(po, src) {
-    origPoFromEst(po, src);
-    if (src === 'hw') {
-        const p = BZ.pj[po.pid], q = p && S.q[p.qid];
-        if (q) {
-            const cons = calcConsumables(q);
-            let added = false;
-            cons.forEach(c => {
-                if (!po.lines.some(l => l.d === c.d)) {
-                    po.lines.push({ ...c, r: 0, g: +S.set.gst || 18 });
-                    added = true;
-                }
-            });
-            if (added) {
-                bzSave('po', po.id);
-                flash('Consumables (glue, screws, clips) auto-added!');
-                render();
-            }
-        }
-    }
-};
-
-// ==========================================
-// PATCH: Advanced Purchase Order (Segregated Vendors & Payments)
-// ==========================================
-
-// 1. Override the "Add lines from estimate" function to handle all categories
+// 3. Advanced Segregated Line Pulling for Purchase Order
 const origPoFromEst = poFromEst;
 poFromEst = function(po, src) {
     const p = BZ.pj[po.pid], q = p && S.q[p.qid];
@@ -736,10 +642,9 @@ poFromEst = function(po, src) {
         Object.keys(est(q).ls).sort(lkSort).forEach(k => add(lamLbl(k)+', 8×4 ft', est(q).ls[k], 'sheet', finCost(k)));
     } else if (src === 'hw') {
         Object.entries(est(q).hw).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([n,qty]) => add(n, qty, accU(n), hwRate(n,q.hw||'Local')));
+        calcConsumables(q).forEach(c => { if(!L.some(l=>l.d===c.d)) add(c.d, c.q, c.u, 0); });
     } else if (src === 'elec') {
-        q.rooms.forEach(rm => rm.rows.forEach(r => {
-            if (r.n && isEl(r)) add(r.n, r.q || 1, r.u || 'nos', 0);
-        }));
+        q.rooms.forEach(rm => rm.rows.forEach(r => { if (r.n && isEl(r)) add(r.n, r.q || 1, r.u || 'nos', 0); }));
     } else if (src === 'site') {
         q.rooms.forEach(rm => rm.rows.forEach(r => {
             if (r.n && (rm.sv || rm.w || /paint|gypsum|ceiling|civil|tile|plumbing|waterproofing|putty|primer/i.test(r.n))) {
@@ -755,28 +660,27 @@ poFromEst = function(po, src) {
     flash('Lines added from the estimate!');
 };
 
-// 2. Update the PO Edit UI (Dropdown options & Payment Tracking)
+// 4. Update the PO Edit UI (Dropdown options & Payment Tracking)
 const origPoEdit = poEdit;
 poEdit = function(o) {
     let html = origPoEdit(o);
     
-    // Update the dropdown to include new categories
     const oldSel = `<select id="po_src" style="max-width:260px"><option value="ply">From estimate: plywood sheets</option><option value="lam">From estimate: laminate / finish</option><option value="hw">From estimate: hardware</option><option value="stone">From estimate: counter-top stone</option></select>`;
     const newSel = `<select id="po_src" style="max-width:260px">
         <option value="ply">From estimate: Plywood</option>
         <option value="lam">From estimate: Laminate / Finish</option>
-        <option value="hw">From estimate: Hardware</option>
+        <option value="hw">From estimate: Hardware & Consumables</option>
         <option value="elec">From estimate: Electrical Items</option>
         <option value="site">From estimate: Site Work (Paint/Civil/Gypsum)</option>
         <option value="stone">From estimate: Stone / Countertop</option>
     </select>`;
     html = html.replace(oldSel, newSel);
 
-    // Add Payment Tracking
     const t = poTot(o);
     let paid = 0;
     (o.pays || []).forEach(p => paid += (+p.amt || 0));
     const bal = t.tot - paid;
+    
     const payHtml = `
     <div class="card">
         <h3>Payment Tracking (Internal)</h3>
@@ -804,14 +708,13 @@ poEdit = function(o) {
     return html;
 };
 
-// 3. Update PO PDF Generation (Strictly No Prices & Segregated Pages)
+// 5. Update PO PDF Generation (No Prices, Segregated Pages, Clear Headers)
 const origPoDoc_Adv = poDoc;
 poDoc = function(o) {
     const v = BZ.vd[o.vid] || {};
     const p = BZ.pj[o.pid] || {};
     const q = S.q[p.qid];
     
-    // Categorize the items strictly
     const getCategory = (desc) => {
         const d = desc.toLowerCase();
         if (d.includes('plywood') || d.includes('ply') || d.includes('mdf') || d.includes('hdhmr')) return 'ply';
@@ -826,34 +729,28 @@ poDoc = function(o) {
     const groups = { ply: [], lam: [], hw: [], elec: [], site: [], stone: [], other: [] };
     (o.lines||[]).forEach(l => { if (l.d) groups[getCategory(l.d)].push(l); });
 
-    // Quantity formatter (no decimals, rounds up if > 0.1)
     const fmtQty = (qty) => {
         const n = +qty || 0; const frac = n - Math.floor(n);
         return frac > 0.1 ? Math.ceil(n) : Math.floor(n);
     };
 
-    // ONLY Description, Qty, and Unit are printed. No prices!
     const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
 
-    // Page 1: Summary / Cover Page
+    // Page 1: Cover
     let html = `<div class="pg">
         <div class="kv">
             <div><b>VENDOR DETAILS</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')}</div>
             <div><b>DELIVER TO</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div>
         </div>
-        
         <div class="sh">PURCHASE ORDER SUMMARY</div>
         ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${fmtQty(l.q)}</td><td>${esc(l.u)}</td></tr>`).join('')}</table>` : '<p class="nt">No items added.</p>'}
-        
         ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
-        
         <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
             <span>Vendor acknowledgement</span>
             <span>For ${esc(co().name)}<br><br>Authorised signatory</span>
         </div>
     </div>`;
 
-    // Generate a separate page for each category present in the PO
     if (groups.ply.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">PLYWOOD</h2>${T1(['Description', 'Qty', 'Unit'], groups.ply.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
     if (groups.lam.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH</h2>${T1(['Description', 'Qty', 'Unit'], groups.lam.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
     if (groups.hw.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">HARDWARE & CONSUMABLES</h2>${T1(['Description', 'Qty', 'Unit'], groups.hw.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
@@ -862,13 +759,11 @@ poDoc = function(o) {
     if (groups.stone.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">STONE & COUNTERTOPS</h2>${T1(['Description', 'Qty', 'Unit'], groups.stone.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
     if (groups.other.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS</h2>${T1(['Description', 'Qty', 'Unit'], groups.other.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
 
-    // The header on EVERY page (No prices, just dates and addresses)
     const metaHtml = `
-        <b>PO: ${esc(o.no)}</b> | Issue Date: <b>${dmy(o.date)}</b><br>
-        Delivery Req.: <b style="color:#b00020">${dmy(o.del)}</b><br>
+        <b>PO: ${esc(o.no)}</b> | Date: <b>${dmy(o.date)}</b><br>
         Vendor: <b>${esc(v.name||'—')}</b><br>
-        Project: ${esc(p.name||'—')}<br>
-        Address: ${esc(p.addr||'—')}<br>
+        Project: ${esc(p.name||'—')} | Address: ${esc(p.addr||'—')}<br>
+        Delivery Req.: <b style="color:#b00020">${dmy(o.del)}</b><br>
         Ref: ${q ? esc(qno(q)) : 'N/A'}
     `;
     
@@ -879,7 +774,7 @@ poDoc = function(o) {
     </div>` + docPaper('PURCHASE ORDER', metaHtml, html);
 };
 
-// 4. Wire up the Payment Tracking buttons
+// 6. Wire up the Payment Tracking buttons
 document.addEventListener('click', e => {
     const bAdd = e.target.closest('[data-bza="payaddpo"]');
     if (bAdd) {
@@ -889,7 +784,6 @@ document.addEventListener('click', e => {
         O.pays.push({ date: today(), amt: 0, mode: 'UPI', ref: '', next: '' });
         bzSave('po', O.id); render(); return;
     }
-    
     const bDel = e.target.closest('[data-bza="paydelpo"]');
     if (bDel) {
         e.preventDefault(); e.stopImmediatePropagation();
@@ -907,3 +801,5 @@ document.addEventListener('change', e => {
         }
     }
 });
+
+console.log("Custom patch loaded successfully! All PO prices hidden.");
