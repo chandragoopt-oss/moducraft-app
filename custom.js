@@ -261,3 +261,112 @@ vList = function() {
     });
     return html;
 };
+
+
+// ==========================================
+// PATCH: Append Warranty to Quotation PDF
+// ==========================================
+
+function injectWarranty() {
+    const paper = document.querySelector('.paper');
+    // Only inject if it's the main quotation (has .hero) and warranty isn't already there
+    if (paper && paper.querySelector('.hero') && !paper.querySelector('#warranty-page')) {
+        const tbody = paper.querySelector('table.doc > tbody > tr > td');
+        if (tbody) {
+            const warrantyHtml = `
+            <div class="pg" id="warranty-page" style="break-before: page;">
+                <h2 style="text-align:center;letter-spacing:3px">LIMITED WARRANTY & SERVICE POLICY</h2>
+                <p class="nt" style="text-align:center;margin-bottom:20px"><b>Module Studio</b> | Website: www.modulestudio.in<br>Customer Care: 9830864409 (Call & WhatsApp)</p>
+                
+                <p class="nt">This document constitutes the formal warranty and service terms for the interior solutions provided by Module Studio. By accepting the quotation and engaging our services, the Customer agrees to the following terms and conditions.</p>
+                
+                <div class="sh">1. THE 10-YEAR MATERIAL GUARANTEE</div>
+                <p class="nt">Module Studio maintains a strict manufacturing policy of utilizing only premium-grade, highly durable materials. We expressly do not use MDF (Medium Density Fiberboard) in our structural applications. We exclusively work with MR (Moisture Resistant) Plywood, BWR (Boiling Water Resistant) Plywood, BWP (Boiling Water Proof) Plywood, and HDHMR (High Density High Moisture Resistance) boards.</p>
+                <p class="nt">Subject to the limitations set forth below, Module Studio provides a comprehensive 10-Year Warranty on the core structural materials (carcass) and shutters of the fitted furniture manufactured by us. This guarantee covers manufacturing defects, structural delamination, and edge-banding failure under standard residential use.</p>
+                
+                <div class="sh">2. THIRD-PARTY COMPONENTS (OEM WARRANTIES)</div>
+                <p class="nt">The Customer acknowledges that certain components within the project are not manufactured by Module Studio but are procured from Original Equipment Manufacturers (OEMs). These items are strictly governed by the respective manufacturer’s warranty terms:</p>
+                <ul class="nt" style="margin-left:20px;padding-left:0">
+                    <li><b>Hardware & Accessories:</b> Hinges, channels, handles, and moving parts carry the OEM’s standard warranty.</li>
+                    <li><b>Appliances & Sanitary Fixtures:</b> Chimneys, hobs, sinks, taps, etc., carry the OEM’s warranty. Any labor or cleaning charges associated with their servicing will be borne by the Customer.</li>
+                    <li><b>Electricals & Lighting:</b> Switches, lights, and wiring components carry the OEM’s warranty. Module Studio is not liable for wiring defects post-handover.</li>
+                    <li><b>Mirrors:</b> A 1-year warranty applies strictly to the electrical/LED components only. Module Studio provides no warranty on the mirror glass itself.</li>
+                </ul>
+
+                <div class="sh">3. ITEMS EXPRESSLY EXCLUDED (NO WARRANTY)</div>
+                <p class="nt">The following items are supplied on an "as-is" basis and carry zero warranty from Module Studio:</p>
+                <ul class="nt" style="margin-left:20px;padding-left:0">
+                    <li>Countertops (Material)</li>
+                    <li>Civil work, Tiling, and Gas Piping</li>
+                    <li>Fragile items (Mirror glass, loose glass, etc.)</li>
+                    <li>Wallpapers (including base preparation and seepage-related peeling)</li>
+                    <li>Home Automation systems (Smart locks, Wi-Fi cameras, etc.)</li>
+                </ul>
+
+                <div class="sh">4. LIMITATIONS OF LIABILITY & WARRANTY VOIDANCE</div>
+                <p class="nt">Module Studio’s liability is strictly limited to repairing or replacing defective covered products. This warranty shall be rendered null and void under the following conditions:</p>
+                <ul class="nt" style="margin-left:20px;padding-left:0">
+                    <li><b>Water Damage & Seepage:</b> Damage resulting from continuous dampness or structural leakage exceeding the material's tolerance (e.g., continuous exposure beyond 72 hours for BWP, 48 hours for BWR, and 24 hours for HDHMR).</li>
+                    <li><b>Normal Wear & Tear:</b> Scratches, dents, chipping, or discoloration resulting from daily use.</li>
+                    <li><b>Environmental Factors:</b> Fading or degradation of laminates/finishes due to excessive exposure to direct sunlight, heat, or moisture.</li>
+                    <li><b>Misuse & Negligence:</b> Damage caused by accidents, improper handling, overloading of modules (e.g., tandem units, magic corners), or exposure to harsh chemical solvents (e.g., turpentine, strong cleaners).</li>
+                    <li><b>Pests:</b> Damage caused by termites, wood borers, rodents, or pets.</li>
+                    <li><b>Rusting:</b> Corrosion of metallic parts due to exposure to household chemicals or moisture.</li>
+                    <li><b>Force Majeure:</b> Acts of God, including but not limited to floods, earthquakes, fire, pandemics, or any event beyond Module Studio's control.</li>
+                    <li><b>Unauthorized Modifications:</b> Any alterations, repairs, or dismantling performed by the Customer or unauthorized third parties.</li>
+                    <li><b>Transfer of Ownership:</b> If the property is sold or the products are resold.</li>
+                </ul>
+
+                <div class="sh">5. CLAIMS PROCEDURE</div>
+                <p class="nt">To initiate a warranty claim, the Customer must notify Module Studio with proof of purchase and photographic evidence of the defect.</p>
+                <ul class="nt" style="margin-left:20px;padding-left:0">
+                    <li><b>How to reach us:</b> Visit www.modulestudio.in, or call/WhatsApp us at 9830864409.</li>
+                    <li><b>Inspection:</b> An authorized representative will inspect the site to validate the claim.</li>
+                    <li><b>Resolution:</b> If approved, Module Studio will, at its sole discretion, repair or replace the defective product. If a replacement is required, we will provide a product that matches the original in dimension, function, and color as closely as possible. The replaced product will be covered under the original warranty period only; no new warranty shall apply.</li>
+                </ul>
+
+                <div class="sh">6. SERVICE & MAINTENANCE POLICY</div>
+                <ul class="nt" style="margin-left:20px;padding-left:0">
+                    <li><b>Complimentary Service:</b> Module Studio provides one (1) free service visit within 6 months of project handover. This covers routine checks, minor alignment of shutters, and adjustments for moving parts.</li>
+                    <li><b>Chargeable Service:</b> Post the 6-month period, any alignment or maintenance requests will be handled on a chargeable basis. If the service requires replacement of items not covered under warranty (e.g., physical damage, rust, water damage), the cost of parts and labor will be billed to the Customer.</li>
+                </ul>
+
+                <div class="sh">7. GOVERNING LAW & JURISDICTION</div>
+                <p class="nt">This warranty policy shall be governed by and construed in accordance with the laws of India. Any disputes, claims, or legal proceedings arising out of or in connection with this warranty shall be subject to the exclusive jurisdiction of the courts located in the city/state where the Customer's project site is situated.</p>
+                
+                <p class="nt" style="font-style:italic;font-size:10px;margin-top:20px">(Disclaimer: Images provided in the quotation are for representational purposes only. Final products may vary slightly in texture and finish based on material batch availability and site conditions.)</p>
+            </div>
+            `;
+            tbody.insertAdjacentHTML('beforeend', warrantyHtml);
+            return true;
+        }
+    }
+    return false;
+}
+
+function removeWarranty() {
+    const wp = document.getElementById('warranty-page');
+    if (wp) wp.remove();
+}
+
+// Intercept the PDF generation to inject and remove the warranty
+const origPaperToPdf = paperToPdf;
+paperToPdf = async function(mode) {
+    const injected = injectWarranty();
+    try {
+        return await origPaperToPdf.apply(this, arguments);
+    } finally {
+        if (injected) removeWarranty();
+    }
+};
+
+// Intercept the HTML file download to inject and remove the warranty
+const origClientHtml = clientHtml;
+clientHtml = function() {
+    const injected = injectWarranty();
+    try {
+        return origClientHtml.apply(this, arguments);
+    } finally {
+        if (injected) removeWarranty();
+    }
+};
