@@ -11,6 +11,9 @@ todayCard = function() {
 // PATCH: Advanced Follow Up System & Today Dashboard
 // ==========================================
 
+// Helper to check if a project is active (not closed)
+const isProjectActive = p => p && !['Closed', 'Closure'].includes(p.stage);
+
 // 1. Calculate pending follow ups (defaults to 4 days if no date set)
 function getDueCount() {
     let count = 0;
@@ -27,7 +30,7 @@ function getDueCount() {
     });
     
     Object.values(BZ.pj).forEach(p => {
-        if (p.stage != 'Closed') {
+        if (isProjectActive(p)) {
             const base = p.lfu || p.cr;
             if (p.nfu && p.nfu <= t) count++;
             else if (!p.nfu && base && (Date.now() - new Date(base).getTime())/864e5 >= 4) count++;
@@ -130,8 +133,9 @@ function openFupModal(id, type) {
     };
 }
 
-// 4. Global Event Listeners for Follow Up & Dead Lead buttons
+// 4. Global Event Listeners for Follow Up, Dead Lead, & Complete buttons
 document.addEventListener('click', e => {
+    // Follow Up
     const bFup = e.target.closest && e.target.closest('[data-fup]');
     if (bFup) {
         e.preventDefault();
@@ -140,6 +144,7 @@ document.addEventListener('click', e => {
         return;
     }
     
+    // Dead Lead
     const bDead = e.target.closest && e.target.closest('[data-dead]');
     if (bDead) {
         e.preventDefault();
@@ -149,7 +154,7 @@ document.addEventListener('click', e => {
         if (!obj) return;
         
         askPick('Why was this lead lost?', [
-            ['Price too high', 'Price too high'],
+            ['Price too high', 'Pricetoo high'],
             ['Chose another designer', 'Chose another designer'],
             ['Postponed', 'Postponed / not now'],
             ['No response', 'No response'],
@@ -161,6 +166,23 @@ document.addEventListener('click', e => {
             render();
             flash('Marked as Dead Lead');
         }, () => {}); 
+    }
+
+    // Mark Project Complete
+    const bComp = e.target.closest && e.target.closest('[data-complete]');
+    if (bComp) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const id = bComp.dataset.complete;
+        const p = BZ.pj[id];
+        if (!p) return;
+
+        askDo('Mark this project as COMPLETED? It will be moved to Closure and removed from follow-ups.', () => {
+            p.stage = 'Closure';
+            bzSave('pj', id);
+            render();
+            flash('Project marked as Completed');
+        });
     }
 }, true);
 
@@ -178,13 +200,12 @@ todayCard = function() {
 
     // --- Section A: Overdue / Due Today ---
     const dueQ = Object.values(S.q).filter(q => {
-        // Ignore dead leads
         if (q.st !== 'shared' || q.unl || q.out === 'lost' || linked.has(q.id)) return false;
         const base = q.lfu || q.shAt || q.date;
         return (q.nfu && q.nfu <= t) || (!q.nfu && base && (Date.now() - new Date(base).getTime())/864e5 >= 4);
     });
     const dueP = Object.values(BZ.pj).filter(p => {
-        if (p.stage === 'Closed') return false;
+        if (!isProjectActive(p)) return false;
         const base = p.lfu || p.cr;
         return (p.nfu && p.nfu <= t) || (!p.nfu && base && (Date.now() - new Date(base).getTime())/864e5 >= 4);
     });
@@ -192,7 +213,7 @@ todayCard = function() {
     if (dueQ.length || dueP.length) {
         let r = '';
         dueP.forEach(p => {
-            r += `<tr><td><span class="mut">Project</span><br><b>${esc(p.name)}</b><td>${esc(p.client)}<td style="color:#b00020;font-weight:bold">${p.nfu ? dmy(p.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></td></tr>`;
+            r += `<tr><td><span class="mut">Project</span><br><b>${esc(p.name)}</b><td>${esc(p.client)}<td style="color:#b00020;font-weight:bold">${p.nfu ? dmy(p.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-complete="${p.id}" style="background:#dcfce7;color:#166534;border-color:#bbf7d0;padding:4px 10px;margin-left:4px">✅ Complete</button></td></tr>`;
         });
         dueQ.forEach(q => {
             r += `<tr><td><span class="mut">Quotation</span><br><b>${esc(q.name)}</b><td>${esc(qno(q))}<td style="color:#b00020;font-weight:bold">${q.nfu ? dmy(q.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-dead="${q.id}" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;padding:4px 10px;margin-left:4px">❌ Dead</button></td></tr>`;
@@ -201,9 +222,9 @@ todayCard = function() {
     }
 
     // --- Section B: Running Projects ---
-    const runP = Object.values(BZ.pj).filter(p=>p.stage!='Closed');
+    const runP = Object.values(BZ.pj).filter(isProjectActive);
     if (runP.length) {
-        let r = runP.map(p => `<tr><td><b>${esc(p.name)}</b><td>${esc(p.client)}<td>${esc(p.stage)}<td>${p.nfu ? dmy(p.nfu) : '—'}<td><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button></tr>`).join('');
+        let r = runP.map(p => `<tr><td><b>${esc(p.name)}</b><td>${esc(p.client)}<td>${esc(p.stage)}<td>${p.nfu ? dmy(p.nfu) : '—'}<td style="white-space:nowrap"><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-complete="${p.id}" style="background:#dcfce7;color:#166534;border-color:#bbf7d0;padding:4px 10px;margin-left:4px">✅ Complete</button></td></tr>`).join('');
         newHtml += `<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fffaf0"><b>🏗️ Running Projects</b><div class="sc"><table class="g" style="min-width:700px"><tr><th>Project</th><th>Client</th><th>Stage</th><th>Next Follow Up</th><th></th></tr>${r}</table></div></div>`;
     }
 
