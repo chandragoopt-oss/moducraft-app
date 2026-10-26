@@ -804,13 +804,14 @@ poEdit = function(o) {
     return html;
 };
 
-// 3. Update PO PDF Generation (Clean layout, no red text, segregated pages)
+// 3. Update PO PDF Generation (Strictly No Prices & Segregated Pages)
 const origPoDoc_Adv = poDoc;
 poDoc = function(o) {
     const v = BZ.vd[o.vid] || {};
     const p = BZ.pj[o.pid] || {};
     const q = S.q[p.qid];
     
+    // Categorize the items strictly
     const getCategory = (desc) => {
         const d = desc.toLowerCase();
         if (d.includes('plywood') || d.includes('ply') || d.includes('mdf') || d.includes('hdhmr')) return 'ply';
@@ -825,23 +826,34 @@ poDoc = function(o) {
     const groups = { ply: [], lam: [], hw: [], elec: [], site: [], stone: [], other: [] };
     (o.lines||[]).forEach(l => { if (l.d) groups[getCategory(l.d)].push(l); });
 
+    // Quantity formatter (no decimals, rounds up if > 0.1)
     const fmtQty = (qty) => {
         const n = +qty || 0; const frac = n - Math.floor(n);
         return frac > 0.1 ? Math.ceil(n) : Math.floor(n);
     };
+
+    // ONLY Description, Qty, and Unit are printed. No prices!
     const T1 = (h, rows) => `<table class="t"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
 
+    // Page 1: Summary / Cover Page
     let html = `<div class="pg">
-        <div class="kv"><div><b>VENDOR</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')}</div><div><b>DELIVER TO / PROJECT</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div></div>
+        <div class="kv">
+            <div><b>VENDOR DETAILS</b><br>${esc(v.name||'')}<br>${esc(v.addr||'')}<br>${v.person?esc(v.person)+'<br>':''}${esc(v.phone||'')}</div>
+            <div><b>DELIVER TO</b><br>${esc(p.name||'')}<br>${esc(p.addr||'')}</div>
+        </div>
+        
         <div class="sh">PURCHASE ORDER SUMMARY</div>
         ${o.lines.length ? `<table class="t"><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th></tr>${o.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.d)}</td><td>${fmtQty(l.q)}</td><td>${esc(l.u)}</td></tr>`).join('')}</table>` : '<p class="nt">No items added.</p>'}
+        
         ${o.note?`<div class="sh">TERMS &amp; NOTES</div><p style="font-size:12px">${esc(o.note)}</p>`:''}
+        
         <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
             <span>Vendor acknowledgement</span>
             <span>For ${esc(co().name)}<br><br>Authorised signatory</span>
         </div>
     </div>`;
 
+    // Generate a separate page for each category present in the PO
     if (groups.ply.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">PLYWOOD</h2>${T1(['Description', 'Qty', 'Unit'], groups.ply.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
     if (groups.lam.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">LAMINATE & FINISH</h2>${T1(['Description', 'Qty', 'Unit'], groups.lam.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
     if (groups.hw.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">HARDWARE & CONSUMABLES</h2>${T1(['Description', 'Qty', 'Unit'], groups.hw.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
@@ -850,12 +862,14 @@ poDoc = function(o) {
     if (groups.stone.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">STONE & COUNTERTOPS</h2>${T1(['Description', 'Qty', 'Unit'], groups.stone.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
     if (groups.other.length) html += `<div class="pg" style="break-before: page;"><h2 style="text-align:center;letter-spacing:3px">OTHER ITEMS</h2>${T1(['Description', 'Qty', 'Unit'], groups.other.map(l => [esc(l.d), fmtQty(l.q), esc(l.u)]))}</div>`;
 
+    // The header on EVERY page (No prices, just dates and addresses)
     const metaHtml = `
-        <b>PO: ${esc(o.no)}</b> | Date: <b>${dmy(o.date)}</b><br>
-        Quote Ref: <b>${q ? esc(qno(q)) : 'N/A'}</b><br>
+        <b>PO: ${esc(o.no)}</b> | Issue Date: <b>${dmy(o.date)}</b><br>
+        Delivery Req.: <b style="color:#b00020">${dmy(o.del)}</b><br>
         Vendor: <b>${esc(v.name||'—')}</b><br>
-        Delivery: <b>${dmy(o.del)}</b><br>
-        Category: ${[...new Set((o.lines||[]).map(l=>getCategory(l.d)))].join(', ').toUpperCase()}
+        Project: ${esc(p.name||'—')}<br>
+        Address: ${esc(p.addr||'—')}<br>
+        Ref: ${q ? esc(qno(q)) : 'N/A'}
     `;
     
     return `<div class="bar noprint">
