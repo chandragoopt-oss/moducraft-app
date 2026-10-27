@@ -295,6 +295,13 @@ cm:['Quality-focused materials and workmanship','Detailed, transparent quotation
 const FU={mm:1/304.8,cm:1/30.48,in:1/12,ft:1,m:3.28084};
 let S={acl:[],set:cl(DEF),q:{},cur:null,tab:'q',db:null,w:true,dl:null};
 const T=()=>S.q[S.cur],co=()=>S.set.co;
+
+// --- ADDED TO PREVENT BLANK SCREEN CRASH ---
+const BZ={pj:{},vd:{},po:{}},BZC={pj:'projects',vd:'vendors',po:'pos'},LKB='msq_biz',bzTm={};
+const dstr=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),today=()=>dstr(new Date()),addDays=(d,n)=>{const t=new Date((d||today())+'T00:00:00');t.setDate(t.getDate()+n);return dstr(t)},dmy=d=>d?String(d).split('-').reverse().join('/'):'',ddiff=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);
+try{const x=JSON.parse(localStorage.getItem(LKB)||'null');if(x)Object.keys(BZC).forEach(k=>BZ[k]=x[k]||{})}catch(e){}
+// ------------------------------------------
+
 const accF=n=>S.set.acc.find(a=>a.n==n)||{},accRate=(n,q)=>{const o=q&&(q.ar||[]).find(x=>x.n==n);return o?+o.r||0:+accF(n).r||0},accU=n=>accF(n).u||'nos',accP=(r,q)=>rowAcc(r).reduce((t,a)=>t+(+a.q||0)*accRate(a.n,q),0),accT=r=>[...rowAcc(r).map(a=>a.n+(a.q>1?' × '+a.q:'')),r.a].filter(Boolean).join(', ');
 const LK='msq_v2',lastBy=()=>{try{return localStorage.getItem('msq_by')||''}catch(e){return''}};
 function askDo(msg,fn){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px';const bx=document.createElement('div');bx.style.cssText='background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:18px;max-width:380px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.35)';const p=document.createElement('p');p.textContent=msg;p.style.cssText='margin:0 0 14px;font-size:15px';const y=document.createElement('button');y.textContent='Yes, do it';const n=document.createElement('button');n.textContent='Cancel';n.className='g';n.style.marginLeft='8px';y.onclick=()=>{o.remove();fn()};n.onclick=()=>o.remove();bx.append(p,y,n);o.appendChild(bx);document.body.appendChild(o)}
