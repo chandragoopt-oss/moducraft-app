@@ -1044,3 +1044,414 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
   console.log('[ModuCraft +] Guided rate setup v2 (dark-mode safe) loaded');
 })();
 /* ===== END STEP 1 ===== */
+
+/* ===== STEP 2: GST / NON-GST INVOICE (v2) ===== */
+/* Appended — does not touch any existing code. Safe to remove by deleting this block. */
+(function(){
+  'use strict';
+  if (window.__mcInvoiceLoaded_v2) { console.log('[ModuCraft +] Invoice v2 already loaded'); return; }
+  window.__mcInvoiceLoaded_v2 = true;
+
+  function ensureSettings() {
+    if (!S || !S.set) return;
+    if (!S.set.invPrefix) S.set.invPrefix = 'INV';
+    if (!S.set.sac) S.set.sac = '9954';
+    if (!S.set.co) S.set.co = {};
+    if (!S.set.co.state) S.set.co.state = 'West Bengal';
+    if (!S.set.co.gstin) S.set.co.gstin = '';
+    if (!S.set.gst) S.set.gst = 18;
+  }
+
+  function amtWords(n) {
+    n = Math.round(Math.abs(+n || 0));
+    if (n === 0) return 'Zero Rupees Only';
+    const a = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+    const t = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+    const two = x => x < 20 ? a[x] : t[Math.floor(x/10)] + (x%10 ? ' ' + a[x%10] : '');
+    const three = x => (x >= 100 ? a[Math.floor(x/100)] + ' Hundred' + (x%100 ? ' and ' : '') : '') + (x%100 ? two(x%100) : '');
+    let r = '';
+    const cr = Math.floor(n / 1e7); n %= 1e7;
+    const lk = Math.floor(n / 1e5); n %= 1e5;
+    const th = Math.floor(n / 1e3); n %= 1e3;
+    if (cr) r += three(cr) + ' Crore ';
+    if (lk) r += two(lk) + ' Lakh ';
+    if (th) r += two(th) + ' Thousand ';
+    if (n) r += three(n);
+    return 'Rupees ' + r.trim() + ' Only';
+  }
+
+  function nextInvoiceNo() {
+    const d = new Date();
+    const fyStart = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+    const fy = String(fyStart).slice(-2) + String(fyStart + 1).slice(-2);
+    const prefix = (S.set.invPrefix || 'INV') + '-' + fy + '-';
+    let maxN = 0;
+    try {
+      Object.values(BZ.pj || {}).forEach(function(p) {
+        (p.inv || []).forEach(function(inv) {
+          if (inv.no && String(inv.no).indexOf(prefix) === 0) {
+            const n = parseInt(String(inv.no).slice(prefix.length), 10);
+            if (!isNaN(n) && n > maxN) maxN = n;
+          }
+        });
+      });
+    } catch(e) {}
+    return prefix + String(maxN + 1).padStart(4, '0');
+  }
+
+  function computeInv(inv) {
+    const amt = +inv.amount || 0;
+    const r = n => Math.round(n * 100) / 100;
+    if (inv.gst === false) {
+      return { taxable: r(amt), cgst: 0, sgst: 0, igst: 0, totalTax: 0, total: r(amt) };
+    }
+    const rate = +inv.gstRate || 18;
+    const intra = inv.intraState !== false;
+    let taxable, cgst, sgst, igst, total;
+    if (inv.mode === 'total') { total = amt; taxable = amt / (1 + rate/100); }
+    else { taxable = amt; total = amt * (1 + rate/100); }
+    if (intra) { cgst = taxable * rate / 200; sgst = taxable * rate / 200; igst = 0; }
+    else { cgst = 0; sgst = 0; igst = taxable * rate / 100; }
+    return { taxable: r(taxable), cgst: r(cgst), sgst: r(sgst), igst: r(igst), totalTax: r(cgst+sgst+igst), total: r(total) };
+  }
+
+  function invTab(p) {
+    ensureSettings();
+    const invs = (p.inv || []).slice();
+    const active = invs.filter(function(i){ return i.status !== 'Cancelled'; });
+    const totalTaxable = active.reduce(function(a, i){ return a + computeInv(i).taxable; }, 0);
+    const totalGst = active.reduce(function(a, i){ return a + computeInv(i).totalTax; }, 0);
+    const total = active.reduce(function(a, i){ return a + computeInv(i).total; }, 0);
+    const contract = +p.val || 0;
+    const balanceToInvoice = Math.max(0, contract - totalTaxable);
+    const hasAnyGst = invs.some(function(i){ return i.gst !== false && i.status !== 'Cancelled'; });
+
+    const rows = invs.map(function(inv, i) {
+      const c = computeInv(inv);
+      const off = inv.status === 'Cancelled';
+      const isGst = inv.gst !== false;
+      const badge = '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:' +
+        (isGst ? 'rgba(31,78,121,.15)' : 'rgba(128,128,128,.2)') + ';color:inherit;font-weight:600">' +
+        (isGst ? 'GST' : 'NON-GST') + '</span>';
+      return '<tr style="' + (off ? 'opacity:.5;text-decoration:line-through' : '') + '">' +
+        '<td><b>' + esc(inv.no || '—') + '</b> ' + badge + (off ? ' <span style="color:#EF4444">cancelled</span>' : '') + '</td>' +
+        '<td>' + (inv.date ? dmy(inv.date) : '—') + '</td>' +
+        '<td>' + esc(inv.milestone || inv.description || '—') + '</td>' +
+        '<td class="ro">' + fmt(c.taxable) + '</td>' +
+        '<td class="ro">' + (isGst ? fmt(c.totalTax) : '—') + '</td>' +
+        '<td class="ro"><b>' + fmt(c.total) + '</b></td>' +
+        '<td>' + (off ? '<span style="color:#EF4444">Cancelled</span>' : '<span style="color:#22C55E">' + esc(inv.status || 'Issued') + '</span>') + '</td>' +
+        '<td style="white-space:nowrap"><button class="g" data-inv-act="view" data-i="' + i + '">View</button> ' +
+          (off ? '' : '<button class="g" data-inv-act="cancel" data-i="' + i + '">Cancel</button>') + '</td>' +
+      '</tr>';
+    }).join('');
+
+    const tile = function(l, v, sub, col) {
+      return '<div style="padding:8px;background:' + (col || 'rgba(31,78,121,0.08)') + ';border-radius:8px">' +
+        '<div class="mut" style="font-size:11px">' + l + '</div>' +
+        '<div style="font-size:18px;font-weight:bold;color:#1F4E79">' + v + '</div>' +
+        '<div class="mut" style="font-size:11px">' + sub + '</div></div>';
+    };
+
+    let tiles = tile('Contract value', fmt(contract), 'pre-GST')
+      + tile('Invoiced (taxable)', fmt(totalTaxable), (contract > 0 ? Math.round(totalTaxable / contract * 100) : 0) + '% of contract');
+    if (hasAnyGst || totalGst > 0) tiles += tile('GST invoiced', fmt(totalGst), 'CGST+SGST+IGST');
+    tiles += tile('Total invoiced', fmt(total), hasAnyGst ? 'incl. GST' : 'no tax', 'rgba(34,197,94,0.12)')
+      + tile('Balance to invoice', fmt(balanceToInvoice), 'taxable', balanceToInvoice > 0 ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)');
+
+    return '<div class="card"><h3>Invoices</h3>' +
+      '<p class="mut" style="margin:4px 0">Choose <b>GST Invoice</b> for a GST-registered business (tax breakdown + GSTIN printed). Choose <b>Non-GST Invoice</b> for a plain invoice with no tax words.</p>' +
+      '<div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin:10px 0">' + tiles + '</div>' +
+      '<div class="bar noprint" style="margin-top:12px"><button data-inv-act="create" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:8px 16px;font-weight:600;cursor:pointer">+ Create Invoice</button></div>' +
+      (invs.length
+        ? '<div class="sc" style="margin-top:10px"><table class="g" style="min-width:820px"><tr><th>Invoice No.</th><th>Date</th><th>Description</th><th class="ro">Taxable</th><th class="ro">GST</th><th class="ro">Total</th><th>Status</th><th></th></tr>' + rows + '</table></div>'
+        : '<p class="mut" style="margin-top:12px">No invoices yet. Click "Create Invoice" to raise the first one.</p>') +
+      '</div>';
+  }
+
+  function invCreateDialog(p) {
+    ensureSettings();
+    const c = co();
+    const q = S.q[p.qid];
+    const invs = (p.inv || []).filter(function(i){ return i.status !== 'Cancelled'; });
+    const alreadyInvoiced = invs.reduce(function(a, i){ return a + computeInv(i).taxable; }, 0);
+    const contract = +p.val || 0;
+    const remaining = Math.max(0, contract - alreadyInvoiced);
+    const hasGstin = !!(c.gstin && String(c.gstin).trim());
+    const defaultType = hasGstin ? 'gst' : 'nongst';
+    const payOpts = (p.pays || []).map(function(x, i){
+      return '<option value="' + i + '">' + esc(x.n) + ' — ' + esc(x.p || 0) + '% → ' + fmt(x.amt) + '</option>';
+    }).join('');
+    const defaultDesc = 'Interior design & turnkey execution services' + (q ? ' as per quotation ' + qno(q) : '') + ' — ' + (p.name || 'project');
+
+    const body =
+      '<div style="grid-column:1/-1"><label>Invoice type</label><select id="inv_type"><option value="gst"' + (defaultType==='gst'?' selected':'') + '>GST Invoice — with tax breakdown, GSTIN, SAC</option><option value="nongst"' + (defaultType==='nongst'?' selected':'') + '>Non-GST Invoice — plain, no tax, no GST words</option></select><small id="inv_type_hint" style="display:block;margin-top:4px"></small></div>' +
+      '<div><label>Invoice date</label><input type="date" id="inv_date" value="' + new Date().toISOString().slice(0, 10) + '"></div>' +
+      '<div><label>Against milestone (optional)</label><select id="inv_ms"><option value="">— None —</option>' + payOpts + '</select></div>' +
+      '<div style="grid-column:1/-1"><label>Description of service (printed on invoice)</label><input id="inv_desc" value="' + esc(defaultDesc) + '"></div>' +
+      '<div id="inv_gst_fields" style="display:contents">' +
+        '<div><label>Mode</label><select id="inv_mode"><option value="taxable">Amount entered is TAXABLE value</option><option value="total">Amount entered is TOTAL incl. GST</option></select></div>' +
+        '<div><label>GST rate (%)</label><input type="number" id="inv_rate" min="0" max="28" value="' + (S.set.gst || 18) + '"></div>' +
+        '<div><label>Place of supply</label><input id="inv_pos" value="' + esc(p.placeOfSupply || c.state || 'West Bengal') + '"></div>' +
+        '<div><label>Tax type</label><select id="inv_intra"><option value="1">Intra-state (CGST + SGST)</option><option value="0">Inter-state (IGST)</option></select></div>' +
+        '<div><label>SAC code</label><input id="inv_sac" value="' + esc(S.set.sac || '9954') + '"></div>' +
+        '<div><label>Client GSTIN (optional)</label><input id="inv_cgstin" value="' + esc(p.clientGstin || '') + '" placeholder="15-character GSTIN" maxlength="15" style="text-transform:uppercase"></div>' +
+      '</div>' +
+      '<div><label>Amount (₹)</label><input type="number" id="inv_amt" min="0" step="0.01" value="' + remaining + '"></div>' +
+      '<div style="grid-column:1/-1"><label>Notes (optional)</label><textarea id="inv_notes" rows="2"></textarea></div>' +
+      '<div style="grid-column:1/-1;padding:10px;background:rgba(31,78,121,0.06);border-radius:8px;margin-top:6px"><b>Preview:</b> <span id="inv_preview" class="mut">Enter amount</span></div>';
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
+    modal.innerHTML = '<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:720px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto">' +
+      '<h3 style="margin-top:0">Create Invoice</h3>' +
+      '<p class="mut" style="margin:4px 0 14px;font-size:13px">Invoice No. will be: <b>' + nextInvoiceNo() + '</b></p>' +
+      '<div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px">' + body + '</div>' +
+      '<div class="bar" style="margin-top:14px;justify-content:flex-end">' +
+        '<button class="g" id="inv_cancel">Cancel</button>' +
+        '<button id="inv_save" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:8px 20px;font-weight:600;cursor:pointer">Create Invoice</button>' +
+      '</div></div>';
+    document.body.appendChild(modal);
+
+    const $ = function(id){ return document.getElementById(id); };
+
+    const updateTypeVisibility = function(){
+      const isGst = $('inv_type').value === 'gst';
+      document.getElementById('inv_gst_fields').style.display = isGst ? 'contents' : 'none';
+      const hint = $('inv_type_hint');
+      if (isGst && !hasGstin) {
+        hint.innerHTML = '<span style="color:#EF4444">⚠ Your GSTIN is not set in Settings — a GST invoice without your GSTIN is non-compliant. Add it in Settings & Rates → GST/Non-GST Invoicing.</span>';
+      } else if (!isGst) {
+        hint.innerHTML = '<span class="mut">No tax, no GSTIN, no GST words — plain invoice. Amount is the total.</span>';
+      } else {
+        hint.innerHTML = '<span class="mut">GST invoice with CGST/SGST or IGST breakdown.</span>';
+      }
+    };
+
+    const updatePreview = function(){
+      const amt = +$('inv_amt').value || 0;
+      const isGst = $('inv_type').value === 'gst';
+      if (!amt) { $('inv_preview').textContent = 'Enter amount'; return; }
+      if (!isGst) {
+        $('inv_preview').innerHTML = 'Amount: <b>' + fmt(amt) + '</b> <span class="mut">(no tax — plain invoice)</span>';
+        return;
+      }
+      const rate = +$('inv_rate').value || 0;
+      const intra = $('inv_intra').value === '1';
+      const mode = $('inv_mode').value;
+      const comp = computeInv({ amount: amt, gstRate: rate, intraState: intra, mode: mode, gst: true });
+      let html = 'Taxable: <b>' + fmt(comp.taxable) + '</b>';
+      if (intra) html += ' · CGST @ ' + (rate/2) + '%: ' + fmt(comp.cgst) + ' · SGST @ ' + (rate/2) + '%: ' + fmt(comp.sgst);
+      else html += ' · IGST @ ' + rate + '%: ' + fmt(comp.igst);
+      html += ' · <b>Total: ' + fmt(comp.total) + '</b>';
+      $('inv_preview').innerHTML = html;
+    };
+
+    ['inv_amt','inv_rate','inv_intra','inv_mode','inv_type'].forEach(function(id){ $(id).addEventListener('input', updatePreview); });
+    ['inv_mode','inv_type'].forEach(function(id){ $(id).addEventListener('change', updatePreview); });
+    $('inv_type').addEventListener('change', updateTypeVisibility);
+    $('inv_ms').addEventListener('change', function(){
+      if ($('inv_ms').value !== '') {
+        const x = p.pays[+$('inv_ms').value];
+        if (x) $('inv_amt').value = x.amt || 0;
+      }
+      updatePreview();
+    });
+    updateTypeVisibility();
+    updatePreview();
+
+    $('inv_cancel').onclick = function(){ modal.remove(); };
+    $('inv_save').onclick = function(){
+      const amount = +$('inv_amt').value || 0;
+      if (amount <= 0) { alert('Enter an amount greater than 0'); return; }
+      const isGst = $('inv_type').value === 'gst';
+      if (isGst && !hasGstin) {
+        if (!confirm('Your company GSTIN is blank — a GST invoice without GSTIN is non-compliant.\n\nProceed anyway?')) return;
+      }
+      const inv = {
+        id: 'inv' + Date.now().toString(36),
+        no: nextInvoiceNo(),
+        date: $('inv_date').value || new Date().toISOString().slice(0, 10),
+        amount: amount,
+        gst: isGst,
+        gstRate: isGst ? (+$('inv_rate').value || 18) : 0,
+        intraState: isGst ? ($('inv_intra').value === '1') : true,
+        mode: isGst ? $('inv_mode').value : 'taxable',
+        description: $('inv_desc').value.trim(),
+        sac: isGst ? ($('inv_sac').value.trim() || '9954') : '',
+        milestone: $('inv_ms').value !== '' ? (p.pays[+$('inv_ms').value] || {}).n || '' : '',
+        placeOfSupply: isGst ? $('inv_pos').value.trim() : '',
+        clientGstin: isGst ? $('inv_cgstin').value.trim() : '',
+        status: 'Issued',
+        notes: $('inv_notes').value.trim(),
+        created: Date.now()
+      };
+      p.inv = p.inv || [];
+      p.inv.push(inv);
+      try { bzSave('pj', p.id); } catch(e) {}
+      try { audEvt('pj', p.id, p.name, 'Invoice issued', (isGst ? 'GST ' : 'Non-GST ') + inv.no + ' · ' + fmt(computeInv(inv).total)); } catch(e) {}
+      S.bzdoc = { t: 'inv', id: p.id, i: p.inv.length - 1 };
+      modal.remove();
+      render();
+    };
+  }
+
+  function invDoc(p, inv) {
+    if (!inv) return '<div class="card"><p>Invoice not found.</p><button class="g" data-bza="docback">← Back</button></div>';
+    ensureSettings();
+    const c = co();
+    const comp = computeInv(inv);
+    const q = S.q[p.qid];
+    const isGst = inv.gst !== false;
+    const gstRate = +inv.gstRate || 18;
+    const half = gstRate / 2;
+    const off = inv.status === 'Cancelled';
+
+    const recipient =
+      '<b>' + esc(p.client || 'Client') + '</b><br>' +
+      esc(p.addr || '') + '<br>' +
+      (p.phone ? 'Phone: ' + esc(p.phone) + '<br>' : '') +
+      (isGst && inv.clientGstin ? 'GSTIN: <b>' + esc(inv.clientGstin) + '</b>' : '');
+
+    const rowDesc = inv.description || ('Interior design & turnkey execution services' + (q ? ' as per quotation ' + qno(q) : ''));
+    const milestoneNote = inv.milestone ? '<br><small class="mut">Milestone: ' + esc(inv.milestone) + '</small>' : '';
+
+    let tableHeader, row1, totRow, taxRows, grandTotal, reverseCharge;
+
+    if (isGst) {
+      tableHeader = '<tr><th style="width:50px">S.No</th><th>Description of Service</th><th style="width:100px">SAC</th><th class="r" style="width:130px">Amount (₹)</th></tr>';
+      row1 = '<tr><td>1</td><td>' + esc(rowDesc) + milestoneNote + '</td><td>' + esc(inv.sac || '9954') + '</td><td class="r">' + fmt(comp.taxable) + '</td></tr>';
+      totRow = '<tr class="tot"><td colspan="3" class="r"><b>Taxable Value</b></td><td class="r"><b>' + fmt(comp.taxable) + '</b></td></tr>';
+      taxRows = inv.intraState !== false
+        ? '<tr><td colspan="3" class="r">CGST @ ' + half + '%</td><td class="r">' + fmt(comp.cgst) + '</td></tr>' +
+          '<tr><td colspan="3" class="r">SGST @ ' + half + '%</td><td class="r">' + fmt(comp.sgst) + '</td></tr>'
+        : '<tr><td colspan="3" class="r">IGST @ ' + gstRate + '%</td><td class="r">' + fmt(comp.igst) + '</td></tr>';
+      grandTotal = '<tr class="tot gt"><td colspan="3" class="r"><b>Total Invoice Value</b></td><td class="r"><b>' + fmt(comp.total) + '</b></td></tr>';
+      reverseCharge = '<p style="font-size:11px;margin-top:6px"><b>Reverse Charge:</b> No</p>';
+    } else {
+      tableHeader = '<tr><th style="width:50px">S.No</th><th>Description of Service</th><th class="r" style="width:130px">Amount (₹)</th></tr>';
+      row1 = '<tr><td>1</td><td>' + esc(rowDesc) + milestoneNote + '</td><td class="r">' + fmt(comp.total) + '</td></tr>';
+      totRow = '';
+      taxRows = '';
+      grandTotal = '<tr class="tot gt"><td colspan="2" class="r"><b>Total Invoice Value</b></td><td class="r"><b>' + fmt(comp.total) + '</b></td></tr>';
+      reverseCharge = '';
+    }
+
+    const body =
+      (off ? '<div style="border:2px solid #b00020;color:#b00020;padding:8px;font-weight:bold;text-align:center;margin-bottom:10px">CANCELLED</div>' : '') +
+      '<div style="margin:10px 0 6px;font-weight:bold;font-size:12px;color:#4D5A4A;letter-spacing:1px">BILL TO</div>' +
+      '<div style="margin-bottom:14px">' + recipient + '</div>' +
+      '<table class="t">' + tableHeader + row1 + totRow + taxRows + grandTotal + '</table>' +
+      '<p style="font-size:12px;margin-top:10px"><b>Amount in words:</b> ' + esc(amtWords(comp.total)) + '</p>' +
+      reverseCharge +
+      (inv.notes ? '<div class="sh">NOTES</div><p style="font-size:12px">' + esc(inv.notes) + '</p>' : '') +
+      '<div style="display:flex;justify-content:space-between;margin-top:40px;font-size:12px">' +
+        '<div>This is a computer-generated invoice.</div>' +
+        '<div style="text-align:center">For <b>' + esc(c.name || 'Company') + '</b><br><br><br>Authorised Signatory</div>' +
+      '</div>';
+
+    let meta = (isGst ? 'Tax Invoice' : 'Invoice') + '<br>' +
+      'No.: <b>' + esc(inv.no) + '</b><br>' +
+      'Date: ' + (inv.date ? dmy(inv.date) : dmy(new Date().toISOString().slice(0, 10))) + '<br>';
+    if (isGst && c.gstin) meta += 'GSTIN: <b>' + esc(c.gstin) + '</b><br>';
+    if (isGst) meta += 'Place of Supply: ' + esc(inv.placeOfSupply || c.state || 'West Bengal');
+
+    const title = isGst ? 'TAX INVOICE' : 'INVOICE';
+    const filePrefix = isGst ? 'GST-Invoice-' : 'Invoice-';
+
+    return '<div class="bar noprint">' +
+      '<button data-a="dpdf" data-acc="1" data-fn="' + filePrefix + esc(String(inv.no).replace(/\//g, '-')) + '.pdf">Download PDF</button>' +
+      '<button class="g" data-a="ap">Print</button>' +
+      (off ? '' : '<button class="g" data-inv-act="cancel-doc" data-i="' + p.inv.indexOf(inv) + '">Cancel this invoice</button>') +
+      '<button class="g" data-bza="docback">← Back</button>' +
+    '</div>' + docPaper(title, meta, body);
+  }
+
+  // ---------- Wiring ----------
+  if (typeof PJTABS !== 'undefined' && PJTABS.push && !PJTABS.some(function(t){return t[0]==='inv';})) {
+    PJTABS.push(['inv', 'Invoices', 'fs']);
+  }
+  if (typeof ERPT !== 'undefined' && ERPT.push && ERPT.indexOf('inv') < 0) {
+    ERPT.push('inv');
+  }
+
+  if (window.erpTab) {
+    const _erpTab = window.erpTab;
+    window.erpTab = function(p, T) {
+      if (T === 'inv') return invTab(p);
+      return _erpTab(p, T);
+    };
+  }
+  if (window.vProj) {
+    const _vProj = window.vProj;
+    window.vProj = function() {
+      if (S.bzdoc && S.bzdoc.t === 'inv') {
+        const proj = BZ.pj[S.bzdoc.id];
+        if (!proj) return _vProj();
+        return invDoc(proj, (proj.inv || [])[S.bzdoc.i]);
+      }
+      return _vProj();
+    };
+  }
+  if (window.vSet) {
+    const _vSet2 = window.vSet;
+    window.vSet = function() { return _vSet2() + invoiceSettingsCard(); };
+  }
+
+  function invoiceSettingsCard() {
+    ensureSettings();
+    const c = S.set.co || {};
+    const hasGstin = !!(c.gstin && String(c.gstin).trim());
+    return '<div class="card"><h3>GST / Non-GST Invoicing</h3>' +
+      '<p class="mut" style="margin:4px 0 12px">Leave <b>GSTIN blank</b> if you are not GST-registered — new invoices will default to Non-GST and won\'t show any GST terms. Fill it in if you are registered.</p>' +
+      '<div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">' +
+        '<div><label>Your GSTIN (blank = not registered)</label><input data-setup-inv="co|gstin" value="' + esc(c.gstin || '') + '" placeholder="15-character GSTIN" maxlength="15" style="text-transform:uppercase"></div>' +
+        '<div><label>Your state</label><input data-setup-inv="co|state" value="' + esc(c.state || '') + '" placeholder="e.g. West Bengal"></div>' +
+        '<div><label>Invoice number prefix</label><input data-setup-inv="invPrefix" value="' + esc(S.set.invPrefix || 'INV') + '"></div>' +
+        '<div><label>Default SAC code</label><input data-setup-inv="sac" value="' + esc(S.set.sac || '9954') + '"><small class="mut">Only used on GST invoices.</small></div>' +
+        '<div><label>Default GST rate (%)</label><input type="number" data-setup-inv="gst" value="' + (S.set.gst || 18) + '" min="0" max="28"><small class="mut">Only used on GST invoices.</small></div>' +
+      '</div>' +
+      '<p class="mut" style="margin-top:10px;font-size:11px"><b>Next invoice number:</b> ' + nextInvoiceNo() + ' (resets every April 1). Default for new invoices: <b>' + (hasGstin ? 'GST' : 'Non-GST') + '</b>.</p>' +
+    '</div>';
+  }
+
+  document.addEventListener('change', function(e) {
+    const t = e.target;
+    if (!t.dataset || !t.dataset.setupInv) return;
+    const path = t.dataset.setupInv;
+    if (path.indexOf('co|') === 0) S.set.co[path.slice(3)] = t.value.trim();
+    else if (path === 'gst') S.set.gst = +t.value || 18;
+    else S.set[path] = t.value.trim();
+    try { save('s'); } catch(x) {}
+    try { flash('Saved'); } catch(x) {}
+  });
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-inv-act]');
+    if (!btn) return;
+    e.preventDefault();
+    const action = btn.dataset.invAct;
+    const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+    if (!p) return;
+    if (action === 'create') { invCreateDialog(p); return; }
+    if (action === 'view') { S.bzdoc = { t: 'inv', id: p.id, i: +btn.dataset.i }; render(); return; }
+    if (action === 'cancel' || action === 'cancel-doc') {
+      const inv = (p.inv || [])[+btn.dataset.i];
+      if (!inv) return;
+      if (!confirm('Cancel invoice ' + inv.no + '?\n\nThe number stays on record but the invoice is marked CANCELLED. This number cannot be reused.')) return;
+      inv.status = 'Cancelled';
+      inv.cancelledAt = Date.now();
+      try { bzSave('pj', p.id); } catch(x) {}
+      try { audEvt('pj', p.id, p.name, 'Invoice cancelled', (inv.gst === false ? 'Non-GST ' : 'GST ') + inv.no); } catch(x) {}
+      render();
+      return;
+    }
+  });
+
+  if (typeof render === 'function') {
+    setTimeout(function(){ try { render(); } catch(x){} }, 300);
+  }
+
+  console.log('[ModuCraft +] GST / Non-GST invoice v2 loaded');
+})();
+/* ===== END STEP 2 ===== */
