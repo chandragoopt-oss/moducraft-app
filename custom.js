@@ -1,4 +1,14 @@
 // ==========================================
+// SAFE FALLBACKS (Prevent any missing function crashes)
+// ==========================================
+if (typeof window.dmy === 'undefined') window.dmy = d => d ? new Date(d).toLocaleDateString('en-GB') : '—';
+if (typeof window.addDays === 'undefined') window.addDays = (d, days) => { const r = new Date(d); r.setDate(r.getDate() + days); return r.toISOString().slice(0, 10); };
+if (typeof window.askPick === 'undefined') window.askPick = (msg, opts, cb) => { const v = prompt(msg + '\n' + opts.map(o=>o[1]).join(', ')); if(v) cb(v); };
+if (typeof window.flash === 'undefined') window.flash = alert;
+if (typeof window.saveEnq === 'undefined') window.saveEnq = function() { localStorage.setItem('msq_enq_data', JSON.stringify(window.ENQ || {})); };
+if (!window.ENQ) window.ENQ = JSON.parse(localStorage.getItem('msq_enq_data') || '{}');
+
+// ==========================================
 // PATCH: Advanced Follow Up System & Today Dashboard
 // ==========================================
 const isProjectActive = p => p && !['Closed', 'Closure'].includes(p.stage);
@@ -136,7 +146,6 @@ window.vEdit = function() {
     const q = S.q[S.cur];
     if (!q) return html;
     
-    // Minimal base UI for edit if none exists
     if (!html.includes('Pricing basis')) {
         html = `<div class="card"><h2>Quotation Editor</h2><p>Client: <input id="q_name" value="${esc(q.name||'')}"></p>${html}</div>`;
     }
@@ -196,11 +205,6 @@ window.vEdit = function() {
   if (window.__mcEnqLoaded) return;
   window.__mcEnqLoaded = true;
   
-  let savedEnq = {};
-  try { savedEnq = JSON.parse(localStorage.getItem('msq_enq_data') || '{}'); } catch(e) {}
-  window.ENQ = savedEnq;
-  window.saveEnq = function() { try { localStorage.setItem('msq_enq_data', JSON.stringify(window.ENQ)); } catch(e) {} };
-  
   window.vEnq = function() {
     const list = Object.values(window.ENQ).sort((a, b) => (b.date || '').localeCompare(a.date || '')), t = today();
     const rows = list.map(e => {
@@ -209,6 +213,28 @@ window.vEdit = function() {
     }).join('');
     return `<div class="card"><div class="bar noprint"><h2>Enquiries / Leads</h2><button data-enq-act="new" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;margin-left:auto">+ New Enquiry</button></div><p class="mut">Track potential clients before creating a quotation.</p><div class="sc"><table class="g" style="min-width:760px"><tr><th>Client</th><th>Project / Requirement</th><th>Budget</th><th>Next Follow Up</th><th>Status</th><th></th></tr>${rows || '<tr><td colspan="6" class="mut">No enquiries logged yet.</td></tr>'}</table></div></div>`;
   };
+  
+  // MISSING FUNCTION RESTORED
+  function openEnqModal(id) {
+    const isNew = !id;
+    const e = isNew ? { id: 'e' + Date.now().toString(36), date: today(), status: 'Enquiry' } : window.ENQ[id];
+    const o = document.createElement('div'); 
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
+    o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto"><h3 style="margin-top:0">${isNew ? 'New Enquiry' : 'Edit Enquiry'}</h3><div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px"><div style="grid-column:1/-1"><label>Client Name *</label><input id="eq_name" value="${esc(e.name||'')}"></div><div><label>Phone / Email</label><input id="eq_phone" value="${esc(e.phone||'')}"></div><div><label>Project (e.g. 2BHK)</label><input id="eq_proj" value="${esc(e.project||'')}"></div><div><label>Budget</label><input id="eq_bud" value="${esc(e.budget||'')}"></div><div><label>Next Follow Up</label><input type="date" id="eq_date" value="${e.nextFollowUp||''}"></div><div style="grid-column:1/-1"><label>Notes</label><textarea id="eq_notes" rows="2">${esc(e.notes||'')}</textarea></div><div style="grid-column:1/-1"><label>Status</label><select id="eq_status">${['Enquiry','Quoted','Won','Lost'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div><div class="bar" style="margin-top:14px;justify-content:flex-end">${!isNew ? `<button class="g" id="eq_del" style="margin-right:auto;color:#b00020;border-color:#fca5a5">Delete</button>` : ''}<button class="g" id="eq_cancel">Cancel</button><button id="eq_save" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:8px 20px;font-weight:600;cursor:pointer">Save</button></div></div>`;
+    document.body.appendChild(o);
+    document.getElementById('eq_cancel').onclick = () => o.remove();
+    if (!isNew) document.getElementById('eq_del').onclick = () => { if (confirm('Delete this enquiry?')) { delete window.ENQ[id]; window.saveEnq(); o.remove(); render(); } };
+    document.getElementById('eq_save').onclick = () => {
+      const name = document.getElementById('eq_name').value.trim(); if (!name) return alert('Client name is required');
+      e.name = name; e.phone = document.getElementById('eq_phone').value.trim(); e.project = document.getElementById('eq_proj').value.trim(); e.budget = document.getElementById('eq_bud').value.trim(); e.nextFollowUp = document.getElementById('eq_date').value; e.notes = document.getElementById('eq_notes').value.trim(); e.status = document.getElementById('eq_status').value;
+      window.ENQ[e.id] = e; window.saveEnq();
+      if (isNew) {
+        const wText = `New Enquiry Alert!\n\nClient: ${e.name}\nProject: ${e.project || 'Not specified'}\nPhone: ${e.phone || 'Not provided'}\nBudget: ${e.budget || 'Not specified'}\nNext Follow-up: ${e.nextFollowUp || 'None'}\n\nSent from ModuCraft.`, waOwner = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`, waPartner = `https://wa.me/919830864409?text=${encodeURIComponent(wText)}`;
+        o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto;text-align:center"><h3 style="margin-top:0;color:#22C55E">✅ Enquiry Saved</h3><p class="mut" style="font-size:13px;margin-bottom:16px">Do you want to alert the team via WhatsApp?</p><div style="display:flex;flex-direction:column;gap:8px"><a href="${waOwner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Owner (9830051060)</a><a href="${waPartner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Partner (9830864409)</a></div><button class="g" id="eq_done" style="margin-top:16px;width:100%">Close</button></div>`;
+        document.getElementById('eq_done').onclick = () => { o.remove(); render(); flash('Enquiry saved'); };
+      } else { o.remove(); render(); flash('Enquiry updated'); }
+    };
+  }
   
   document.addEventListener('click', function(ev) {
     const btn = ev.target.closest('[data-enq-act]'); if (!btn) return; ev.preventDefault();
