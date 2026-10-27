@@ -1538,3 +1538,157 @@ document.addEventListener('change', e => {
     setFavicon();
   }
 })();
+// ==========================================
+// STEP 11: GLOBAL SEARCH & MOBILE BOTTOM NAV (PHASE 3)
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcPhase3Loaded) return;
+  window.__mcPhase3Loaded = true;
+
+  // 1. Inject CSS for the new UI elements
+  const css = document.createElement('style');
+  css.textContent = `
+    /* Global Search Styles */
+    #gs-wrap { position: relative; margin-left: 10px; margin-right: auto; }
+    #gs-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 12px 6px 30px; border-radius: 20px; width: 200px; font-size: 13px; transition: all 0.3s; }
+    #gs-input:focus { width: 280px; background: rgba(255,255,255,0.25); outline: none; border-color: #fff; }
+    #gs-input::placeholder { color: rgba(255,255,255,0.6); }
+    #gs-icon { position: absolute; left: 10px; top: 8px; font-size: 12px; color: rgba(255,255,255,0.7); }
+    #gs-results { position: absolute; top: 40px; left: 0; width: 320px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 100000; display: none; max-height: 400px; overflow-y: auto; }
+    .gs-item { padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background 0.2s; }
+    .gs-item:hover { background: var(--in); }
+    .gs-item b { display: block; font-size: 14px; margin-bottom: 2px; }
+    .gs-item span { font-size: 11px; color: var(--mut); }
+    .gs-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; background: #1F4E79; color: #fff; margin-right: 6px; }
+
+    /* Mobile Bottom Nav Styles */
+    #mob-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--line); z-index: 99999; padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .mob-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; background: transparent; border: 0; color: var(--mut); font-size: 10px; cursor: pointer; }
+    .mob-btn.on { color: var(--gold); font-weight: bold; }
+    .mob-btn i { font-size: 20px; margin-bottom: 2px; font-style: normal; }
+    
+    @media screen and (max-width: 900px) {
+      #mob-nav { display: flex; }
+      body { padding-bottom: 65px; } /* Prevent content from hiding behind nav */
+      nav#nav { display: none !important; } /* Hide desktop nav */
+      #gs-wrap { display: none; } /* Hide search on mobile for space */
+      #dept_sw { margin-left: auto !important; }
+    }
+  `;
+  document.head.appendChild(css);
+
+  // 2. Inject the HTML elements
+  const topBar = document.querySelector('.top');
+  if (topBar && !document.getElementById('gs-wrap')) {
+    const searchWrap = document.createElement('div');
+    searchWrap.id = 'gs-wrap';
+    searchWrap.innerHTML = `
+      <span id="gs-icon">🔍</span>
+      <input id="gs-input" placeholder="Search clients, projects, quotes..." autocomplete="off">
+      <div id="gs-results"></div>
+    `;
+    topBar.appendChild(searchWrap);
+
+    const mobNav = document.createElement('div');
+    mobNav.id = 'mob-nav';
+    mobNav.innerHTML = `
+      <button class="mob-btn" data-mob-tab="h"><i>🏠</i>Home</button>
+      <button class="mob-btn" data-mob-tab="q"><i>📄</i>Quotes</button>
+      <button class="mob-btn" data-mob-tab="j"><i>🏗️</i>Projects</button>
+      <button class="mob-btn" data-mob-tab="s"><i>⚙️</i>Menu</button>
+    `;
+    document.body.appendChild(mobNav);
+  }
+
+  // 3. Global Search Logic
+  const input = document.getElementById('gs-input');
+  const results = document.getElementById('gs-results');
+
+  if (input) {
+    input.addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      if (q.length < 2) { results.style.display = 'none'; return; }
+      
+      let html = '';
+      let count = 0;
+
+      // Search Quotations
+      Object.values(S.q).forEach(x => {
+        if (count > 15) return;
+        const match = (x.name||'').toLowerCase().includes(q) || (x.project||'').toLowerCase().includes(q) || (qno(x)||'').toLowerCase().includes(q);
+        if (match) {
+          html += `<div class="gs-item" data-gs-act="q" data-id="${x.id}"><b><span class="gs-badge">Quote</span> ${esc(x.name)}</b><span>${esc(x.project)} • ${qno(x)}</span></div>`;
+          count++;
+        }
+      });
+
+      // Search Projects
+      Object.values(BZ.pj).forEach(x => {
+        if (count > 15) return;
+        const match = (x.name||'').toLowerCase().includes(q) || (x.client||'').toLowerCase().includes(q) || (x.addr||'').toLowerCase().includes(q);
+        if (match) {
+          html += `<div class="gs-item" data-gs-act="p" data-id="${x.id}"><b><span class="gs-badge" style="background:#22C55E">Project</span> ${esc(x.name)}</b><span>${esc(x.client)} • ${esc(x.stage)}</span></div>`;
+          count++;
+        }
+      });
+
+      // Search Enquiries
+      Object.values(window.ENQ || {}).forEach(x => {
+        if (count > 15) return;
+        const match = (x.name||'').toLowerCase().includes(q) || (x.project||'').toLowerCase().includes(q) || (x.phone||'').toLowerCase().includes(q);
+        if (match) {
+          html += `<div class="gs-item" data-gs-act="e" data-id="${x.id}"><b><span class="gs-badge" style="background:#F59E0B">Enquiry</span> ${esc(x.name)}</b><span>${esc(x.project)} • ${esc(x.phone)}</span></div>`;
+          count++;
+        }
+      });
+
+      if (html) {
+        results.innerHTML = html;
+        results.style.display = 'block';
+      } else {
+        results.innerHTML = '<div style="padding:12px;font-size:13px;color:#666">No results found.</div>';
+        results.style.display = 'block';
+      }
+    });
+
+    // Close search when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#gs-wrap')) results.style.display = 'none';
+    });
+  }
+
+  // 4. Handle Search Result Clicks
+  document.addEventListener('click', (e) => {
+    const item = e.target.closest('[data-gs-act]');
+    if (!item) return;
+    const act = item.dataset.gsAct, id = item.dataset.id;
+    
+    results.style.display = 'none';
+    input.value = '';
+
+    if (act === 'q') { S.tab = 'e'; S.cur = id; render(); }
+    else if (act === 'p') { S.tab = 'j'; S.pj = id; S.pt = 'ov'; render(); }
+    else if (act === 'e') { S.tab = 'enq'; render(); } // In future, we can auto-open the modal
+  });
+
+  // 5. Handle Mobile Bottom Nav Clicks
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-mob-tab]');
+    if (!btn) return;
+    S.tab = btn.dataset.mobTab;
+    render();
+  });
+
+  // 6. Keep active states updated on render
+  const _render = window.render;
+  window.render = function() {
+    _render.apply(this, arguments);
+    // Update mobile nav active state
+    document.querySelectorAll('[data-mob-tab]').forEach(b => {
+      b.classList.toggle('on', b.dataset.mobTab === S.tab);
+    });
+  };
+
+  console.log('[ModuCraft +] Global Search & Mobile Nav loaded');
+})();
