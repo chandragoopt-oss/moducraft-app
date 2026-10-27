@@ -1858,3 +1858,145 @@ document.addEventListener('change', e => {
 
   console.log('[ModuCraft +] Design-First Workflow v2 loaded');
 })();
+
+// ==========================================
+// FIX: Mobile navigation (all tabs, department-aware, "More" sheet)
+// ==========================================
+(function () {
+  'use strict';
+  if (window.__mcMobNavFix) return;
+  window.__mcMobNavFix = true;
+
+  const LABELS = {
+    h:   ['🏠', 'Home'],
+    q:   ['📄', 'Quotations'],
+    j:   ['🏗️', 'Projects'],
+    v:   ['📦', 'Vendors'],
+    r:   ['📊', 'Reports'],
+    e:   ['✏️', 'Edit'],
+    p:   ['👁️', 'Preview'],
+    a:   ['🔧', 'Accessories'],
+    m:   ['📐', 'Ply & Hardware'],
+    d:   ['🎨', 'Design'],
+    f:   ['📏', 'Floor Plan'],
+    s:   ['⚙️', 'Settings'],
+    x:   ['🔐', 'Access & Sharing'],
+    enq: ['📋', 'Enquiries']
+  };
+
+  function currentDept() {
+    try { return localStorage.getItem('msq_dept') || 'admin'; }
+    catch (e) { return 'admin'; }
+  }
+
+  function allowedTabs() {
+    const deptTabs = (window.MC_DEPTS && MC_DEPTS[currentDept()])
+      ? MC_DEPTS[currentDept()].tabs
+      : null;
+    return Object.keys(LABELS).filter(function (k) {
+      if (typeof navOK === 'function' && !navOK(k)) return false;
+      if (deptTabs && !deptTabs.includes(k)) return false;
+      return true;
+    });
+  }
+
+  function rebuildMobileNav() {
+    const mob = document.getElementById('mob-nav');
+    if (!mob) return;
+    const A = allowedTabs();
+    const quick = ['h', 'q', 'j'].filter(function (k) { return A.includes(k); });
+    const showMoreActive = !quick.includes(S.tab);
+    let html = '';
+    quick.forEach(function (k) {
+      const pair = LABELS[k];
+      const on = S.tab === k ? ' on' : '';
+      html += '<button class="mob-btn' + on + '" data-mob-tab="' + k + '">' +
+              '<i>' + pair[0] + '</i>' + pair[1] + '</button>';
+    });
+    html += '<button class="mob-btn' + (showMoreActive ? ' on' : '') +
+            '" data-mob-more="1"><i>☰</i>More</button>';
+    mob.innerHTML = html;
+  }
+
+  function openMenu() {
+    const A = allowedTabs();
+    const prev = document.getElementById('mob-menu');
+    if (prev) prev.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'mob-menu';
+    overlay.style.cssText =
+      'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100002;' +
+      'display:flex;align-items:flex-end;justify-content:center;' +
+      'padding:12px 12px calc(76px + env(safe-area-inset-bottom,0px))';
+
+    const box = document.createElement('div');
+    box.style.cssText =
+      'background:var(--card,#fff);color:var(--ink,#222);border-radius:16px;' +
+      'padding:14px;max-width:460px;width:100%;max-height:72vh;overflow-y:auto;' +
+      'box-shadow:0 -12px 40px rgba(0,0,0,.4)';
+
+    let html = '<h3 style="margin:0 0 10px;text-align:center;color:var(--gr,#4D5A4A)">Menu</h3>';
+    A.forEach(function (k) {
+      const pair = LABELS[k];
+      const on = S.tab === k;
+      html += '<button data-mob-go="' + k + '" style="display:flex;align-items:center;' +
+        'gap:12px;width:100%;margin:4px 0;padding:12px 14px;' +
+        'border:1px solid ' + (on ? 'var(--gold,#B08D57)' : 'var(--line,#ddd)') + ';' +
+        'background:' + (on ? 'var(--gold,#B08D57)' : 'var(--in,#faf8f4)') + ';' +
+        'color:' + (on ? '#fff' : 'var(--ink,#222)') + ';' +
+        'border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;text-align:left">' +
+        '<span style="font-size:20px">' + pair[0] + '</span>' +
+        '<span>' + pair[1] + '</span></button>';
+    });
+    html += '<button id="mob-menu-close" style="width:100%;margin-top:10px;padding:10px;' +
+      'border:1px solid var(--line,#ddd);background:transparent;color:var(--ink,#222);' +
+      'border-radius:10px;font-size:14px;cursor:pointer">Close</button>';
+    box.innerHTML = html;
+    overlay.appendChild(box);
+
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+    box.querySelector('#mob-menu-close').onclick = function () { overlay.remove(); };
+    box.querySelectorAll('[data-mob-go]').forEach(function (b) {
+      b.onclick = function () {
+        S.tab = b.dataset.mobGo;
+        overlay.remove();
+        render();
+      };
+    });
+    document.body.appendChild(overlay);
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('[data-mob-more]')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      openMenu();
+    }
+  }, true);
+
+  const _render = window.render;
+  if (_render) {
+    window.render = function () {
+      _render.apply(this, arguments);
+      try { rebuildMobileNav(); } catch (e) {}
+    };
+  }
+
+  const _setDept = window.MC_setDept;
+  if (_setDept) {
+    window.MC_setDept = function (dept) {
+      if (!window.MC_DEPTS || !MC_DEPTS[dept]) return;
+      if (!MC_DEPTS[dept].tabs.includes(S.tab)) {
+        S.tab = MC_DEPTS[dept].tabs[0] || 'h';
+      }
+      _setDept(dept);
+    };
+  }
+
+  setTimeout(rebuildMobileNav, 500);
+  window.addEventListener('resize', function () {
+    clearTimeout(window.__mobNavT);
+    window.__mobNavT = setTimeout(rebuildMobileNav, 200);
+  });
+})();
