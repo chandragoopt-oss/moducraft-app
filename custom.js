@@ -1644,13 +1644,11 @@ document.addEventListener('change', e => {
   if (window.__mcEnqLoaded) return;
   window.__mcEnqLoaded = true;
 
-  // Initialize Data Storage
   window.ENQ = JSON.parse(localStorage.getItem('msq_enq_data') || '{}');
   window.saveEnq = function() {
     localStorage.setItem('msq_enq_data', JSON.stringify(window.ENQ));
   };
 
-  // Render the Enquiry List
   window.vEnq = function() {
     const list = Object.values(window.ENQ).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const t = today();
@@ -1689,7 +1687,6 @@ document.addEventListener('change', e => {
     </div>`;
   };
 
-  // Add the Tab to the Navigation Menu
   const navObserver = new MutationObserver(() => {
     const nav = document.getElementById('nav');
     if (!nav || document.querySelector('#nav button[data-v="enq"]')) return;
@@ -1724,7 +1721,6 @@ document.addEventListener('change', e => {
     _render.apply(this, arguments);
   };
 
-  // Modal for Add / Edit
   function openEnqModal(id) {
     const isNew = !id;
     const e = isNew ? { id: 'e' + Date.now().toString(36), date: today(), status: 'Enquiry' } : window.ENQ[id];
@@ -1777,12 +1773,9 @@ document.addEventListener('change', e => {
       window.ENQ[e.id] = e;
       window.saveEnq();
       
-      // WHATSAPP ALERT SYSTEM
       if (isNew) {
         const wText = `New Enquiry Alert!\n\nClient: ${e.name}\nProject: ${e.project || 'Not specified'}\nPhone: ${e.phone || 'Not provided'}\nBudget: ${e.budget || 'Not specified'}\nNext Follow-up: ${e.nextFollowUp || 'None'}\n\nSent from ModuCraft.`;
         const waOwner = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`;
         const waPartner = `https://wa.me/919830864409?text=${encodeURIComponent(wText)}`;
         
-        // Change modal to success/notify screen
-        o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto;text-align:center">
-          <h3 style="margin-top:0;color:#22C
+        o.innerHTML = `<div
