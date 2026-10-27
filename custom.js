@@ -1455,3 +1455,73 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
   console.log('[ModuCraft +] GST / Non-GST invoice v2 loaded');
 })();
 /* ===== END STEP 2 ===== */
+
+/* ===== STEP 1 FIX: ENHANCE FIX BUTTON SCROLL & HIGHLIGHT ===== */
+(function() {
+  document.addEventListener('click', function(e) {
+    const fix = e.target.closest('[data-setup-go]');
+    if (!fix) return;
+    e.preventDefault();
+    
+    const map = {
+      co: 'input[data-p="co|name"]',
+      plr: 'input[data-p^="plr|"][data-p$="|r"]',
+      fin: 'input[data-p^="fin|"][data-p$="|c"]',
+      acc: 'input[data-p^="acc|"][data-p$="|rh"]',
+      lab: 'input[data-p="lab"]',
+      mgn: 'input[data-p="mgn"]',
+      gst: 'input[data-p="gst"]',
+      rooms: 'input[data-p^="rooms|"][data-p$="|r"]'
+    };
+    
+    const el = document.querySelector(map[fix.dataset.setupGo] || 'body');
+    if (el) {
+      // 1. Expand collapsed parent card
+      const parentCard = el.closest('.card');
+      if (parentCard && parentCard.classList.contains('cxc')) {
+        parentCard.classList.remove('cxc');
+        const k = parentCard.dataset.cxk;
+        if (k) {
+          try {
+            const st = JSON.parse(localStorage.getItem('msq_cl') || '{}');
+            st[k] = 0;
+            localStorage.setItem('msq_cl', JSON.stringify(st));
+          } catch(x) {}
+        }
+      }
+      
+      // 2. Expand <details> if inside one
+      const details = el.closest('details');
+      if (details) details.open = true;
+      
+      // 3. Scroll with offset (150px from top so keyboard doesn't hide it)
+      setTimeout(function() {
+        const rect = el.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Use both window.scrollTo and scrollIntoView for max compatibility
+        try {
+          window.scrollTo({ top: rect.top + scrollTop - 150, behavior: 'smooth' });
+        } catch(x) {
+          el.scrollIntoView();
+        }
+        
+        // 4. Flash highlight and focus
+        const prevBg = el.style.backgroundColor;
+        const prevShadow = el.style.boxShadow;
+        el.style.backgroundColor = 'rgba(245, 158, 11, 0.4)';
+        el.style.boxShadow = '0 0 0 4px rgba(245, 158, 11, 0.8)';
+        el.style.transition = 'background-color 0.2s, box-shadow 0.2s';
+        
+        setTimeout(function() {
+          try { el.focus(); } catch(x) {}
+          setTimeout(function() {
+            el.style.backgroundColor = prevBg;
+            el.style.boxShadow = prevShadow;
+            setTimeout(() => { el.style.transition = ''; }, 200);
+          }, 2000); // highlight stays for 2 seconds
+        }, 500);
+      }, 50);
+    }
+  }, true); // Capture phase ensures it fires before other app handlers
+})();
