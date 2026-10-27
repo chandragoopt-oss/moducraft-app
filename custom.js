@@ -1693,79 +1693,35 @@ document.addEventListener('change', e => {
   console.log('[ModuCraft +] Global Search & Mobile Nav loaded');
 })();
 // ==========================================
-// STEP 12: DESIGN-FIRST WORKFLOW (ENQUIRY -> DESIGN -> QUOTE)
+// STEP 12: DESIGN-FIRST WORKFLOW & SETTINGS
 // ==========================================
 (function(){
   'use strict';
-  if (window.__mcDesignFirstLoaded) return;
-  window.__mcDesignFirstLoaded = true;
+  if (window.__mcDesignFirstLoaded_v2) return;
+  window.__mcDesignFirstLoaded_v2 = true;
 
-  // 1. Add "Start Design" button to the Enquiry List
-  const origVEnq = window.vEnq;
-  window.vEnq = function() {
-    let html = origVEnq();
-    
-    // We inject a "Design" button next to the "Edit" and "-> Quote" buttons
-    Object.values(window.ENQ).forEach(e => {
-      const target = `<button class="g" data-enq-act="edit" data-id="${e.id}">Edit</button>`;
-      const designBtn = `<button data-enq-act="design" data-id="${e.id}" style="background:#B08D57;color:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;margin-left:4px">🎨 Design</button>`;
-      
-      if (html.includes(target) && !html.includes(`data-enq-act="design" data-id="${e.id}"`)) {
-        html = html.replace(target, target + designBtn);
-      }
-    });
-    
-    return html;
-  };
-
-  // 2. Handle the Design Action
-  document.addEventListener('click', function(ev) {
-    const btn = ev.target.closest('[data-enq-act="design"]');
-    if (!btn) return;
-    ev.preventDefault(); ev.stopImmediatePropagation();
-
-    const enqId = btn.dataset.id;
+  // 1. Create a helper to generate a Draft Quote from an Enquiry
+  window.mc_createDraftFromEnq = function(enqId) {
     const enq = window.ENQ[enqId];
-    if (!enq) return;
+    if (!enq) return null;
 
-    // Check if a quotation already exists for this enquiry
-    // We look for a quote that has the same name and hasn't been closed/lost
-    let existingQuoteId = null;
-    Object.values(S.q).forEach(q => {
-      if (q.enqId === enqId) existingQuoteId = q.id;
-    });
+    // Check if a quote exists
+    let existing = Object.values(S.q).find(q => q.enqId === enqId);
+    if (existing) return existing.id;
 
-    if (existingQuoteId) {
-      // Quote exists, open it
-      S.cur = existingQuoteId;
-      S.tab = 'f'; // Go to Floor Plan
-      render();
-      flash('Opening existing design for ' + enq.name);
-    } else {
-      // Create a new Draft Quotation automatically
-      const newQid = 'q' + Date.now().toString(36);
-      const newQ = {
-        id: newQid,
-        enqId: enqId, // Link to enquiry
-        ts: Date.now(),
-        name: enq.name,
-        contact: enq.phone,
-        project: enq.project,
-        by: lastBy() || uName(),
-        address: '',
-        date: new Date().toISOString().slice(0, 10),
-        rooms: [], // Starts empty, designer will add rooms
-        ir: {},
-        grp: newQid,
-        rev: 0,
-        seq: 1,
-        st: 'draft',
-        pay: cl(S.set.pay),
-        notes: S.set.notes
-      };
-
-      // Add a default room so the floor plan has a starting canvas
-      newQ.rooms.push({
+    // Create new
+    const newQid = 'q' + Date.now().toString(36);
+    const newQ = {
+      id: newQid,
+      enqId: enqId,
+      ts: Date.now(),
+      name: enq.name,
+      contact: enq.phone,
+      project: enq.project,
+      by: lastBy() || uName(),
+      address: '',
+      date: new Date().toISOString().slice(0, 10),
+      rooms: [{
         id: 'r' + Date.now().toString(36),
         t: 'MASTER BEDROOM',
         name: 'MASTER BEDROOM',
@@ -1773,52 +1729,132 @@ document.addEventListener('change', e => {
         rate: '',
         rows: [],
         dim: { L: 3600, W: 3000, H: 2700 }
-      });
+      }],
+      ir: {},
+      grp: newQid,
+      rev: 0,
+      seq: 1,
+      st: 'draft',
+      pay: cl(S.set.pay),
+      notes: S.set.notes
+    };
 
-      S.q[newQid] = newQ;
-      S.cur = newQid;
-      S.tab = 'f'; // Go directly to Floor Plan
-      
-      // Update Enquiry status
-      enq.status = 'Quoted';
-      window.saveEnq();
-      
-      save('q', newQid);
-      render();
-      flash('Draft quotation created! You can now design the layout.');
-    }
-  }, true);
+    S.q[newQid] = newQ;
+    enq.status = 'Quoted';
+    if (window.saveEnq) window.saveEnq();
+    save('q', newQid);
+    return newQid;
+  };
 
-  // 3. Update the Design and Floor Plan Empty States
-  // If a designer clicks "Design" or "Floor Plan" from the main menu without an active quote, 
-  // they shouldn't get an error. They should get a prompt to start from an enquiry.
+  // 2. Inject the "Start Design" screen when no quote is selected
+  function renderDesignStarter() {
+    const enqs = Object.values(window.ENQ || {}).filter(e => e.status !== 'Lost' && e.status !== 'Won');
+    
+    const cards = enqs.map(e => `
+      <div class="card" style="margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; border-left:4px solid #B08D57;">
+        <div>
+          <b style="font-size:16px;color:#1F4E79">${esc(e.name)}</b><br>
+          <span class="mut" style="font-size:12px">${esc(e.project || 'No project')} • ${esc(e.phone)}</span>
+        </div>
+        <button data-ds-start="${e.id}" style="background:#B08D57;color:#fff;border:0;border-radius:6px;padding:8px 16px;font-weight:bold;cursor:pointer">Start Designing →</button>
+      </div>
+    `).join('');
+
+    return `<div class="card">
+      <h2>🎨 Design Workspace</h2>
+      <p class="mut">Select an active Enquiry (Lead) to start designing. A draft quotation will be created automatically in the background.</p>
+      <div class="bar noprint" style="margin-bottom:16px;">
+        <button data-a="tab" data-v="enq" class="g">+ Create New Enquiry</button>
+        <button data-a="tab" data-v="q" class="g">View Existing Quotations</button>
+      </div>
+      ${cards || '<div class="warn">No active enquiries found. Please create a new enquiry first.</div>'}
+    </div>`;
+  }
+
+  // 3. Extract the Settings HTML so it can be used in Design and Floor Plan
+  function getDesignSettingsHTML(q) {
+    const s = S.set;
+    const IO = srt(s.items,i=>i.n).map(i=>`<option>${esc(i.n)}</option>`).join('');
+    
+    // We replicate the exact block from Image 2 using the app's native data binding (data-d="q")
+    return `<details class="card" style="margin-bottom:12px; background:var(--in); border:1px solid var(--line);">
+      <summary style="font-weight:bold; color:#1F4E79; cursor:pointer; padding:4px;">⚙️ Project Materials, Hardware & Pricing Settings</summary>
+      <div class="fg" style="margin-top:10px;">
+        ${(q.pm=q.pm||{},'')}
+        ${GR3.map((g,gi)=>`<div><label>Ply maker — ${g}</label><input list="dl_pm${gi}" data-d="q" data-p="pm|${g}" data-newmk="${g}" value="${esc(brandFor(q,g))}" placeholder="type any maker"><datalist id="dl_pm${gi}">${brandsFor(g).map(b=>`<option value="${esc(b)}">`).join('')}</datalist></div>`).join('')}
+        <div><label>Hardware / accessories company</label><input list="dl_hw" data-d="q" data-p="hw" data-newhw value="${esc(q.hw||'Local')}" placeholder="type any company"><datalist id="dl_hw">${BRANDS.map(b=>`<option value="${esc(b)}">`).join('')}</datalist></div>
+        <div><label>Carcass finish — all units (BSL: both sides)</label>${SEL('q','cf',q.cf||FIN0,lamNames())}</div>
+        <div><label>Inner laminate code / colour</label>${I('q','ccol',q.ccol||'','placeholder="e.g. White 8112"')}</div>
+        <div><label>Outer laminate code / colour</label>${I('q','scol',q.scol||'','placeholder="e.g. Walnut W12"')}</div>
+        <div><label>Shutter finish — outer</label>${SEL('q','fo',q.fo||FIN0,S.set.fin.map(x=>x.n))}</div>
+        <div><label>Shutter finish — inner</label>${SEL('q','fi',q.fi||FIN0,S.set.fin.map(x=>x.n))}</div>
+        <div><label>Pricing basis</label>
+          <select data-d="q" data-p="pmo">
+            <option value="Module rates" ${q.pmo==='Module rates'||!q.pmo?'selected':''}>Module rates (auto-calculated)</option>
+            <option value="Room base" ${q.pmo==='Room base'?'selected':''}>Room base (per sq.ft)</option>
+            <option value="Package" ${q.pmo==='Package'?'selected':''}>Package (flat price per room)</option>
+            <option value="Material costing" ${q.pmo==='Material costing'?'selected':''}>Material costing (Internal only)</option>
+          </select>
+        </div>
+        <div style="grid-column: 1 / -1; border-top: 1px dashed var(--line); margin-top: 10px; padding-top: 10px;">
+          <label style="font-weight: bold; color: var(--gold);">Discounts by Section (%)</label>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top:4px;">
+            <div><label>Wooden Work %</label>${N('q','dw',q.dw||0)}</div>
+            <div><label>Hardware & Accessories %</label>${N('q','dh',q.dh||0)}</div>
+            <div><label>Site / Civil Work %</label>${N('q','ds',q.ds||0)}</div>
+          </div>
+        </div>
+        <div><label>Electrical fittings included in the total?</label>${SEL('q','elx',q.elx||'Yes',['Yes','No'])}</div>
+      </div>
+    </details>`;
+  }
+
+  // 4. Override the Design and Floor Plan tabs
   const origVDesign = window.vDesign;
   window.vDesign = function() {
-    if (!S.cur || !S.q[S.cur]) {
-      return `<div class="card"><h2>Design Walls</h2><p class="mut">You need an active quotation to use the design tools.</p>
-        <div class="bar"><button data-a="tab" data-v="enq">Go to Enquiries to start a design</button> <button data-a="tab" data-v="q">Go to Quotations</button></div>
-      </div>`;
-    }
-    return origVDesign();
+    if (!S.cur || !S.q[S.cur]) return renderDesignStarter();
+    const q = S.q[S.cur];
+    return getDesignSettingsHTML(q) + origVDesign();
   };
 
   const origVPlan = window.vPlan;
   window.vPlan = function() {
-    if (!S.cur || !S.q[S.cur]) {
-      return `<div class="card"><h2>Floor Plan</h2><p class="mut">You need an active quotation to use the floor plan editor.</p>
-        <div class="bar"><button data-a="tab" data-v="enq">Go to Enquiries to start a design</button> <button data-a="tab" data-v="q">Go to Quotations</button></div>
-      </div>`;
-    }
-    return origVPlan();
+    if (!S.cur || !S.q[S.cur]) return renderDesignStarter();
+    const q = S.q[S.cur];
+    return getDesignSettingsHTML(q) + origVPlan();
   };
 
-  // 4. Ensure the Edit tab is accessible to Designers so they can add rooms/pricing after drawing
-  // (This is handled by the Department filtering we built in Step 8, but just in case:)
-  if (typeof MC_DEPTS !== 'undefined' && MC_DEPTS.design) {
-    if (!MC_DEPTS.design.tabs.includes('e')) {
-      MC_DEPTS.design.tabs.push('e'); // Designers need Edit tab to add rooms/prices
+  // 5. Handle clicking the "Start Designing" button in the new Dashboard
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-ds-start]');
+    if (!btn) return;
+    e.preventDefault();
+    
+    const enqId = btn.dataset.dsStart;
+    const newQid = window.mc_createDraftFromEnq(enqId);
+    
+    if (newQid) {
+      S.cur = newQid;
+      // If they clicked from the Floor Plan tab, keep them there. 
+      // If they clicked from Design tab, keep them there.
+      render();
+      flash('Draft quotation created! You can now design.');
     }
-  }
+  });
 
-  console.log('[ModuCraft +] Design-First Workflow loaded');
+  // 6. Add the button to the Enquiry tab too
+  const origVEnq = window.vEnq;
+  window.vEnq = function() {
+    let html = origVEnq();
+    Object.values(window.ENQ).forEach(e => {
+      const target = `<button class="g" data-enq-act="edit" data-id="${e.id}">Edit</button>`;
+      const designBtn = `<button data-ds-start="${e.id}" style="background:#B08D57;color:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;margin-left:4px">🎨 Design</button>`;
+      if (html.includes(target) && !html.includes(`data-ds-start="${e.id}"`)) {
+        html = html.replace(target, target + designBtn);
+      }
+    });
+    return html;
+  };
+
+  console.log('[ModuCraft +] Design-First Workflow v2 loaded');
 })();
