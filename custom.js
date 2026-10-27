@@ -943,3 +943,200 @@ document.addEventListener('change', e => {
 
   console.log('[ModuCraft +] Expenses & Cash-Flow loaded');
 })();
+// ==========================================
+// STEP 6: DAILY SITE REPORT (PHOTOS & MILESTONES)
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcDailyLoaded) return;
+  window.__mcDailyLoaded = true;
+
+  // 1. Add the "Daily Report" tab
+  if (typeof PJTABS !== 'undefined' && PJTABS.push && !PJTABS.some(t => t[0]==='drep')) {
+    PJTABS.push(['drep', 'Daily Site Report', 'fslv']);
+  }
+  if (typeof ERPT !== 'undefined' && ERPT.push && ERPT.indexOf('drep') < 0) {
+    ERPT.push('drep');
+  }
+
+  // 2. Render the Daily Report Tab
+  function drepTab(p) {
+    const can = S.w && (S.lvl === 'full' || S.lvl === 'staff' || S.lvl === 'site');
+    const reps = (p.daily || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    
+    const cards = reps.map((rep, i) => {
+      // Find expenses matching this date
+      const exps = (p.expenses || []).filter(e => e.date === rep.date);
+      const expTotal = exps.reduce((t, e) => t + (+e.amt || 0), 0);
+      
+      const expHtml = exps.length ? `
+        <div style="margin-top:10px; border-top:1px dashed var(--line); padding-top:8px;">
+          <span style="font-size:11px;font-weight:bold;color:#b00020">Payments / Expenses (${fmt(expTotal)})</span>
+          ${exps.map(e => `<div style="font-size:12px;margin-top:2px">• ${esc(e.cat)}: ${esc(e.desc)} — <b>${fmt(e.amt)}</b> (${esc(e.by || '')})</div>`).join('')}
+        </div>` : '';
+
+      const photosHtml = (rep.photos || []).length ? `
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
+          ${rep.photos.map(phId => {
+            const ph = ERP.ph[phId];
+            return ph ? `<img src="${ph.d}" data-phv="${phId}" style="height:70px; border-radius:6px; cursor:pointer; object-fit:cover; border:1px solid var(--line);">` : '';
+          }).join('')}
+        </div>` : '';
+
+      return `<div class="card" style="margin-bottom:10px; border-left:4px solid #1F4E79;">
+        <div class="bar" style="margin-bottom:4px">
+          <b style="font-size:15px;color:#1F4E79">📅 ${dmy(rep.date)}</b>
+          ${can ? `<button class="g" data-drep-act="del" data-i="${i}" style="margin-left:auto;padding:2px 6px;font-size:11px">Delete</button>` : ''}
+        </div>
+        <p style="margin:4px 0;font-size:13px;white-space:pre-wrap;">${esc(rep.summary)}</p>
+        ${photosHtml}
+        ${expHtml}
+      </div>`;
+    }).join('');
+
+    return `<div class="card">
+      <div class="bar noprint">
+        <h3>Daily Site Reports</h3>
+        ${can ? `<button data-drep-act="new" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;margin-left:auto">+ Log Today's Report</button>` : ''}
+      </div>
+      <p class="mut" style="margin-bottom:12px">Keep a daily record of work done, site photos, and cash payments. Visible to the client if you enable it in their portal.</p>
+      <div style="max-height:70vh;overflow-y:auto;padding-right:4px">
+        ${cards || '<p class="mut" style="text-align:center;padding:20px">No daily reports logged yet.</p>'}
+      </div>
+    </div>`;
+  }
+
+  // 3. Intercept Project render to show the tab
+  if (window.erpTab) {
+    const _erpTab = window.erpTab;
+    window.erpTab = function(p, T) {
+      if (T === 'drep') return drepTab(p);
+      return _erpTab(p, T);
+    };
+  }
+
+  // 4. Modal for Adding a Report
+  function openDailyModal(p) {
+    const o = document.createElement('div');
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
+    
+    // Find pending POs or just allow manual entry
+    o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:auto">
+      <h3 style="margin-top:0">New Daily Report</h3>
+      <div class="dgrid" style="grid-template-columns:1fr;gap:10px;">
+        <div><label>Date</label><input type="date" id="dr_date" value="${today()}"></div>
+        <div><label>Work Summary (What was done today?)</label><textarea id="dr_sum" rows="3" placeholder="e.g. Kitchen base units installed. Wardrobe carcass delivered."></textarea></div>
+        
+        <div style="border-top:1px solid var(--line);padding-top:10px;margin-top:6px;">
+          <label style="font-weight:bold;color:#b00020">Contractor Payment / Site Expense (Optional)</label>
+          <div class="dgrid" style="grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;">
+            <div><select id="dr_cat">${['Labour', 'Transport', 'Material', 'Site Misc', 'Other'].map(c=>`<option>${c}</option>`).join('')}</select></div>
+            <div><input type="number" id="dr_amt" placeholder="Amount ₹" min="0"></div>
+          </div>
+          <div style="margin-top:6px;"><input id="dr_desc" placeholder="Paid to / Description (e.g. Paid Ramesh for cutting)"></div>
+        </div>
+
+        <div style="border-top:1px solid var(--line);padding-top:10px;margin-top:6px;">
+          <label style="font-weight:bold;color:#1F4E79">Site Photos</label>
+          <input type="file" id="dr_photos" accept="image/*" multiple style="margin-top:4px;">
+          <div id="dr_prev" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+        </div>
+      </div>
+      
+      <div class="bar" style="margin-top:16px;justify-content:flex-end">
+        <button class="g" id="dr_cancel">Cancel</button>
+        <button id="dr_save" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:8px 20px;font-weight:600;cursor:pointer">Save Report</button>
+      </div>
+    </div>`;
+    document.body.appendChild(o);
+
+    const fileInput = document.getElementById('dr_photos');
+    const prevBox = document.getElementById('dr_prev');
+    let uploadedPhotos = []; // temporarily hold base64s
+
+    fileInput.addEventListener('change', () => {
+      prevBox.innerHTML = '';
+      uploadedPhotos = [];
+      const files = fileInput.files;
+      if (files.length > 5) alert('Please select up to 5 photos per report.');
+      
+      Array.from(files).slice(0, 5).forEach(file => {
+        const r = new FileReader();
+        r.onload = (e) => {
+          const im = new Image();
+          im.onload = () => {
+            const m = Math.min(1, 800 / Math.max(im.width, im.height));
+            const c = document.createElement('canvas');
+            c.width = Math.round(im.width * m); c.height = Math.round(im.height * m);
+            c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+            const b64 = c.toDataURL('image/jpeg', .7);
+            uploadedPhotos.push(b64);
+            prevBox.innerHTML += `<img src="${b64}" style="height:50px;border-radius:4px;">`;
+          };
+          im.src = e.target.result;
+        };
+        r.readAsDataURL(file);
+      });
+    });
+
+    document.getElementById('dr_cancel').onclick = () => o.remove();
+    document.getElementById('dr_save').onclick = () => {
+      const date = document.getElementById('dr_date').value;
+      const sum = document.getElementById('dr_sum').value.trim();
+      if (!date) return alert('Please select a date.');
+      
+      p.daily = p.daily || [];
+      const repId = 'dr' + Date.now().toString(36);
+      
+      // Save photos
+      const phIds = uploadedPhotos.map(b64 => phStore(p.id, b64));
+      
+      // Save expenses
+      const amt = +document.getElementById('dr_amt').value || 0;
+      if (amt > 0) {
+        p.expenses = p.expenses || [];
+        p.expenses.push({
+          date: date,
+          cat: document.getElementById('dr_cat').value,
+          desc: document.getElementById('dr_desc').value.trim() || 'Site Expense',
+          amt: amt,
+          by: uName()
+        });
+      }
+
+      // Save report
+      p.daily.unshift({ id: repId, date: date, summary: sum, photos: phIds });
+      bzSave('pj', p.id);
+      try { audEvt('pj', p.id, p.name, 'Daily report added', date); } catch(e) {}
+      o.remove();
+      render();
+      flash('Daily report saved!');
+    };
+  }
+
+  // 5. Handle Clicks
+  document.addEventListener('click', e => {
+    const bNew = e.target.closest('[data-drep-act="new"]');
+    if (bNew) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+      if (p) openDailyModal(p);
+      return;
+    }
+    
+    const bDel = e.target.closest('[data-drep-act="del"]');
+    if (bDel) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+      if (p && confirm('Delete this daily report? Photos will remain in the gallery.')) {
+        const reps = (p.daily || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        const toDelete = reps[+bDel.dataset.i];
+        p.daily = p.daily.filter(x => x.id !== toDelete.id);
+        bzSave('pj', p.id); render();
+      }
+      return;
+    }
+  }, true);
+
+  console.log('[ModuCraft +] Daily Site Report loaded');
+})();
