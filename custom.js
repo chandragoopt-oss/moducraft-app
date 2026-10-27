@@ -1297,32 +1297,33 @@ document.addEventListener('change', e => {
   console.log('[ModuCraft +] Daily Site Report loaded');
 })();
 // ==========================================
-// STEP 8 & 9: DEPARTMENT SEGREGATION & ADVANCED ACCESS CONTROL
+// STEP 8 & 9: DEPARTMENT SEGREGATION & ADVANCED ACCESS CONTROL (FIXED)
 // ==========================================
 (function(){
   'use strict';
-  if (window.__mcDeptAclLoaded) return;
-  window.__mcDeptAclLoaded = true;
+  if (window.__mcDeptAclLoaded_v2) return;
+  window.__mcDeptAclLoaded_v2 = true;
 
-  // 1. Define Departments
   window.MC_DEPTS = {
     admin:    { name: '👑 Admin View', tabs: ['h', 'r', 'enq', 'q', 'e', 'p', 'j', 'd', 'f', 'a', 'm', 'v', 's', 'x'] },
-    sales:    { name: '💼 Sales & Quotations', tabs: ['enq', 'q', 'e', 'p'] },
+    sales:    { name: '💼 Sales & Quotes', tabs: ['enq', 'q', 'e', 'p'] },
     design:   { name: '📐 Design & Site', tabs: ['j', 'd', 'f', 'a'] },
     purchase: { name: '📦 Purchase & Factory', tabs: ['v', 'm', 's'] },
-    accounts: { name: '💰 Accounts & Finance', tabs: ['h', 'r', 'x'] }
+    accounts: { name: '💰 Accounts', tabs: ['h', 'r', 'x'] }
   };
 
+  let curDept = localStorage.getItem('msq_dept') || 'admin';
+
+  // FIX 1: Update the local variable so render() applies the new department immediately
   window.MC_setDept = function(dept) {
     if (!MC_DEPTS[dept]) return;
+    curDept = dept; 
     localStorage.setItem('msq_dept', dept);
     if (!MC_DEPTS[dept].tabs.includes(S.tab)) S.tab = 'h';
     render();
   };
 
-  let curDept = localStorage.getItem('msq_dept') || 'admin';
-
-  // 2. Inject the Switcher (Only visible to Owner)
+  // FIX 2: Fix header layout so dropdown sits nicely next to the nav
   window.MC_injectSwitcher = function() {
     const top = document.querySelector('.top');
     const isOwner = S.role === 'Owner' || S.role === 'Editor' || !S.role;
@@ -1337,26 +1338,29 @@ document.addEventListener('change', e => {
 
     const div = document.createElement('div');
     div.id = 'dept_sw';
-    div.style.cssText = 'margin-left:auto; display:flex; align-items:center; gap:8px; order:-1;';
+    div.style.cssText = 'margin-left:auto; display:flex; align-items:center;';
     
     const sel = document.createElement('select');
-    sel.style.cssText = 'background:#1F2937; color:#fff; border:1px solid #ffffff44; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px;';
+    sel.style.cssText = 'background:#1F2937; color:#fff; border:1px solid #ffffff44; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; outline:none;';
     Object.entries(MC_DEPTS).forEach(([k, v]) => {
       sel.innerHTML += `<option value="${k}" ${k === curDept ? 'selected' : ''}>${v.name}</option>`;
     });
 
     sel.onchange = (e) => MC_setDept(e.target.value);
     div.appendChild(sel);
+    
     const nav = document.getElementById('nav');
-    if (nav) top.insertBefore(div, nav);
+    if (nav) {
+        // Remove the auto-margin from nav so it sits next to our dropdown
+        nav.style.marginLeft = '12px';
+        top.insertBefore(div, nav);
+    }
   };
 
-  // 3. Intercept applyLvl to force the department for non-owners
+  // Keep department locked for non-owners based on their Access & Sharing profile
   const origApplyLvl = window.applyLvl;
   window.applyLvl = function() {
     origApplyLvl();
-    
-    // If user is NOT the owner, check their assigned department
     if (S.role !== 'Owner' && S.role !== 'Editor') {
       const entry = S.acl.find(x => (x.id && x.id == S.uid) || (x.em && S.myEmail && x.em == S.myEmail.toLowerCase()));
       if (entry && entry.dept && MC_DEPTS[entry.dept]) {
@@ -1366,28 +1370,22 @@ document.addEventListener('change', e => {
           if (!MC_DEPTS[curDept].tabs.includes(S.tab)) S.tab = 'h';
         }
       } else {
-        // Default fallback for unassigned non-owners
-        if (curDept !== 'sales') { // Assume sales is a safe default for staff
+        if (curDept !== 'sales') {
           curDept = 'sales';
           localStorage.setItem('msq_dept', curDept);
         }
       }
     } else {
-      // Owner/Editor can use whatever is in local storage
       curDept = localStorage.getItem('msq_dept') || 'admin';
     }
   };
 
-  // 4. Filter Nav bar based on department
   const navObserver = new MutationObserver(() => {
     MC_injectSwitcher();
     const nav = document.getElementById('nav');
     if (!nav) return;
-    
     const allowed = MC_DEPTS[curDept] ? MC_DEPTS[curDept].tabs : MC_DEPTS.admin.tabs;
-    const btns = nav.querySelectorAll('button[data-a="tab"]');
-    
-    btns.forEach(b => {
+    nav.querySelectorAll('button[data-a="tab"]').forEach(b => {
       b.style.display = allowed.includes(b.dataset.v) ? '' : 'none';
     });
   });
@@ -1396,14 +1394,11 @@ document.addEventListener('change', e => {
     navObserver.observe(document.getElementById('nav'), { childList: true, subtree: true });
   }
 
-  // 5. Rebuild the vShare (Access & Sharing) UI
+  // Rebuild Access & Sharing to include Department selection
   window.vShare = function() {
     if(window.__OFFLINE) return licInfoCard()+(localStorage.getItem('msq_owner_key')?licOwnerCard():'');
     const adm = S.role=='Owner'||S.role=='Editor';
-    
-    const deptOpts = Object.entries(MC_DEPTS).map(([k, v]) => 
-      `<option value="${k}">${v.name}</option>`
-    ).join('');
+    const deptOpts = Object.entries(MC_DEPTS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('');
 
     const userRows = S.acl.map(x => {
       const cDept = x.dept || 'admin';
@@ -1417,24 +1412,20 @@ document.addEventListener('change', e => {
 
     return `<div class="card">
       <h2>Access & Sharing</h2>
-      <p>Your access: <b>${esc(S.role||'Unknown')}</b> • screen level: <b>${LN[S.lvl||'full']}</b> — ${S.w?'you can edit and save.':'view only, changes are not saved.'}</p>
-      <div class="bar"><input id="lnk" readonly value="${ARTL}" style="max-width:420px"><button data-a="cp">Copy app link</button>${S.lvl=='view'||S.w0===false?'':`<button class="g" data-a="lk">${S.lock?'Switch back to edit mode':'Switch to view-only mode'}</button>`}</div>
+      <p>Your access: <b>${esc(S.role||'Unknown')}</b> • screen level: <b>${LN[S.lvl||'full']}</b></p>
+      <div class="bar"><input id="lnk" readonly value="${ARTL}" style="max-width:420px"><button data-a="cp">Copy app link</button></div>
     </div>
     ${adm?`<div class="card">
       <h3>People &amp; access levels</h3>
-      <p class="mut">Invite the person in claude.ai → <b>Share</b> (Viewer = cannot save, Contributor = can save). Then add their email below and select their <b>Department</b> to lock their screen to only what they need.</p>
-      
+      <p class="mut">Invite the person in claude.ai → <b>Share</b> (Viewer = cannot save, Contributor = can save). Then add their email below and select their <b>Department</b> to lock their screen.</p>
       <div class="bar">
         <input id="aem" type="email" placeholder="Email address" style="max-width:220px">
         <select id="alv" style="max-width:200px">${Object.entries(LN).map(([k,v])=>`<option value="${k}"${k=='view'?' selected':''}>${v}</option>`).join('')}</select>
         <select id="adept" style="max-width:180px">${deptOpts}</select>
         <button data-a="ae">Add User</button>
       </div>
-      
-      <p class="mut">The person must <b>also</b> be invited in claude.ai → Share. Their department lock is applied when they open the app.</p>
       <input id="psq" data-ps placeholder="Or search a person by name…" style="max-width:340px">
       <div id="psr"></div>
-      
       <div class="sc">
         <table class="g" style="min-width:640px">
           <tr><th>Person / Email</th><th>Access Level</th><th>Department Lock</th><th></th></tr>
@@ -1443,25 +1434,23 @@ document.addEventListener('change', e => {
       </div>
     </div>`:''}
     ${adm?teamCard()+licOwnerCard():''}
-    <div class="card"><h3>What each level sees</h3><div class="sc"><table class="g" style="min-width:560px"><tr><th>Level<th>Quotations<th>Rates / Settings page<th>Accessory list</tr><tr><td><b>Full access</b><td>Create / edit / delete<td>Yes<td>With rates and amounts</tr><tr><td><b>Staff</b><td>Create / edit / delete<td>Hidden<td>Quantities only (no rates)</tr><tr><td><b>Viewer</b><td>View and preview only<td>Hidden<td>Quantities only, plus PDF</tr></table></div></div>
-    <div class="card"><h3>Diagnostics</h3><p class="mut">Cloud: <b>${S.db?'connected':'NOT connected'}</b> • Write permission: <b>${S.w?'yes':'no'}</b> • Modules: ${S.set.items.length} • Rooms: ${S.set.rooms.length} • Accessories: ${S.set.acc.length}</p><button class="g" data-a="dg">Test cloud save</button></div>
-    <div class="card"><h3>Important</h3><p>These levels control what each person's <b>screen</b> shows. Everyone invited to the app technically receives its stored data, so a technically skilled person could still look up rates. For anyone who must <b>never</b> see your rates, don't invite them — send the <b>Accessory list PDF</b> or the client quotation instead.</p></div>`;
+    <div class="card"><h3>Important</h3><p>Department locks control what each person's <b>screen</b> shows. Everyone invited to the app technically receives its stored data, so a technically skilled person could still look up rates.</p></div>`;
   };
 
-  // 6. Handle Saving the Department Lock
+  // Handle saving Department lock changes in the table
   document.addEventListener('change', e => {
     if (e.target.dataset.acldept) {
       const id = e.target.dataset.acldept;
       const entry = S.acl.find(a => (a.id || a.em) == id);
       if (entry) {
         entry.dept = e.target.value;
-        saveAcl(); // This triggers applyLvl and saves to cloud/localStorage
+        saveAcl();
         flash('Department lock updated');
       }
     }
   });
 
-  // 7. Handle the Add User button to include Department
+  // Handle Add User button
   document.addEventListener('click', e => {
     const bAdd = e.target.closest('[data-a="ae"]');
     if (!bAdd) return;
@@ -1481,7 +1470,7 @@ document.addEventListener('change', e => {
     window.open('mailto:' + em + '?subject=' + encodeURIComponent('Access to ' + co().name + ' quotation app') + '&body=' + encodeURIComponent('Hello,\n\nPlease open our quotation app: ' + ARTL + '\n(Sign in to claude.ai with this email address.)\n\nYour access level: ' + LN[lv] + '\nDepartment: ' + MC_DEPTS[dept].name + '\n\n' + co().name), '_blank');
   }, true);
 
-  // 8. Enhance Dashboard with Admin Overview metrics
+  // Admin Dashboard Metrics
   const origTodayCard = todayCard;
   todayCard = function() {
     let html = origTodayCard();
@@ -1509,7 +1498,7 @@ document.addEventListener('change', e => {
     return html;
   };
 
-  // 9. Override render to ensure everything stays locked
+  // Override render to enforce the locked state
   const _render = window.render;
   window.render = function() {
     MC_injectSwitcher();
@@ -1520,5 +1509,5 @@ document.addEventListener('change', e => {
     });
   };
 
-  console.log('[ModuCraft +] Department Segregation & Advanced Access loaded');
+  console.log('[ModuCraft +] Department Segregation & Advanced Access v2 loaded');
 })();
