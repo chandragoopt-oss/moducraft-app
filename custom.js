@@ -1641,13 +1641,13 @@ document.addEventListener('change', e => {
   if (window.__mcEnqLoaded) return;
   window.__mcEnqLoaded = true;
 
-  // 1. Initialize Data Storage
+  // Initialize Data Storage
   window.ENQ = JSON.parse(localStorage.getItem('msq_enq_data') || '{}');
   window.saveEnq = function() {
     localStorage.setItem('msq_enq_data', JSON.stringify(window.ENQ));
   };
 
-  // 2. Render the Enquiry List
+  // Render the Enquiry List
   window.vEnq = function() {
     const list = Object.values(window.ENQ).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const t = today();
@@ -1686,11 +1686,11 @@ document.addEventListener('change', e => {
     </div>`;
   };
 
-  // 3. Add the Tab to the Navigation Menu
+  // Add the Tab to the Navigation Menu
   const navObserver = new MutationObserver(() => {
     const nav = document.getElementById('nav');
     if (!nav || document.querySelector('#nav button[data-v="enq"]')) return;
-    if (typeof navOK === 'function' && !navOK('q')) return; // Don't show for view-only roles
+    if (typeof navOK === 'function' && !navOK('q')) return; 
 
     const btn = document.createElement('button');
     btn.dataset.a = 'tab';
@@ -1699,7 +1699,6 @@ document.addEventListener('change', e => {
     btn.textContent = 'Enquiries';
     btn.onclick = () => { S.tab = 'enq'; render(); };
     
-    // Insert after "Quotations"
     const firstBtn = nav.querySelector('button');
     if (firstBtn) firstBtn.after(btn);
     else nav.appendChild(btn);
@@ -1708,24 +1707,21 @@ document.addEventListener('change', e => {
     navObserver.observe(document.getElementById('nav'), { childList: true });
   }
 
-  // 4. Hook into the main render function
   const _render = window.render;
   window.render = function() {
     if (S.tab === 'enq') {
       document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === 'enq'));
       document.getElementById('app').innerHTML = window.vEnq();
-      // Ensure the nav observer keeps the button highlighted
       const btn = document.querySelector('#nav button[data-v="enq"]');
       if (btn) btn.classList.add('on');
       return;
     }
-    // Remove highlight if we are on another tab
     const btn = document.querySelector('#nav button[data-v="enq"]');
     if (btn) btn.classList.remove('on');
     _render.apply(this, arguments);
   };
 
-  // 5. Modal for Add / Edit
+  // Modal for Add / Edit
   function openEnqModal(id) {
     const isNew = !id;
     const e = isNew ? { id: 'e' + Date.now().toString(36), date: today(), status: 'Enquiry' } : window.ENQ[id];
@@ -1777,13 +1773,38 @@ document.addEventListener('change', e => {
       
       window.ENQ[e.id] = e;
       window.saveEnq();
-      o.remove();
-      render();
-      flash('Enquiry saved');
+      
+      // WHATSAPP ALERT SYSTEM
+      if (isNew) {
+        const wText = `New Enquiry Alert!\n\nClient: ${e.name}\nProject: ${e.project || 'Not specified'}\nPhone: ${e.phone || 'Not provided'}\nBudget: ${e.budget || 'Not specified'}\nNext Follow-up: ${e.nextFollowUp || 'None'}\n\nSent from ModuCraft.`;
+        const waOwner = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`;
+        const waPartner = `https://wa.me/919830864409?text=${encodeURIComponent(wText)}`;
+        
+        // Change modal to success/notify screen
+        o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto;text-align:center">
+          <h3 style="margin-top:0;color:#22C55E">✅ Enquiry Saved</h3>
+          <p class="mut" style="font-size:13px;margin-bottom:16px">Do you want to alert the team via WhatsApp?</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <a href="${waOwner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Owner (9830051060)</a>
+            <a href="${waPartner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Partner (9830864409)</a>
+          </div>
+          <button class="g" id="eq_done" style="margin-top:16px;width:100%">Close</button>
+        </div>`;
+        
+        document.getElementById('eq_done').onclick = () => {
+          o.remove();
+          render();
+          flash('Enquiry saved');
+        };
+      } else {
+        o.remove();
+        render();
+        flash('Enquiry updated');
+      }
     };
   }
 
-  // 6. Handle Clicks (New, Edit, Convert)
+  // Handle Clicks (New, Edit, Convert)
   document.addEventListener('click', function(ev) {
     const btn = ev.target.closest('[data-enq-act]');
     if (!btn) return;
@@ -1799,7 +1820,6 @@ document.addEventListener('change', e => {
       if (!e) return;
       
       if (confirm(`Create a new quotation for ${e.name}?`)) {
-        // Use main app's newQ function
         window.newQ();
         const q = window.T();
         if (q) {
@@ -1807,21 +1827,22 @@ document.addEventListener('change', e => {
           q.contact = e.phone;
           q.project = e.project || q.project;
           q.by = window.lastBy();
-          // Save and render
           window.save('q', q.id);
         }
         
-        // Mark enquiry as Quoted
         e.status = 'Quoted';
         window.saveEnq();
         
-        // Switch to Edit tab
         S.tab = 'e';
         render();
         flash('Converted to new quotation');
       }
     }
   });
+
+  console.log('[ModuCraft +] Enquiry Tracker loaded');
+})();
+/* ===== END STEP 4 ===== */
 
   console.log('[ModuCraft +] Enquiry Tracker loaded');
 })();
