@@ -1525,3 +1525,156 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
     }
   }, true); // Capture phase ensures it fires before other app handlers
 })();
+
+/* ===== STEP 3: PACKAGE TEMPLATES (2BHK / 3BHK / ROOM SETS) ===== */
+(function(){
+  'use strict';
+  if (window.__mcPackagesLoaded) return;
+  window.__mcPackagesLoaded = true;
+
+  // Define your standard packages here. 
+  // You can edit these module sizes or IDs later if you want.
+  const PACKAGES = {
+    'pkg_kitchen': { name: '🍳 Standard Kitchen', rooms: [
+      { name: 'KITCHEN', t: 'KITCHEN', items: [
+        { mk: 'kb2', q: 4 }, // Base unit - 2 shutter (600mm)
+        { mk: 'kw2', q: 2 }, // Wall unit - 2 shutter (600mm)
+        { mk: 'ktp', q: 1 }, // Tall unit - 2 shutter (600mm)
+        { mk: 'kl2', q: 2 }, // Loft - 2 shutter (600mm)
+        { mk: 'kbsk', q: 1 } // Sink unit (900mm)
+      ]}
+    ]},
+    'pkg_mbed': { name: '🛏️ Master Bedroom', rooms: [
+      { name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [
+        { mk: 'wh3', q: 1 }, // Wardrobe - 3 door (900mm)
+        { mk: 'wl2', q: 1 }, // Wardrobe loft (900mm)
+        { mk: 'bdbx', q: 1 }, // Bed - box storage (Queen)
+        { mk: 'bst', q: 2 }, // Bedside table
+        { mk: 'drs', q: 1 }, // Dressing unit
+        { mk: 'tvw', q: 1 }  // TV wall unit
+      ]}
+    ]},
+    'pkg_2bhk': { name: '🏠 2BHK Package (Kitchen + 2 Beds + Living)', rooms: [
+      { name: 'KITCHEN', t: 'KITCHEN', items: [ { mk: 'kb2', q: 4 }, { mk: 'kw2', q: 2 }, { mk: 'ktp', q: 1 }, { mk: 'kl2', q: 2 }, { mk: 'kbsk', q: 1 } ]},
+      { name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [ { mk: 'wh3', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'drs', q: 1 } ]},
+      { name: 'BEDROOM 2', t: 'BEDROOM 2', items: [ { mk: 'wh2', q: 1 }, { mk: 'wl1', q: 1 }, { mk: 'bdpl', q: 1 }, { mk: 'bst', q: 1 }, { mk: 'std', q: 1 } ]},
+      { name: 'LIVING ROOM', t: 'LIVING ROOM', items: [ { mk: 'tvb', q: 1 }, { mk: 'tvp', q: 1 }, { mk: 'shr', q: 1 }, { mk: 'cru', q: 1 } ]}
+    ]},
+    'pkg_3bhk': { name: '🏢 3BHK Package (Full House)', rooms: [
+      { name: 'KITCHEN', t: 'KITCHEN', items: [ { mk: 'kb2', q: 6 }, { mk: 'kw2', q: 3 }, { mk: 'ktp', q: 1 }, { mk: 'kl2', q: 3 }, { mk: 'kbsk', q: 1 } ]},
+      { name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [ { mk: 'wh4', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'drs', q: 1 }, { mk: 'tvw', q: 1 } ]},
+      { name: 'BEDROOM 2', t: 'BEDROOM 2', items: [ { mk: 'wh3', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'std', q: 1 } ]},
+      { name: 'BEDROOM 3', t: 'BEDROOM 3', items: [ { mk: 'wh2', q: 1 }, { mk: 'wl1', q: 1 }, { mk: 'bdpl', q: 1 }, { mk: 'bst', q: 1 }, { mk: 'std', q: 1 } ]},
+      { name: 'LIVING ROOM', t: 'LIVING ROOM', items: [ { mk: 'tvb', q: 1 }, { mk: 'tvp', q: 1 }, { mk: 'shr', q: 1 }, { mk: 'cru', q: 1 } ]}
+    ]}
+  };
+
+  function applyPackage(pkgId) {
+    const pkg = PACKAGES[pkgId];
+    if (!pkg) return;
+    
+    let q = T();
+    if (!q) {
+      // Create a new quote if none exists
+      const id = 'q' + Date.now().toString(36);
+      S.q[id] = { id, ts: Date.now(), name: '', by: lastBy(), project: '', address: '', contact: '', date: new Date().toISOString().slice(0, 10), rooms: [], ir: {}, grp: id, rev: 0, seq: 1, st: 'draft', pay: cl(S.set.pay), notes: S.set.notes };
+      S.cur = id;
+      S.tab = 'e';
+      q = S.q[id];
+    }
+
+    pkg.rooms.forEach(pkgRoom => {
+      const newRoom = {
+        id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+        t: pkgRoom.t,
+        name: pkgRoom.name,
+        w: 0,
+        rate: '',
+        rows: []
+      };
+
+      pkgRoom.items.forEach(item => {
+        const m = MOD[item.mk];
+        if (!m) return;
+        // Use app's built-in modRow logic to generate a standard row
+        const r = modRow(newRoom, m, m.sw[Math.floor(m.sw.length/2)] || m.w0, m.h, q);
+        r.q = item.q || 1;
+        newRoom.rows.push(r);
+      });
+      
+      // Auto-apply skirting and counter if the room logic supports it
+      if (typeof syncAuto === 'function') syncAuto(newRoom);
+      
+      q.rooms.push(newRoom);
+    });
+
+    save('q', S.cur);
+    render();
+    flash('Package added successfully!');
+  }
+
+  function showPackageModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:100001;padding:20px';
+    
+    const btnHtml = Object.entries(PACKAGES).map(([id, p]) => 
+      `<button class="g" style="text-align:left;padding:12px;font-size:15px;margin-bottom:8px;display:block;width:100%" data-pkg-id="${id}">${p.name}</button>`
+    ).join('');
+
+    modal.innerHTML = `
+      <div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4)">
+        <h3 style="margin-top:0">Insert Package Template</h3>
+        <p class="mut" style="font-size:13px;margin-bottom:16px">Choose a pre-built set of rooms and modules. They will be added to your current quotation, and you can edit the sizes/quantities after.</p>
+        ${btnHtml}
+        <button class="g" id="pkg_cancel" style="margin-top:10px;width:100%;background:transparent;border:1px solid #ccc;color:var(--ink)">Cancel</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll('[data-pkg-id]').forEach(btn => {
+      btn.onclick = () => {
+        applyPackage(btn.dataset.pkgId);
+        modal.remove();
+      };
+    });
+    document.getElementById('pkg_cancel').onclick = () => modal.remove();
+  }
+
+  // Patch vList to add button
+  if (window.vList) {
+    const _vList = window.vList;
+    window.vList = function() {
+      let html = _vList();
+      // Insert next to "+ New quotation"
+      html = html.replace(
+        '<button data-a="nq">+ New quotation</button>',
+        '<button data-a="nq">+ New quotation</button><button class="g" id="btn-insert-pkg" style="border-color:#1F4E79;color:#1F4E79;font-weight:600">📦 Insert Package</button>'
+      );
+      return html;
+    };
+  }
+
+  // Patch vEdit to add button
+  if (window.vEdit) {
+    const _vEdit = window.vEdit;
+    window.vEdit = function() {
+      let html = _vEdit();
+      html = html.replace(
+        '<button data-a="sv">Save quotation</button>',
+        '<button data-a="sv">Save quotation</button><button class="g" id="btn-insert-pkg" style="border-color:#1F4E79;color:#1F4E79;font-weight:600">📦 Insert Package</button>'
+      );
+      return html;
+    };
+  }
+
+  // Global click listener for the button
+  document.addEventListener('click', function(e) {
+    if (e.target.id === 'btn-insert-pkg') {
+      e.preventDefault();
+      showPackageModal();
+    }
+  });
+
+  console.log('[ModuCraft +] Package templates loaded');
+})();
+/* ===== END STEP 3 ===== */
