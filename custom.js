@@ -1,6 +1,7 @@
 // ==========================================
 // GLOBAL SAFE FALLBACKS (PREVENT REFERENCE ERRORS)
 // ==========================================
+if (typeof window.calc === 'undefined') window.calc = function() { return { sq: 0, mat: 0, lab: 0, acc: 0, tot: 0 }; };
 if (typeof window.vDash === 'undefined') window.vDash = window.todayCard || function() { return '<div class="card"><h2>Dashboard</h2><p>Base dashboard missing.</p></div>'; };
 if (typeof window.vList === 'undefined') window.vList = function() { return '<div class="card"><h2>Quotations</h2></div>'; };
 if (typeof window.vEdit === 'undefined') window.vEdit = function() { return '<div class="card"><h2>Edit Quotation</h2></div>'; };
