@@ -788,4 +788,1226 @@ document.addEventListener('change', e => {
     else if (act === 'convert') {
       const e = window.ENQ[id]; if (!e) return;
       if (confirm(`Create a new quotation for ${e.name}?`)) {
-        window.newQ();
+        window.newQ(); const q = window.T();
+        if (q) { q.name = e.name; q.contact = e.phone; q.project = e.project || q.project; q.by = window.lastBy(); window.save('q', q.id); }
+        e.status = 'Quoted'; window.saveEnq(); S.tab = 'e'; render(); flash('Converted to new quotation');
+      }
+    }
+  });
+})();
+// ==========================================
+// STEP 5: PROJECT EXPENSES & CASH-FLOW FORECAST
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcExpensesLoaded) return;
+  window.__mcExpensesLoaded = true;
+
+  if (typeof PJTABS !== 'undefined' && PJTABS.push && !PJTABS.some(t => t[0]==='exp')) { PJTABS.push(['exp', 'Expenses', 'fs']); }
+  if (typeof ERPT !== 'undefined' && ERPT.push && ERPT.indexOf('exp') < 0) { ERPT.push('exp'); }
+
+  function expTab(p) {
+    const fl = canRate();
+    const can = S.w && (fl || S.lvl=='staff');
+    const exps = p.expenses || [];
+    const total = exps.reduce((a, x) => a + (+x.amt || 0), 0);
+    const catTotals = {};
+    exps.forEach(x => { catTotals[x.cat || 'Other'] = (catTotals[x.cat || 'Other'] || 0) + (+x.amt || 0); });
+
+    const rows = exps.map((x, i) => `
+      <tr>
+        <td>${bdt('pj', p.id, 'expenses.'+i+'.date', x.date)}</td>
+        <td>${bs('pj', p.id, 'expenses.'+i+'.cat', x.cat || 'Other', ['Transport', 'Labour', 'Material', 'Food / Water', 'Site Misc', 'Other'])}</td>
+        <td>${bi('pj', p.id, 'expenses.'+i+'.desc', x.desc, 'style="min-width:180px"')}</td>
+        <td>${bn('pj', p.id, 'expenses.'+i+'.amt', x.amt, 'style="width:100px"')}</td>
+        <td>${bi('pj', p.id, 'expenses.'+i+'.by', x.by, 'style="width:100px" placeholder="Paid by"')}</td>
+        <td>${can ? ba('exdel', '✕', 'data-i="'+i+'"') : ''}</td>
+      </tr>
+    `).join('');
+
+    const summary = Object.entries(catTotals).map(([c, a]) => `<span class="chip" style="margin-right:4px">${esc(c)}: ${fmt(a)}</span>`).join('');
+
+    return `<div class="card">
+      <div class="bar noprint">
+        <h3>Project Expenses</h3>
+        ${can ? ba('exadd', '+ Add Expense', '', '') : ''}
+        <span style="margin-left:auto;font-size:16px"><b>Total: ${fmt(total)}</b></span>
+      </div>
+      <p class="mut">Track direct project costs not covered by Purchase Orders (labour, transport, site misc). This calculates your true profit.</p>
+      <div class="bar" style="margin-bottom:10px">${summary || '<span class="mut">No categories yet.</span>'}</div>
+      
+      <div class="sc">
+        <table class="g" style="min-width:600px">
+          <tr><th>Date</th><th>Category</th><th>Description</th><th>Amount (₹)</th><th>Paid By</th><th></th></tr>
+          ${rows || '<tr><td colspan="6" class="mut">No expenses recorded for this project yet.</td></tr>'}
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Profitability Check</h3>
+      <div class="dgrid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div><span class="mut">Contract Value</span><br><b>${fmt(p.val)}</b></div>
+        <div><span class="mut">Vendor POs</span><br><b>${fmt(pjSpend(p.id))}</b></div>
+        <div><span class="mut">Direct Expenses</span><br><b>${fmt(total)}</b></div>
+        <div><span class="mut">Real Profit</span><br><b style="color:${(+p.val||0) - (pjSpend(p.id) + total) > 0 ? '#15803d' : '#b00020'}">${fmt((+p.val||0) - (pjSpend(p.id) + total))}</b></div>
+      </div>
+    </div>`;
+  }
+
+  if (window.erpTab) {
+    const _erpTab = window.erpTab;
+    window.erpTab = function(p, T) {
+      if (T === 'exp') return expTab(p);
+      return _erpTab(p, T);
+    };
+  }
+
+  document.addEventListener('click', e => {
+    const bAdd = e.target.closest('[data-bza="exadd"]');
+    if (bAdd) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+      if (!p || !S.w) return;
+      p.expenses = p.expenses || [];
+      p.expenses.push({ date: today(), cat: 'Transport', desc: '', amt: 0, by: uName() });
+      bzSave('pj', p.id); render(); return;
+    }
+    const bDel = e.target.closest('[data-bza="exdel"]');
+    if (bDel) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+      if (!p || !S.w) return;
+      if (confirm('Delete this expense?')) {
+        p.expenses.splice(+bDel.dataset.i, 1);
+        bzSave('pj', p.id); render();
+      }
+      return;
+    }
+  }, true);
+
+  const origTodayCard = todayCard;
+  todayCard = function() {
+    let html = origTodayCard();
+    let inflow = 0, outflow = 0;
+    const t = today(), t30 = addDays(t, 30);
+
+    Object.values(BZ.pj).filter(isProjectActive).forEach(p => {
+      pjPend(p).forEach(o => {
+        if (o.pend > 0 && o.x.due && o.x.due <= t30) inflow += o.pend;
+      });
+    });
+
+    Object.values(BZ.po).filter(o => ['Sent', 'Part received'].includes(o.st)).forEach(o => {
+      if (o.del && o.del <= t30) {
+        const tTot = poTot(o).tot;
+        let paid = 0;
+        (o.pays || []).forEach(p => paid += (+p.amt || 0));
+        const bal = tTot - paid;
+        if (bal > 0) outflow += bal;
+      }
+    });
+
+    const net = inflow - outflow;
+    
+    if (inflow > 0 || outflow > 0) {
+      const cfHtml = `<div class="card" style="border-left:6px solid #F59E0B; background:#fffdf5">
+        <h3>💵 Cash Flow Forecast (Next 30 Days)</h3>
+        <div class="dgrid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+          <div><span class="mut">Expected Inflow (Clients)</span><br><b style="color:#15803d;font-size:18px">${fmt(inflow)}</b></div>
+          <div><span class="mut">Expected Outflow (Vendors)</span><br><b style="color:#b00020;font-size:18px">${fmt(outflow)}</b></div>
+          <div><span class="mut">Net Projection</span><br><b style="color:${net >= 0 ? '#15803d' : '#b00020'};font-size:18px">${fmt(net)}</b></div>
+        </div>
+        <p class="mut" style="margin:8px 0 0;font-size:12px">Based on client payment milestones and vendor delivery dates due in the next 30 days.</p>
+      </div>`;
+
+      const chipEnd = html.indexOf('</div>', html.indexOf('<h2>'));
+      if (chipEnd !== -1) { html = html.substring(0, chipEnd + 6) + cfHtml + html.substring(chipEnd + 6); }
+    }
+
+    return html;
+  };
+
+  console.log('[ModuCraft +] Expenses & Cash-Flow loaded');
+})();
+// ==========================================
+// STEP 6: DAILY SITE REPORT (PHOTOS & MILESTONES)
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcDailyLoaded) return;
+  window.__mcDailyLoaded = true;
+
+  if (typeof PJTABS !== 'undefined' && PJTABS.push && !PJTABS.some(t => t[0]==='drep')) { PJTABS.push(['drep', 'Daily Site Report', 'fslv']); }
+  if (typeof ERPT !== 'undefined' && ERPT.push && ERPT.indexOf('drep') < 0) { ERPT.push('drep'); }
+
+  function drepTab(p) {
+    const can = S.w && (S.lvl === 'full' || S.lvl === 'staff' || S.lvl === 'site');
+    const reps = (p.daily || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    
+    const cards = reps.map((rep, i) => {
+      const exps = (p.expenses || []).filter(e => e.date === rep.date);
+      const expTotal = exps.reduce((t, e) => t + (+e.amt || 0), 0);
+      
+      const expHtml = exps.length ? `
+        <div style="margin-top:10px; border-top:1px dashed var(--line); padding-top:8px;">
+          <span style="font-size:11px;font-weight:bold;color:#b00020">Payments / Expenses (${fmt(expTotal)})</span>
+          ${exps.map(e => `<div style="font-size:12px;margin-top:2px">• ${esc(e.cat)}: ${esc(e.desc)} — <b>${fmt(e.amt)}</b> (${esc(e.by || '')})</div>`).join('')}
+        </div>` : '';
+
+      const photosHtml = (rep.photos || []).length ? `
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
+          ${rep.photos.map(phId => {
+            const ph = ERP.ph[phId];
+            return ph ? `<img src="${ph.d}" data-phv="${phId}" style="height:70px; border-radius:6px; cursor:pointer; object-fit:cover; border:1px solid var(--line);">` : '';
+          }).join('')}
+        </div>` : '';
+
+      return `<div class="card" style="margin-bottom:10px; border-left:4px solid #1F4E79;">
+        <div class="bar" style="margin-bottom:4px">
+          <b style="font-size:15px;color:#1F4E79">📅 ${dmy(rep.date)}</b>
+          ${can ? `<button class="g" data-drep-act="del" data-i="${i}" style="margin-left:auto;padding:2px 6px;font-size:11px">Delete</button>` : ''}
+        </div>
+        <p style="margin:4px 0;font-size:13px;white-space:pre-wrap;">${esc(rep.summary)}</p>
+        ${photosHtml}
+        ${expHtml}
+      </div>`;
+    }).join('');
+
+    return `<div class="card">
+      <div class="bar noprint">
+        <h3>Daily Site Reports</h3>
+        ${can ? `<button data-drep-act="new" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;margin-left:auto">+ Log Today's Report</button>` : ''}
+      </div>
+      <p class="mut" style="margin-bottom:12px">Keep a daily record of work done, site photos, and cash payments. Visible to the client if you enable it in their portal.</p>
+      <div style="max-height:70vh;overflow-y:auto;padding-right:4px">
+        ${cards || '<p class="mut" style="text-align:center;padding:20px">No daily reports logged yet.</p>'}
+      </div>
+    </div>`;
+  }
+
+  if (window.erpTab) {
+    const _erpTab = window.erpTab;
+    window.erpTab = function(p, T) {
+      if (T === 'drep') return drepTab(p);
+      return _erpTab(p, T);
+    };
+  }
+
+  function openDailyModal(p) {
+    const o = document.createElement('div');
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
+    o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:auto">
+      <h3 style="margin-top:0">New Daily Report</h3>
+      <div class="dgrid" style="grid-template-columns:1fr;gap:10px;">
+        <div><label>Date</label><input type="date" id="dr_date" value="${today()}"></div>
+        <div><label>Work Summary (What was done today?)</label><textarea id="dr_sum" rows="3" placeholder="e.g. Kitchen base units installed. Wardrobe carcass delivered."></textarea></div>
+        <div style="border-top:1px solid var(--line);padding-top:10px;margin-top:6px;">
+          <label style="font-weight:bold;color:#b00020">Contractor Payment / Site Expense (Optional)</label>
+          <div class="dgrid" style="grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;">
+            <div><select id="dr_cat">${['Labour', 'Transport', 'Material', 'Site Misc', 'Other'].map(c=>`<option>${c}</option>`).join('')}</select></div>
+            <div><input type="number" id="dr_amt" placeholder="Amount ₹" min="0"></div>
+          </div>
+          <div style="margin-top:6px;"><input id="dr_desc" placeholder="Paid to / Description (e.g. Paid Ramesh for cutting)"></div>
+        </div>
+        <div style="border-top:1px solid var(--line);padding-top:10px;margin-top:6px;">
+          <label style="font-weight:bold;color:#1F4E79">Site Photos</label>
+          <input type="file" id="dr_photos" accept="image/*" multiple style="margin-top:4px;">
+          <div id="dr_prev" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+        </div>
+      </div>
+      <div class="bar" style="margin-top:16px;justify-content:flex-end">
+        <button class="g" id="dr_cancel">Cancel</button>
+        <button id="dr_save" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:8px 20px;font-weight:600;cursor:pointer">Save Report</button>
+      </div>
+    </div>`;
+    document.body.appendChild(o);
+
+    const fileInput = document.getElementById('dr_photos');
+    const prevBox = document.getElementById('dr_prev');
+    let uploadedPhotos = [];
+
+    fileInput.addEventListener('change', () => {
+      prevBox.innerHTML = '';
+      uploadedPhotos = [];
+      const files = fileInput.files;
+      if (files.length > 5) alert('Please select up to 5 photos per report.');
+      
+      Array.from(files).slice(0, 5).forEach(file => {
+        const r = new FileReader();
+        r.onload = (e) => {
+          const im = new Image();
+          im.onload = () => {
+            const m = Math.min(1, 800 / Math.max(im.width, im.height));
+            const c = document.createElement('canvas');
+            c.width = Math.round(im.width * m); c.height = Math.round(im.height * m);
+            c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+            const b64 = c.toDataURL('image/jpeg', .7);
+            uploadedPhotos.push(b64);
+            prevBox.innerHTML += `<img src="${b64}" style="height:50px;border-radius:4px;">`;
+          };
+          im.src = e.target.result;
+        };
+        r.readAsDataURL(file);
+      });
+    });
+
+    document.getElementById('dr_cancel').onclick = () => o.remove();
+    document.getElementById('dr_save').onclick = () => {
+      const date = document.getElementById('dr_date').value;
+      const sum = document.getElementById('dr_sum').value.trim();
+      if (!date) return alert('Please select a date.');
+      
+      p.daily = p.daily || [];
+      const repId = 'dr' + Date.now().toString(36);
+      
+      const phIds = uploadedPhotos.map(b64 => phStore(p.id, b64));
+      
+      const amt = +document.getElementById('dr_amt').value || 0;
+      if (amt > 0) {
+        p.expenses = p.expenses || [];
+        p.expenses.push({
+          date: date,
+          cat: document.getElementById('dr_cat').value,
+          desc: document.getElementById('dr_desc').value.trim() || 'Site Expense',
+          amt: amt,
+          by: uName()
+        });
+      }
+
+      p.daily.unshift({ id: repId, date: date, summary: sum, photos: phIds });
+      bzSave('pj', p.id);
+      try { audEvt('pj', p.id, p.name, 'Daily report added', date); } catch(e) {}
+      o.remove();
+      render();
+      flash('Daily report saved!');
+    };
+  }
+
+  document.addEventListener('click', e => {
+    const bNew = e.target.closest('[data-drep-act="new"]');
+    if (bNew) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+      if (p) openDailyModal(p);
+      return;
+    }
+    
+    const bDel = e.target.closest('[data-drep-act="del"]');
+    if (bDel) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+      if (p && confirm('Delete this daily report? Photos will remain in the gallery.')) {
+        const reps = (p.daily || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        const toDelete = reps[+bDel.dataset.i];
+        p.daily = p.daily.filter(x => x.id !== toDelete.id);
+        bzSave('pj', p.id); render();
+      }
+      return;
+    }
+  }, true);
+    // ==========================================
+// STEP 7: CARPENTER / LABOUR PIECE-RATE BILLING
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcCarpLoaded) return;
+  window.__mcCarpLoaded = true;
+
+  if (typeof PJTABS !== 'undefined' && PJTABS.push && !PJTABS.some(t => t[0]==='carp')) { PJTABS.push(['carp', 'Carpenter / Labour', 'fs']); }
+  if (typeof ERPT !== 'undefined' && ERPT.push && ERPT.indexOf('carp') < 0) { ERPT.push('carp'); }
+
+  function carpTab(p) {
+    const q = S.q[p.qid];
+    const totalSqft = q ? (typeof est === 'function' ? est(q).sq : 0) : 0;
+    
+    p.carp = p.carp || { rate: 0, extras: [], pays: [] };
+    
+    const rate = +p.carp.rate || 0;
+    const baseCost = totalSqft * rate;
+    const extraTotal = (p.carp.extras || []).reduce((a, x) => a + (+x.amt || 0), 0);
+    const totalPayable = baseCost + extraTotal;
+    const paidTotal = (p.carp.pays || []).reduce((a, x) => a + (+x.amt || 0), 0);
+    const balance = totalPayable - paidTotal;
+    const can = S.w;
+
+    const payRows = (p.carp.pays || []).map((x, i) => `
+      <tr>
+        <td>${bdt('pj', p.id, 'carp.pays.'+i+'.date', x.date)}</td>
+        <td>${bn('pj', p.id, 'carp.pays.'+i+'.amt', x.amt, 'style="width:100px"')}</td>
+        <td>${bs('pj', p.id, 'carp.pays.'+i+'.mode', x.mode || 'Cash', ['Cash', 'UPI', 'Bank'])}</td>
+        <td>${bi('pj', p.id, 'carp.pays.'+i+'.note', x.note, 'style="min-width:150px"')}</td>
+        <td>${can ? ba('cpdel', '✕', 'data-i="'+i+'"', 'data-type="pay"') : ''}</td>
+      </tr>
+    `).join('');
+
+    const extraRows = (p.carp.extras || []).map((x, i) => `
+      <tr>
+        <td>${bi('pj', p.id, 'carp.extras.'+i+'.desc', x.desc, 'style="min-width:200px"')}</td>
+        <td>${bn('pj', p.id, 'carp.extras.'+i+'.amt', x.amt, 'style="width:100px"')}</td>
+        <td>${can ? ba('cpdel', '✕', 'data-i="'+i+'"', 'data-type="extra"') : ''}</td>
+      </tr>
+    `).join('');
+
+    return `<div class="card">
+      <div class="bar noprint">
+        <h3>🔨 Carpenter / Labour Billing</h3>
+        ${!q ? '<span style="color:#b00020;font-size:12px;margin-left:10px">⚠ No quotation linked to this project.</span>' : ''}
+      </div>
+      <p class="mut">Calculate labor payments based on the BOQ square footage.</p>
+      
+      <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:10px 0">
+        <div style="padding:10px;background:var(--in);border-radius:8px">
+          <div class="mut" style="font-size:11px">Total Work (SQ.FT)</div>
+          <div style="font-size:20px;font-weight:bold;color:#1F4E79">${totalSqft}</div>
+        </div>
+        <div style="padding:10px;background:var(--in);border-radius:8px">
+          <div class="mut" style="font-size:11px">Labour Rate (₹/sqft)</div>
+          <div>${bn('pj', p.id, 'carp.rate', p.carp.rate, 'style="font-size:20px;font-weight:bold;width:100px"')}</div>
+        </div>
+        <div style="padding:10px;background:var(--in);border-radius:8px">
+          <div class="mut" style="font-size:11px">Calculated Labour Cost</div>
+          <div style="font-size:20px;font-weight:bold;color:#1F4E79">${fmt(baseCost)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start">
+      <div class="card">
+        <h3>Extra Work / Additions</h3>
+        <p class="mut" style="font-size:12px">Add polishing, extra fittings, or work outside the BOQ.</p>
+        <div class="sc">
+          <table class="g">
+            <tr><th>Description</th><th>Amount</th><th></th></tr>
+            ${extraRows || '<tr><td colspan="3" class="mut">No extra work added.</td></tr>'}
+          </table>
+        </div>
+        <div class="bar noprint">${can ? ba('cpadd', '+ Add Extra Work', '', 'data-type="extra"') : ''}</div>
+      </div>
+
+      <div class="card">
+        <h3>Payment History</h3>
+        <p class="mut" style="font-size:12px">Track advances and milestone payments made to the carpenter.</p>
+        <div class="sc">
+          <table class="g" style="min-width:450px">
+            <tr><th>Date</th><th>Amount</th><th>Mode</th><th>Note</th><th></th></tr>
+            ${payRows || '<tr><td colspan="5" class="mut">No payments recorded.</td></tr>'}
+          </table>
+        </div>
+        <div class="bar noprint">${can ? ba('cpadd', '+ Record Payment', '', 'data-type="pay"') : ''}</div>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:6px solid ${balance <= 0 ? '#15803d' : '#F59E0B'}">
+      <h3>Summary</h3>
+      <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <div><span class="mut">Base Labour Cost</span><br><b>${fmt(baseCost)}</b></div>
+        <div><span class="mut">Extra Work</span><br><b>${fmt(extraTotal)}</b></div>
+        <div><span class="mut">Total Payable</span><br><b>${fmt(totalPayable)}</b></div>
+        <div><span class="mut">Total Paid</span><br><b style="color:#15803d">${fmt(paidTotal)}</b></div>
+        <div><span class="mut">Balance Remaining</span><br><b style="color:${balance > 0 ? '#b00020' : '#15803d'}">${fmt(balance)}</b></div>
+      </div>
+    </div>`;
+  }
+
+  if (window.erpTab) {
+    const _erpTab = window.erpTab;
+    window.erpTab = function(p, T) {
+      if (T === 'carp') return carpTab(p);
+      return _erpTab(p, T);
+    };
+  }
+
+  document.addEventListener('click', e => {
+    const bAdd = e.target.closest('[data-bza="cpadd"]');
+    const bDel = e.target.closest('[data-bza="cpdel"]');
+    if (!bAdd && !bDel) return;
+    
+    e.preventDefault(); e.stopImmediatePropagation();
+    const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+    if (!p || !S.w) return;
+    
+    p.carp = p.carp || { rate: 0, extras: [], pays: [] };
+    
+    if (bAdd) {
+      const type = bAdd.dataset.type;
+      if (type === 'pay') p.carp.pays.push({ date: today(), amt: 0, mode: 'Cash', note: '' });
+      else p.carp.extras.push({ desc: '', amt: 0 });
+      bzSave('pj', p.id); render();
+    } else if (bDel) {
+      if (confirm('Delete this record?')) {
+        const type = bDel.dataset.type, idx = +bDel.dataset.i;
+        if (type === 'pay') p.carp.pays.splice(idx, 1);
+        else p.carp.extras.splice(idx, 1);
+        bzSave('pj', p.id); render();
+      }
+    }
+  }, true);
+  
+  document.addEventListener('change', e => {
+    if (e.target.dataset && e.target.dataset.bz && e.target.dataset.bz.startsWith('pj|') && e.target.dataset.bz.includes('carp.')) {
+      setTimeout(render, 100);
+    }
+  });
+
+  console.log('[ModuCraft +] Carpenter Billing loaded');
+})();
+
+  console.log('[ModuCraft +] Daily Site Report loaded');
+})();
+// ==========================================
+// STEP 8 & 9: DEPARTMENT SEGREGATION & ADVANCED ACCESS CONTROL (FIXED)
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcDeptAclLoaded_v2) return;
+  window.__mcDeptAclLoaded_v2 = true;
+
+  window.MC_DEPTS = {
+    admin:    { name: '👑 Admin View', tabs: ['h', 'r', 'enq', 'q', 'e', 'p', 'j', 'd', 'f', 'a', 'm', 'v', 's', 'x'] },
+    sales:    { name: '💼 Sales & Quotes', tabs: ['enq', 'q', 'e', 'p'] },
+    design:   { name: '📐 Design & Site', tabs: ['j', 'd', 'f', 'a'] },
+    purchase: { name: '📦 Purchase & Factory', tabs: ['v', 'm', 's'] },
+    accounts: { name: '💰 Accounts', tabs: ['h', 'r', 'x'] }
+  };
+
+  let curDept = localStorage.getItem('msq_dept') || 'admin';
+
+  window.MC_setDept = function(dept) {
+    if (!MC_DEPTS[dept]) return;
+    curDept = dept; 
+    localStorage.setItem('msq_dept', dept);
+    if (!MC_DEPTS[dept].tabs.includes(S.tab)) S.tab = 'h';
+    render();
+  };
+
+  window.MC_injectSwitcher = function() {
+    const top = document.querySelector('.top');
+    const isOwner = S.role === 'Owner' || S.role === 'Editor' || !S.role;
+    
+    if (!isOwner) {
+      const el = document.getElementById('dept_sw');
+      if (el) el.remove();
+      return;
+    }
+
+    if (!top || document.getElementById('dept_sw')) return;
+
+    const div = document.createElement('div');
+    div.id = 'dept_sw';
+    div.style.cssText = 'margin-left:auto; display:flex; align-items:center;';
+    
+    const sel = document.createElement('select');
+    sel.style.cssText = 'background:#1F2937; color:#fff; border:1px solid #ffffff44; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; outline:none;';
+    Object.entries(MC_DEPTS).forEach(([k, v]) => {
+      sel.innerHTML += `<option value="${k}" ${k === curDept ? 'selected' : ''}>${v.name}</option>`;
+    });
+
+    sel.onchange = (e) => MC_setDept(e.target.value);
+    div.appendChild(sel);
+    
+    const nav = document.getElementById('nav');
+    if (nav) {
+        nav.style.marginLeft = '12px';
+        top.insertBefore(div, nav);
+    }
+  };
+
+  const origApplyLvl = window.applyLvl;
+  window.applyLvl = function() {
+    origApplyLvl();
+    if (S.role !== 'Owner' && S.role !== 'Editor') {
+      const entry = S.acl.find(x => (x.id && x.id == S.uid) || (x.em && S.myEmail && x.em == S.myEmail.toLowerCase()));
+      if (entry && entry.dept && MC_DEPTS[entry.dept]) {
+        if (curDept !== entry.dept) {
+          curDept = entry.dept;
+          localStorage.setItem('msq_dept', curDept);
+          if (!MC_DEPTS[curDept].tabs.includes(S.tab)) S.tab = 'h';
+        }
+      } else {
+        if (curDept !== 'sales') {
+          curDept = 'sales';
+          localStorage.setItem('msq_dept', curDept);
+        }
+      }
+    } else {
+      curDept = localStorage.getItem('msq_dept') || 'admin';
+    }
+  };
+
+  const navObserver = new MutationObserver(() => {
+    MC_injectSwitcher();
+    const nav = document.getElementById('nav');
+    if (!nav) return;
+    const allowed = MC_DEPTS[curDept] ? MC_DEPTS[curDept].tabs : MC_DEPTS.admin.tabs;
+    nav.querySelectorAll('button[data-a="tab"]').forEach(b => {
+      b.style.display = allowed.includes(b.dataset.v) ? '' : 'none';
+    });
+  });
+
+  if (document.getElementById('nav')) {
+    navObserver.observe(document.getElementById('nav'), { childList: true, subtree: true });
+  }
+
+  window.vShare = function() {
+    if(window.__OFFLINE) return licInfoCard()+(localStorage.getItem('msq_owner_key')?licOwnerCard():'');
+    const adm = S.role=='Owner'||S.role=='Editor';
+    const deptOpts = Object.entries(MC_DEPTS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('');
+
+    const userRows = S.acl.map(x => {
+      const cDept = x.dept || 'admin';
+      return `<tr>
+        <td ${x.id?`data-pn="${esc(x.id)}"`:''}>${x.id?'…':esc(x.em)}</td>
+        <td><select data-acl="${esc(x.id||x.em)}">${Object.entries(LN).map(([k,v])=>`<option value="${k}"${x.lvl==k?' selected':''}>${v}</option>`).join('')}</select></td>
+        <td><select data-acldept="${esc(x.id||x.em)}">${Object.entries(MC_DEPTS).map(([k,v])=>`<option value="${k}"${cDept==k?' selected':''}>${v.name}</option>`).join('')}</select></td>
+        <td><button class="g" data-a="acx" data-id="${esc(x.id||x.em)}">Remove</button></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan=4 class="mut">No one listed yet.</tr>';
+
+    return `<div class="card">
+      <h2>Access & Sharing</h2>
+      <p>Your access: <b>${esc(S.role||'Unknown')}</b> • screen level: <b>${LN[S.lvl||'full']}</b></p>
+      <div class="bar"><input id="lnk" readonly value="${ARTL}" style="max-width:420px"><button data-a="cp">Copy app link</button></div>
+    </div>
+    ${adm?`<div class="card">
+      <h3>People &amp; access levels</h3>
+      <p class="mut">Invite the person in claude.ai → <b>Share</b> (Viewer = cannot save, Contributor = can save). Then add their email below and select their <b>Department</b> to lock their screen.</p>
+      <div class="bar">
+        <input id="aem" type="email" placeholder="Email address" style="max-width:220px">
+        <select id="alv" style="max-width:200px">${Object.entries(LN).map(([k,v])=>`<option value="${k}"${k=='view'?' selected':''}>${v}</option>`).join('')}</select>
+        <select id="adept" style="max-width:180px">${deptOpts}</select>
+        <button data-a="ae">Add User</button>
+      </div>
+      <input id="psq" data-ps placeholder="Or search a person by name…" style="max-width:340px">
+      <div id="psr"></div>
+      <div class="sc">
+        <table class="g" style="min-width:640px">
+          <tr><th>Person / Email</th><th>Access Level</th><th>Department Lock</th><th></th></tr>
+          ${userRows}
+        </table>
+      </div>
+    </div>`:''}
+    ${adm?teamCard()+licOwnerCard():''}
+    <div class="card"><h3>Important</h3><p>Department locks control what each person's <b>screen</b> shows. Everyone invited to the app technically receives its stored data, so a technically skilled person could still look up rates.</p></div>`;
+  };
+
+  document.addEventListener('change', e => {
+    if (e.target.dataset.acldept) {
+      const id = e.target.dataset.acldept;
+      const entry = S.acl.find(a => (a.id || a.em) == id);
+      if (entry) {
+        entry.dept = e.target.value;
+        saveAcl();
+        flash('Department lock updated');
+      }
+    }
+  });
+
+  document.addEventListener('click', e => {
+    const bAdd = e.target.closest('[data-a="ae"]');
+    if (!bAdd) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    
+    const em = (document.getElementById('aem').value || '').trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(em)) return flash('Enter a valid email address');
+    
+    const lv = document.getElementById('alv').value;
+    const dept = document.getElementById('adept').value;
+    
+    S.acl = S.acl.filter(x => x.em != em);
+    S.acl.push({ em, lvl: lv, dept });
+    saveAcl();
+    render();
+    
+    window.open('mailto:' + em + '?subject=' + encodeURIComponent('Access to ' + co().name + ' quotation app') + '&body=' + encodeURIComponent('Hello,\n\nPlease open our quotation app: ' + ARTL + '\n(Sign in to claude.ai with this email address.)\n\nYour access level: ' + LN[lv] + '\nDepartment: ' + MC_DEPTS[dept].name + '\n\n' + co().name), '_blank');
+  }, true);
+
+  const origTodayCard = todayCard;
+  todayCard = function() {
+    let html = origTodayCard();
+    if (curDept !== 'admin' && curDept !== 'accounts') return html;
+
+    const pjs = Object.values(BZ.pj).filter(isProjectActive);
+    const qs = Object.values(S.q);
+    const pos = Object.values(BZ.po);
+
+    const totalPipeline = qs.filter(q => q.st === 'shared' && q.out !== 'lost').reduce((a, q) => a + gt(q), 0);
+    let totalReceivable = 0;
+    pjs.forEach(p => { const r = pjRcv(p), v = +p.val || 0; if (v > r) totalReceivable += (v - r); });
+    const pendingVendors = pos.filter(p => ['Draft', 'Sent', 'Part received'].includes(p.st)).length;
+
+    const metricsHtml = `
+      <div class="dgrid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 15px 0;">
+        <div class="card" style="margin:0; border-top:4px solid #1F4E79;"><div class="mut" style="font-size:11px">Sales Pipeline</div><div style="font-size:22px; font-weight:bold; color:#1F4E79;">${fmt(totalPipeline)}</div></div>
+        <div class="card" style="margin:0; border-top:4px solid #22C55E;"><div class="mut" style="font-size:11px">Active Projects</div><div style="font-size:22px; font-weight:bold; color:#22C55E;">${pjs.length}</div></div>
+        <div class="card" style="margin:0; border-top:4px solid #EF4444;"><div class="mut" style="font-size:11px">Receivables (To Collect)</div><div style="font-size:22px; font-weight:bold; color:#EF4444;">${fmt(totalReceivable)}</div></div>
+        <div class="card" style="margin:0; border-top:4px solid #F59E0B;"><div class="mut" style="font-size:11px">POs Pending</div><div style="font-size:22px; font-weight:bold; color:#F59E0B;">${pendingVendors}</div></div>
+      </div>`;
+
+    const chipEnd = html.indexOf('</div>', html.indexOf('<h2>'));
+    if (chipEnd !== -1) html = html.substring(0, chipEnd + 6) + metricsHtml + html.substring(chipEnd + 6);
+    return html;
+  };
+
+  const _render = window.render;
+  window.render = function() {
+    MC_injectSwitcher();
+    _render.apply(this, arguments);
+    const allowed = MC_DEPTS[curDept] ? MC_DEPTS[curDept].tabs : MC_DEPTS.admin.tabs;
+    document.querySelectorAll('#nav button[data-a="tab"]').forEach(b => {
+      b.style.display = allowed.includes(b.dataset.v) ? '' : 'none';
+    });
+  };
+
+  console.log('[ModuCraft +] Department Segregation & Advanced Access v2 loaded');
+})();
+// ==========================================
+// STEP 10: SET BROWSER TAB FAVICON TO APP LOGO
+// ==========================================
+(function(){
+  'use strict';
+  function setFavicon() {
+    const logoImg = document.getElementById('tl');
+    if (logoImg && logoImg.src) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.type = 'image/png';
+      link.href = logoImg.src;
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setFavicon);
+  } else {
+    setFavicon();
+  }
+})();
+// ==========================================
+// STEP 11: GLOBAL SEARCH & MOBILE BOTTOM NAV (PHASE 3)
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcPhase3Loaded) return;
+  window.__mcPhase3Loaded = true;
+
+  const css = document.createElement('style');
+  css.textContent = `
+    #gs-wrap { position: relative; margin-left: 10px; margin-right: auto; }
+    #gs-input { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 12px 6px 30px; border-radius: 20px; width: 200px; font-size: 13px; transition: all 0.3s; }
+    #gs-input:focus { width: 280px; background: rgba(255,255,255,0.25); outline: none; border-color: #fff; }
+    #gs-input::placeholder { color: rgba(255,255,255,0.6); }
+    #gs-icon { position: absolute; left: 10px; top: 8px; font-size: 12px; color: rgba(255,255,255,0.7); }
+    #gs-results { position: absolute; top: 40px; left: 0; width: 320px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 100000; display: none; max-height: 400px; overflow-y: auto; }
+    .gs-item { padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background 0.2s; }
+    .gs-item:hover { background: var(--in); }
+    .gs-item b { display: block; font-size: 14px; margin-bottom: 2px; }
+    .gs-item span { font-size: 11px; color: var(--mut); }
+    .gs-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; background: #1F4E79; color: #fff; margin-right: 6px; }
+    #mob-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--line); z-index: 99999; padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .mob-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; background: transparent; border: 0; color: var(--mut); font-size: 10px; cursor: pointer; }
+    .mob-btn.on { color: var(--gold); font-weight: bold; }
+    .mob-btn i { font-size: 20px; margin-bottom: 2px; font-style: normal; }
+    @media screen and (max-width: 900px) {
+      #mob-nav { display: flex; }
+      body { padding-bottom: 65px; }
+      nav#nav { display: none !important; }
+      #gs-wrap { display: none; }
+      #dept_sw { margin-left: auto !important; }
+    }
+  `;
+  document.head.appendChild(css);
+
+  const topBar = document.querySelector('.top');
+  if (topBar && !document.getElementById('gs-wrap')) {
+    const searchWrap = document.createElement('div');
+    searchWrap.id = 'gs-wrap';
+    searchWrap.innerHTML = `<span id="gs-icon">🔍</span><input id="gs-input" placeholder="Search clients, projects, quotes..." autocomplete="off"><div id="gs-results"></div>`;
+    topBar.appendChild(searchWrap);
+
+    const mobNav = document.createElement('div');
+    mobNav.id = 'mob-nav';
+    mobNav.innerHTML = `
+      <button class="mob-btn" data-mob-tab="h"><i>🏠</i>Home</button>
+      <button class="mob-btn" data-mob-tab="q"><i>📄</i>Quotes</button>
+      <button class="mob-btn" data-mob-tab="j"><i>🏗️</i>Projects</button>
+      <button class="mob-btn" data-mob-tab="s"><i>⚙️</i>Menu</button>
+    `;
+    document.body.appendChild(mobNav);
+  }
+
+  const input = document.getElementById('gs-input');
+  const results = document.getElementById('gs-results');
+
+  if (input) {
+    input.addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      if (q.length < 2) { results.style.display = 'none'; return; }
+      
+      let html = '';
+      let count = 0;
+
+      Object.values(S.q).forEach(x => {
+        if (count > 15) return;
+        const match = (x.name||'').toLowerCase().includes(q) || (x.project||'').toLowerCase().includes(q) || (qno(x)||'').toLowerCase().includes(q);
+        if (match) { html += `<div class="gs-item" data-gs-act="q" data-id="${x.id}"><b><span class="gs-badge">Quote</span> ${esc(x.name)}</b><span>${esc(x.project)} • ${qno(x)}</span></div>`; count++; }
+      });
+
+      Object.values(BZ.pj).forEach(x => {
+        if (count > 15) return;
+        const match = (x.name||'').toLowerCase().includes(q) || (x.client||'').toLowerCase().includes(q) || (x.addr||'').toLowerCase().includes(q);
+        if (match) { html += `<div class="gs-item" data-gs-act="p" data-id="${x.id}"><b><span class="gs-badge" style="background:#22C55E">Project</span> ${esc(x.name)}</b><span>${esc(x.client)} • ${esc(x.stage)}</span></div>`; count++; }
+      });
+
+      Object.values(window.ENQ || {}).forEach(x => {
+        if (count > 15) return;
+        const match = (x.name||'').toLowerCase().includes(q) || (x.project||'').toLowerCase().includes(q) || (x.phone||'').toLowerCase().includes(q);
+        if (match) { html += `<div class="gs-item" data-gs-act="e" data-id="${x.id}"><b><span class="gs-badge" style="background:#F59E0B">Enquiry</span> ${esc(x.name)}</b><span>${esc(x.project)} • ${esc(x.phone)}</span></div>`; count++; }
+      });
+
+      if (html) { results.innerHTML = html; results.style.display = 'block'; } 
+      else { results.innerHTML = '<div style="padding:12px;font-size:13px;color:#666">No results found.</div>'; results.style.display = 'block'; }
+    });
+
+    document.addEventListener('click', (e) => { if (!e.target.closest('#gs-wrap')) results.style.display = 'none'; });
+  }
+
+  document.addEventListener('click', (e) => {
+    const item = e.target.closest('[data-gs-act]');
+    if (!item) return;
+    const act = item.dataset.gsAct, id = item.dataset.id;
+    results.style.display = 'none'; input.value = '';
+    if (act === 'q') { S.tab = 'e'; S.cur = id; render(); }
+    else if (act === 'p') { S.tab = 'j'; S.pj = id; S.pt = 'ov'; render(); }
+    else if (act === 'e') { S.tab = 'enq'; render(); }
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-mob-tab]');
+    if (!btn) return;
+    S.tab = btn.dataset.mobTab;
+    render();
+  });
+
+  const _render = window.render;
+  window.render = function() {
+    _render.apply(this, arguments);
+    document.querySelectorAll('[data-mob-tab]').forEach(b => { b.classList.toggle('on', b.dataset.mobTab === S.tab); });
+  };
+})();
+// ==========================================
+// STEP 12: DESIGN-FIRST WORKFLOW & SETTINGS
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcDesignFirstLoaded_v2) return;
+  window.__mcDesignFirstLoaded_v2 = true;
+
+  window.mc_createDraftFromEnq = function(enqId) {
+    const enq = window.ENQ[enqId];
+    if (!enq) return null;
+    let existing = Object.values(S.q).find(q => q.enqId === enqId);
+    if (existing) return existing.id;
+
+    const newQid = 'q' + Date.now().toString(36);
+    const newQ = {
+      id: newQid, enqId: enqId, ts: Date.now(), name: enq.name, contact: enq.phone, project: enq.project, by: lastBy() || uName(), address: '', date: new Date().toISOString().slice(0, 10),
+      rooms: [{ id: 'r' + Date.now().toString(36), t: 'MASTER BEDROOM', name: 'MASTER BEDROOM', w: 0, rate: '', rows: [], dim: { L: 3600, W: 3000, H: 2700 } }],
+      ir: {}, grp: newQid, rev: 0, seq: 1, st: 'draft', pay: cl(S.set.pay), notes: S.set.notes
+    };
+    S.q[newQid] = newQ;
+    enq.status = 'Quoted';
+    if (window.saveEnq) window.saveEnq();
+    save('q', newQid);
+    return newQid;
+  };
+
+  function renderDesignStarter() {
+    const enqs = Object.values(window.ENQ || {}).filter(e => e.status !== 'Lost' && e.status !== 'Won');
+    const cards = enqs.map(e => `<div class="card" style="margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; border-left:4px solid #B08D57;"><div><b style="font-size:16px;color:#1F4E79">${esc(e.name)}</b><br><span class="mut" style="font-size:12px">${esc(e.project || 'No project')} • ${esc(e.phone)}</span></div><button data-ds-start="${e.id}" style="background:#B08D57;color:#fff;border:0;border-radius:6px;padding:8px 16px;font-weight:bold;cursor:pointer">Start Designing →</button></div>`).join('');
+    return `<div class="card"><h2>🎨 Design Workspace</h2><p class="mut">Select an active Enquiry (Lead) to start designing. A draft quotation will be created automatically in the background.</p><div class="bar noprint" style="margin-bottom:16px;"><button data-a="tab" data-v="enq" class="g">+ Create New Enquiry</button><button data-a="tab" data-v="q" class="g">View Existing Quotations</button></div>${cards || '<div class="warn">No active enquiries found. Please create a new enquiry first.</div>'}</div>`;
+  }
+
+  function getDesignSettingsHTML(q) {
+    const s = S.set;
+    return `<details class="card" style="margin-bottom:12px; background:var(--in); border:1px solid var(--line);">
+      <summary style="font-weight:bold; color:#1F4E79; cursor:pointer; padding:4px;">⚙️ Project Materials, Hardware & Pricing Settings</summary>
+      <div class="fg" style="margin-top:10px;">
+        ${(q.pm=q.pm||{},'')}
+        ${GR3.map((g,gi)=>`<div><label>Ply maker — ${g}</label><input list="dl_pm${gi}" data-d="q" data-p="pm|${g}" data-newmk="${g}" value="${esc(brandFor(q,g))}" placeholder="type any maker"><datalist id="dl_pm${gi}">${brandsFor(g).map(b=>`<option value="${esc(b)}">`).join('')}</datalist></div>`).join('')}
+        <div><label>Hardware / accessories company</label><input list="dl_hw" data-d="q" data-p="hw" data-newhw value="${esc(q.hw||'Local')}" placeholder="type any company"><datalist id="dl_hw">${BRANDS.map(b=>`<option value="${esc(b)}">`).join('')}</datalist></div>
+        <div><label>Carcass finish — all units (BSL: both sides)</label>${SEL('q','cf',q.cf||FIN0,lamNames())}</div>
+        <div><label>Inner laminate code / colour</label>${I('q','ccol',q.ccol||'','placeholder="e.g. White 8112"')}</div>
+        <div><label>Outer laminate code / colour</label>${I('q','scol',q.scol||'','placeholder="e.g. Walnut W12"')}</div>
+        <div><label>Shutter finish — outer</label>${SEL('q','fo',q.fo||FIN0,S.set.fin.map(x=>x.n))}</div>
+        <div><label>Shutter finish — inner</label>${SEL('q','fi',q.fi||FIN0,S.set.fin.map(x=>x.n))}</div>
+        <div><label>Pricing basis</label><select data-d="q" data-p="pmo"><option value="Module rates" ${q.pmo==='Module rates'||!q.pmo?'selected':''}>Module rates (auto-calculated)</option><option value="Room base" ${q.pmo==='Room base'?'selected':''}>Room base (per sq.ft)</option><option value="Package" ${q.pmo==='Package'?'selected':''}>Package (flat price per room)</option><option value="Material costing" ${q.pmo==='Material costing'?'selected':''}>Material costing (Internal only)</option></select></div>
+        <div style="grid-column: 1 / -1; border-top: 1px dashed var(--line); margin-top: 10px; padding-top: 10px;"><label style="font-weight: bold; color: var(--gold);">Discounts by Section (%)</label><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top:4px;"><div><label>Wooden Work %</label>${N('q','dw',q.dw||0)}</div><div><label>Hardware & Accessories %</label>${N('q','dh',q.dh||0)}</div><div><label>Site / Civil Work %</label>${N('q','ds',q.ds||0)}</div></div></div>
+        <div><label>Electrical fittings included in the total?</label>${SEL('q','elx',q.elx||'Yes',['Yes','No'])}</div>
+      </div>
+    </details>`;
+  }
+
+  const origVDesign = window.vDesign;
+  window.vDesign = function() {
+    if (!S.cur || !S.q[S.cur]) return renderDesignStarter();
+    const q = S.q[S.cur];
+    return getDesignSettingsHTML(q) + origVDesign();
+  };
+
+  const origVPlan = window.vPlan;
+  window.vPlan = function() {
+    if (!S.cur || !S.q[S.cur]) return renderDesignStarter();
+    const q = S.q[S.cur];
+    return getDesignSettingsHTML(q) + origVPlan();
+  };
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-ds-start]');
+    if (!btn) return;
+    e.preventDefault();
+    const enqId = btn.dataset.dsStart;
+    const newQid = window.mc_createDraftFromEnq(enqId);
+    if (newQid) { S.cur = newQid; render(); flash('Draft quotation created! You can now design.'); }
+  });
+
+  const origVEnq = window.vEnq;
+  window.vEnq = function() {
+    let html = origVEnq();
+    Object.values(window.ENQ).forEach(e => {
+      const target = `<button class="g" data-enq-act="edit" data-id="${e.id}">Edit</button>`;
+      const designBtn = `<button data-ds-start="${e.id}" style="background:#B08D57;color:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;margin-left:4px">🎨 Design</button>`;
+      if (html.includes(target) && !html.includes(`data-ds-start="${e.id}"`)) { html = html.replace(target, target + designBtn); }
+    });
+    return html;
+  };
+})();
+
+// ==========================================
+// FIX: Mobile navigation (all tabs, department-aware, "More" sheet)
+// ==========================================
+(function () {
+  'use strict';
+  if (window.__mcMobNavFix) return;
+  window.__mcMobNavFix = true;
+
+  const LABELS = {
+    h:   ['🏠', 'Home'], q:   ['📄', 'Quotations'], j:   ['🏗️', 'Projects'], v:   ['📦', 'Vendors'], r:   ['📊', 'Reports'], e:   ['✏️', 'Edit'], p:   ['👁️', 'Preview'], a:   ['🔧', 'Accessories'], m:   ['📐', 'Ply & Hardware'], d:   ['🎨', 'Design'], f:   ['📏', 'Floor Plan'], s:   ['⚙️', 'Settings'], x:   ['🔐', 'Access & Sharing'], enq: ['📋', 'Enquiries']
+  };
+
+  function currentDept() { try { return localStorage.getItem('msq_dept') || 'admin'; } catch (e) { return 'admin'; } }
+  function allowedTabs() {
+    const deptTabs = (window.MC_DEPTS && MC_DEPTS[currentDept()]) ? MC_DEPTS[currentDept()].tabs : null;
+    return Object.keys(LABELS).filter(function (k) {
+      if (typeof navOK === 'function' && !navOK(k)) return false;
+      if (deptTabs && !deptTabs.includes(k)) return false;
+      return true;
+    });
+  }
+
+  function rebuildMobileNav() {
+    const mob = document.getElementById('mob-nav');
+    if (!mob) return;
+    const A = allowedTabs();
+    const quick = ['h', 'q', 'j'].filter(function (k) { return A.includes(k); });
+    const showMoreActive = !quick.includes(S.tab);
+    let html = '';
+    quick.forEach(function (k) {
+      const pair = LABELS[k];
+      const on = S.tab === k ? ' on' : '';
+      html += '<button class="mob-btn' + on + '" data-mob-tab="' + k + '"><i>' + pair[0] + '</i>' + pair[1] + '</button>';
+    });
+    html += '<button class="mob-btn' + (showMoreActive ? ' on' : '') + '" data-mob-more="1"><i>☰</i>More</button>';
+    mob.innerHTML = html;
+  }
+
+  function openMenu() {
+    const A = allowedTabs();
+    const prev = document.getElementById('mob-menu');
+    if (prev) prev.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'mob-menu';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100002;display:flex;align-items:flex-end;justify-content:center;padding:12px 12px calc(76px + env(safe-area-inset-bottom,0px))';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--card,#fff);color:var(--ink,#222);border-radius:16px;padding:14px;max-width:460px;width:100%;max-height:72vh;overflow-y:auto;box-shadow:0 -12px 40px rgba(0,0,0,.4)';
+
+    let html = '<h3 style="margin:0 0 10px;text-align:center;color:var(--gr,#4D5A4A)">Menu</h3>';
+    A.forEach(function (k) {
+      const pair = LABELS[k];
+      const on = S.tab === k;
+      html += '<button data-mob-go="' + k + '" style="display:flex;align-items:center;gap:12px;width:100%;margin:4px 0;padding:12px 14px;border:1px solid ' + (on ? 'var(--gold,#B08D57)' : 'var(--line,#ddd)') + ';background:' + (on ? 'var(--gold,#B08D57)' : 'var(--in,#faf8f4)') + ';color:' + (on ? '#fff' : 'var(--ink,#222)') + ';border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;text-align:left"><span style="font-size:20px">' + pair[0] + '</span><span>' + pair[1] + '</span></button>';
+    });
+    html += '<button id="mob-menu-close" style="width:100%;margin-top:10px;padding:10px;border:1px solid var(--line,#ddd);background:transparent;color:var(--ink,#222);border-radius:10px;font-size:14px;cursor:pointer">Close</button>';
+    box.innerHTML = html;
+    overlay.appendChild(box);
+
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+    box.querySelector('#mob-menu-close').onclick = function () { overlay.remove(); };
+    box.querySelectorAll('[data-mob-go]').forEach(function (b) {
+      b.onclick = function () { S.tab = b.dataset.mobGo; overlay.remove(); render(); };
+    });
+    document.body.appendChild(overlay);
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('[data-mob-more]')) {
+      e.preventDefault(); e.stopImmediatePropagation(); openMenu();
+    }
+  }, true);
+
+  const _render = window.render;
+  if (_render) {
+    window.render = function () { _render.apply(this, arguments); try { rebuildMobileNav(); } catch (e) {} };
+  }
+
+  const _setDept = window.MC_setDept;
+  if (_setDept) {
+    window.MC_setDept = function (dept) {
+      if (!window.MC_DEPTS || !MC_DEPTS[dept]) return;
+      if (!MC_DEPTS[dept].tabs.includes(S.tab)) { S.tab = MC_DEPTS[dept].tabs[0] || 'h'; }
+      _setDept(dept);
+    };
+  }
+
+  setTimeout(rebuildMobileNav, 500);
+  window.addEventListener('resize', function () { clearTimeout(window.__mobNavT); window.__mobNavT = setTimeout(rebuildMobileNav, 200); });
+})();
+
+// ==========================================
+// FIX: Public Enquiries Sync (Date, Time, Platform)
+// ==========================================
+(function() {
+  if (window.__mcEnqSyncLoaded) return;
+  window.__mcEnqSyncLoaded = true;
+
+  const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
+  const API_KEY = "ModuCraft@2026";
+
+  async function fetchEnquiries() {
+    try {
+      const res = await fetch(GOOGLE_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'read', collection: 'enquiries', apiKey: API_KEY }) });
+      const data = await res.json();
+      if (data.ok && data.data) {
+        let updated = false;
+        Object.values(data.data).forEach(row => {
+          if (!window.ENQ[row.id]) {
+            window.ENQ[row.id] = { id: row.id, name: row.name, phone: row.phone, project: row.project, budget: row.budget, notes: row.notes, platform: row.platform || 'App', date: row.date ? row.date.split('T')[0] : new Date().toISOString().split('T')[0], time: row.date ? new Date(row.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '', status: 'Enquiry' };
+            updated = true;
+          }
+        });
+        if (updated) { window.saveEnq(); if (S.tab === 'enq') render(); }
+      }
+    } catch(e) { console.log("Enquiry sync error:", e); }
+  }
+
+  const _vEnq = window.vEnq;
+  window.vEnq = function() {
+    let html = _vEnq();
+    html = html.replace('<th>Next Follow Up</th>', '<th>Source & Date</th><th>Next Follow Up</th>');
+    Object.values(window.ENQ).forEach(e => {
+      const rowTarget = `<tr><td><b>${esc(e.name)}</b><br><span class="mut">${esc(e.phone)}</span></td><td>${esc(e.project)}</td><td>${esc(e.budget || '—')}</td>`;
+      const sourceInfo = `<td><b style="color:#B08D57">${esc(e.platform || 'Manual')}</b><br><span class="mut" style="font-size:11px">${dmy(e.date)} ${e.time || ''}</span></td>`;
+      if (html.includes(rowTarget)) { html = html.replace(rowTarget, rowTarget + sourceInfo); }
+    });
+    return html;
+  };
+
+  setTimeout(fetchEnquiries, 1500);
+  setInterval(fetchEnquiries, 15000);
+
+  document.addEventListener('click', e => {
+    if (e.target.closest && e.target.closest('[data-enq-act="refresh"]')) { e.preventDefault(); fetchEnquiries(); alert("Checking for new enquiries..."); }
+  });
+
+  const _render = window.render;
+  window.render = function() {
+    _render.apply(this, arguments);
+    if (S.tab === 'enq') {
+      setTimeout(() => {
+        const bar = document.querySelector('.card .bar.noprint');
+        if (bar && !bar.querySelector('[data-enq-act="refresh"]')) { bar.innerHTML += `<button class="g" data-enq-act="refresh" style="margin-left:10px">↻ Sync</button>`; }
+      }, 100);
+    }
+  };
+})();
+
+// ==========================================
+// ENHANCED ENQUIRIES: Filtering, Grouping, Deleting (ADMIN RESTRICTED)
+// ==========================================
+(function() {
+  if (window.__mcEnqManagerLoaded) return;
+  window.__mcEnqManagerLoaded = true;
+
+  const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
+  const API_KEY = "ModuCraft@2026";
+
+  window.mcDeleteEnq = async function(id) {
+    if(!confirm("Are you sure you want to permanently delete this enquiry? This will also remove it from Google Sheets.")) return;
+    delete window.ENQ[id]; window.saveEnq();
+    try { await fetch(GOOGLE_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'delete', collection: 'enquiries', id: id, apiKey: API_KEY }) }); } catch(e) { console.log("Failed to delete from cloud", e); }
+    render();
+  };
+
+  window.mcUpdateEnqStatus = function(id, newStatus) {
+    if(window.ENQ[id]) { window.ENQ[id].status = newStatus; window.saveEnq(); render(); }
+  };
+
+  const _vEnq = window.vEnq;
+  window.vEnq = function() {
+    const allEnqs = Object.values(window.ENQ || {}).sort((a,b) => {
+      const d1 = new Date(a.date + ' ' + (a.time || '00:00')).getTime();
+      const d2 = new Date(b.date + ' ' + (b.time || '00:00')).getTime();
+      return d2 - d1;
+    });
+
+    if (!S.enqFilter) S.enqFilter = 'all';
+    
+    const tabs = [['all', 'All Leads'], ['new', 'New'], ['followup', 'Follow-up'], ['quoted', 'Quoted'], ['won', 'Won 🏆'], ['lost', 'Lost ❌']];
+
+    const filtered = allEnqs.filter(e => {
+      if (S.enqFilter === 'all') return true;
+      const st = (e.status || 'Enquiry').toLowerCase();
+      if (S.enqFilter === 'new') return st === 'enquiry' || st === 'new';
+      if (S.enqFilter === 'quoted') return st === 'quoted';
+      if (S.enqFilter === 'won') return st === 'won';
+      if (S.enqFilter === 'lost') return st === 'lost';
+      if (S.enqFilter === 'followup') return e.nfu && e.nfu <= today();
+      return true;
+    });
+
+    const grouped = {};
+    filtered.forEach(e => {
+      let dateStr = e.date || new Date().toISOString().split('T')[0];
+      const dObj = new Date(dateStr);
+      const isToday = dateStr === today();
+      const isYesterday = dateStr === addDays(today(), -1);
+      const displayDate = isToday ? "TODAY" : isYesterday ? "YESTERDAY" : dObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      if (!grouped[displayDate]) grouped[displayDate] = [];
+      grouped[displayDate].push(e);
+    });
+
+    let html = `<div class="card" style="border-top: 4px solid #1F4E79;">
+      <div class="bar noprint">
+        <h2>Enquiries & Leads</h2>
+        <button data-enq-act="new" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;margin-left:auto">+ Manual Enquiry</button>
+        <button class="g" data-enq-act="refresh" style="margin-left:8px">↻ Sync</button>
+      </div>
+      <div class="bar" style="margin-bottom:15px; gap:5px; flex-wrap:wrap;">
+        ${tabs.map(([key, label]) => {
+          const active = S.enqFilter === key;
+          const count = key === 'all' ? allEnqs.length : allEnqs.filter(e => {
+            const st = (e.status || 'Enquiry').toLowerCase();
+            if(key === 'new') return st === 'enquiry' || st === 'new';
+            if(key === 'followup') return e.nfu && e.nfu <= today();
+            return st === key;
+          }).length;
+          return `<button class="${active ? '' : 'g'}" style="padding:5px 15px; border-radius:20px; ${active ? 'background:#B08D57;border-color:#B08D57;color:#fff;' : ''}" data-enq-filter="${key}">${label} (${count})</button>`;
+        }).join('')}
+      </div>`;
+
+    if (Object.keys(grouped).length === 0) {
+      html += `<p class="mut" style="text-align:center; padding: 20px;">No enquiries found in this category.</p>`;
+    } else {
+      Object.keys(grouped).forEach(dateLabel => {
+        html += `<div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold; color: #666; font-size: 13px; border-bottom: 2px solid #eee; padding-bottom: 4px;">📅 ${dateLabel}</div>`;
+        html += `<div class="sc"><table class="g" style="min-width: 950px;">
+          <tr><th style="width: 20%;">Client Details</th><th style="width: 25%;">Project / Address</th><th style="width: 15%;">Budget & Source</th><th style="width: 15%;">Status</th><th style="width: 25%; text-align: right;">Actions</th></tr>`;
+        grouped[dateLabel].forEach(e => {
+          const stColor = e.status === 'Won' ? '#15803d' : e.status === 'Lost' ? '#b00020' : '#1F4E79';
+          html += `<tr>
+            <td><b style="font-size: 15px;">${esc(e.name)}</b><br><span class="mut" style="font-size:12px">📞 ${esc(e.phone)}</span><br><span class="mut" style="font-size:11px">${e.email ? '✉️ '+esc(e.email) : ''}</span></td>
+            <td><b>${esc(e.project || '—')}</b><br><span class="mut" style="font-size:11px">📍 ${esc(e.address || 'No address')}</span></td>
+            <td><b style="color:#B08D57">${esc(e.budget || '—')}</b><br><span class="mut" style="font-size:11px">${esc(e.platform || 'Website')} • ${e.time || ''}</span>${e.notes ? `<br><button class="g" onclick="alert('REQUIREMENTS:\\n\\n' + \`${esc(e.notes).replace(/`/g, "'")}\`)" style="padding:2px 6px;font-size:10px;margin-top:4px">View Details</button>` : ''}</td>
+            <td><select onchange="mcUpdateEnqStatus('${e.id}', this.value)" style="font-weight: bold; color: ${stColor}; border-color: ${stColor}; padding: 4px; border-radius: 4px;"><option value="Enquiry" ${e.status === 'Enquiry' ? 'selected' : ''}>New</option><option value="Quoted" ${e.status === 'Quoted' ? 'selected' : ''}>Quoted</option><option value="Won" ${e.status === 'Won' ? 'selected' : ''}>Won</option><option value="Lost" ${e.status === 'Lost' ? 'selected' : ''}>Lost</option></select></td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+              ${e.status !== 'Won' ? `<button data-enq-act="convert" data-id="${e.id}" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px">Quote</button>` : ''}
+              ${(S.role === 'Owner' || S.role === 'Editor' || !S.role) ? `<button onclick="mcDeleteEnq('${e.id}')" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px;font-weight:bold;">🗑️</button>` : ''}
+            </td>
+          </tr>`;
+        });
+        html += `</table></div>`;
+      });
+    }
+    html += `</div>`;
+    return html;
+  };
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-enq-filter]');
+    if (btn) { e.preventDefault(); S.enqFilter = btn.dataset.enqFilter; render(); }
+  });
+})();
+
+// ==========================================
+// DAILY STARTUP CHECKLIST LOGIC
+// ==========================================
+(function() {
+  if (window.__mcDailyChecklistLoaded) return;
+  window.__mcDailyChecklistLoaded = true;
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const today = new Date().toDateString();
+    const lastCheck = localStorage.getItem(`checklist_${today}`);
+
+    // Only show if not done today
+    if (lastCheck === 'completed') return;
+
+    const modal = document.getElementById('daily-checklist-modal');
+    if (!modal) return;
+
+    // Wait for S.role to be defined before showing the checklist
+    const checkRole = setInterval(() => {
+      if (typeof S !== 'undefined' && S.role) {
+        clearInterval(checkRole);
+        setupChecklist(modal, today);
+      }
+    }, 500);
+  });
+
+  function setupChecklist(modal, today) {
+    const isAdmin = (S.role === 'Owner' || S.role === 'Editor' || !S.role);
+    
+    let tasks = [];
+    if (isAdmin) {
+      tasks = [
+        { id: 'chk_email', label: 'Check Email / BCC for new leads (Optional)', optional: true },
+        { id: 'chk_leads', label: 'Review New Leads in Enquiries Tab', optional: false },
+        { id: 'chk_sync', label: 'Check System Sync Status', optional: false },
+        { id: 'chk_pipeline', label: 'Review Won/Lost Pipeline', optional: false }
+      ];
+    } else {
+      tasks = [
+        { id: 'chk_tasks', label: 'Review assigned tasks', optional: false },
+        { id: 'chk_site', label: 'Check site updates & daily reports', optional: false }
+      ];
+    }
+
+    const itemsContainer = document.getElementById('chk-items');
+    itemsContainer.innerHTML = tasks.map(t => `
+      <label class="chk-item">
+        <input type="checkbox" id="${t.id}" class="chk-cb" ${t.optional ? 'data-optional="true"' : ''} onchange="window.validateChecklist()">
+        ${t.label}
+      </label>
+    `).join('');
+
+    document.getElementById('chk-date').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    modal.style.display = 'flex';
+
+    window.validateChecklist = function() {
+      const cbs = document.querySelectorAll('.chk-cb');
+      const allReqChecked = Array.from(cbs).every(cb => cb.checked || cb.dataset.optional === 'true');
+      document.getElementById('chk-start-btn').disabled = !allReqChecked;
+    };
+
+    document.getElementById('chk-start-btn').onclick = function() {
+      localStorage.setItem(`checklist_${today}`, 'completed');
+      modal.style.display = 'none';
+      if (typeof render === 'function') render();
+    };
+  }
+})();
