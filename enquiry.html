@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ModuCraft - Enquiry Form</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #F5F1EA; padding: 20px; color: #24313A; margin: 0; }
+    .card { background: #fff; max-width: 400px; margin: 20px auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #B08D57; }
+    h2 { margin-top: 0; color: #4D5A4A; text-align: center; }
+    label { display: block; margin-top: 12px; font-size: 14px; font-weight: bold; color: #666; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+    button { background: #B08D57; color: #fff; border: 0; padding: 12px; width: 100%; border-radius: 6px; font-size: 16px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+    button:disabled { background: #ccc; }
+    .success { display: none; text-align: center; color: #15803d; font-weight: bold; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Request a Quote</h2>
+  <p style="text-align:center; font-size:13px; color:#777;">Fill this form and our team will contact you shortly.</p>
+  
+  <form id="enqForm">
+    <label>Your Name *</label>
+    <input type="text" id="name" required placeholder="e.g. Rahul Sharma">
+    
+    <label>Phone Number *</label>
+    <input type="tel" id="phone" required placeholder="10-digit mobile number">
+    
+    <label>Project Type</label>
+    <input type="text" id="project" placeholder="e.g. 2BHK Flat, Kitchen, Office">
+    
+    <label>Estimated Budget</label>
+    <select id="budget">
+      <option value="">Select Budget</option>
+      <option value="Under ₹1 Lakh">Under ₹1 Lakh</option>
+      <option value="₹1 - ₹3 Lakhs">₹1 - ₹3 Lakhs</option>
+      <option value="₹3 - ₹5 Lakhs">₹3 - ₹5 Lakhs</option>
+      <option value="₹5 - ₹10 Lakhs">₹5 - ₹10 Lakhs</option>
+      <option value="Above ₹10 Lakhs">Above ₹10 Lakhs</option>
+    </select>
+    
+    <label>Message (Optional)</label>
+    <textarea id="notes" rows="3" placeholder="Any specific requirements..."></textarea>
+    
+    <input type="hidden" id="platform" value="Website">
+
+    <button type="submit" id="btn">Submit Enquiry</button>
+    <div id="msg" class="success">✓ Thank you! We have received your enquiry.</div>
+  </form>
+</div>
+
+<script>
+  // 1. Get the platform from the URL (e.g. enquiry.html?source=Instagram)
+  const urlParams = new URLSearchParams(window.location.search);
+  const source = urlParams.get('source');
+  if (source) document.getElementById('platform').value = source;
+
+  // 2. Your Google Web App URL
+  const API_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
+
+  // 3. Send data when form is submitted
+  document.getElementById('enqForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn');
+    btn.disabled = true;
+    btn.textContent = "Sending...";
+
+    const data = {
+      action: 'public_enquiry',
+      name: document.getElementById('name').value,
+      phone: document.getElementById('phone').value,
+      project: document.getElementById('project').value,
+      budget: document.getElementById('budget').value,
+      notes: document.getElementById('notes').value,
+      platform: document.getElementById('platform').value,
+      date: new Date().toISOString()
+    };
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      
+      if (result.ok) {
+        document.getElementById('enqForm').style.display = 'none';
+        document.getElementById('msg').style.display = 'block';
+      } else {
+        alert("Something went wrong. Please call us directly.");
+        btn.disabled = false;
+        btn.textContent = "Submit Enquiry";
+      }
+    } catch (err) {
+      alert("Network error. Please try again.");
+      btn.disabled = false;
+      btn.textContent = "Submit Enquiry";
+    }
+  });
+</script>
+
+</body>
+</html>
