@@ -1634,3 +1634,194 @@ document.addEventListener('change', e => {
 
   console.log('[ModuCraft +] Package templates v2 loaded');
 })();
+
+/* ===== STEP 4: ENQUIRY TRACKER (PRE-QUOTATION) ===== */
+(function(){
+  'use strict';
+  if (window.__mcEnqLoaded) return;
+  window.__mcEnqLoaded = true;
+
+  // 1. Initialize Data Storage
+  window.ENQ = JSON.parse(localStorage.getItem('msq_enq_data') || '{}');
+  window.saveEnq = function() {
+    localStorage.setItem('msq_enq_data', JSON.stringify(window.ENQ));
+  };
+
+  // 2. Render the Enquiry List
+  window.vEnq = function() {
+    const list = Object.values(window.ENQ).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const t = today();
+
+    const rows = list.map(e => {
+      const isOverdue = e.nextFollowUp && e.nextFollowUp <= t;
+      const badge = e.status === 'Won' ? '<span style="color:#15803d">Won</span>' : 
+                    e.status === 'Lost' ? '<span style="color:#b00020">Lost</span>' : 
+                    `<span style="color:#1F4E79">${e.status || 'Enquiry'}</span>`;
+      
+      return `<tr>
+        <td><b>${esc(e.name)}</b><br><span class="mut">${esc(e.phone)}</span></td>
+        <td>${esc(e.project)}</td>
+        <td>${esc(e.budget || '—')}</td>
+        <td style="${isOverdue ? 'color:#b00020;font-weight:bold' : ''}">${e.nextFollowUp ? dmy(e.nextFollowUp) : '—'}</td>
+        <td>${badge}</td>
+        <td style="white-space:nowrap">
+          <button class="g" data-enq-act="edit" data-id="${e.id}">Edit</button>
+          ${e.status !== 'Won' ? `<button data-enq-act="convert" data-id="${e.id}" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;margin-left:4px">→ Quote</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="card">
+      <div class="bar noprint">
+        <h2>Enquiries / Leads</h2>
+        <button data-enq-act="new" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;margin-left:auto">+ New Enquiry</button>
+      </div>
+      <p class="mut">Track potential clients before creating a quotation. Convert them to a quote with one click.</p>
+      <div class="sc">
+        <table class="g" style="min-width:760px">
+          <tr><th>Client</th><th>Project / Requirement</th><th>Budget</th><th>Next Follow Up</th><th>Status</th><th></th></tr>
+          ${rows || '<tr><td colspan="6" class="mut">No enquiries logged yet.</td></tr>'}
+        </table>
+      </div>
+    </div>`;
+  };
+
+  // 3. Add the Tab to the Navigation Menu
+  const navObserver = new MutationObserver(() => {
+    const nav = document.getElementById('nav');
+    if (!nav || document.querySelector('#nav button[data-v="enq"]')) return;
+    if (typeof navOK === 'function' && !navOK('q')) return; // Don't show for view-only roles
+
+    const btn = document.createElement('button');
+    btn.dataset.a = 'tab';
+    btn.dataset.v = 'enq';
+    btn.className = (S.tab === 'enq') ? 'on' : '';
+    btn.textContent = 'Enquiries';
+    btn.onclick = () => { S.tab = 'enq'; render(); };
+    
+    // Insert after "Quotations"
+    const firstBtn = nav.querySelector('button');
+    if (firstBtn) firstBtn.after(btn);
+    else nav.appendChild(btn);
+  });
+  if (document.getElementById('nav')) {
+    navObserver.observe(document.getElementById('nav'), { childList: true });
+  }
+
+  // 4. Hook into the main render function
+  const _render = window.render;
+  window.render = function() {
+    if (S.tab === 'enq') {
+      document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === 'enq'));
+      document.getElementById('app').innerHTML = window.vEnq();
+      // Ensure the nav observer keeps the button highlighted
+      const btn = document.querySelector('#nav button[data-v="enq"]');
+      if (btn) btn.classList.add('on');
+      return;
+    }
+    // Remove highlight if we are on another tab
+    const btn = document.querySelector('#nav button[data-v="enq"]');
+    if (btn) btn.classList.remove('on');
+    _render.apply(this, arguments);
+  };
+
+  // 5. Modal for Add / Edit
+  function openEnqModal(id) {
+    const isNew = !id;
+    const e = isNew ? { id: 'e' + Date.now().toString(36), date: today(), status: 'Enquiry' } : window.ENQ[id];
+    
+    const o = document.createElement('div');
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
+    
+    o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto">
+      <h3 style="margin-top:0">${isNew ? 'New Enquiry' : 'Edit Enquiry'}</h3>
+      <div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px">
+        <div style="grid-column:1/-1"><label>Client Name *</label><input id="eq_name" value="${esc(e.name||'')}"></div>
+        <div><label>Phone / Email</label><input id="eq_phone" value="${esc(e.phone||'')}"></div>
+        <div><label>Project (e.g. 2BHK)</label><input id="eq_proj" value="${esc(e.project||'')}"></div>
+        <div><label>Budget</label><input id="eq_bud" value="${esc(e.budget||'')}"></div>
+        <div><label>Next Follow Up</label><input type="date" id="eq_date" value="${e.nextFollowUp||''}"></div>
+        <div style="grid-column:1/-1"><label>Notes</label><textarea id="eq_notes" rows="2">${esc(e.notes||'')}</textarea></div>
+        <div style="grid-column:1/-1"><label>Status</label><select id="eq_status">${['Enquiry','Quoted','Won','Lost'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      </div>
+      <div class="bar" style="margin-top:14px;justify-content:flex-end">
+        ${!isNew ? `<button class="g" id="eq_del" style="margin-right:auto;color:#b00020;border-color:#fca5a5">Delete</button>` : ''}
+        <button class="g" id="eq_cancel">Cancel</button>
+        <button id="eq_save" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:8px 20px;font-weight:600;cursor:pointer">Save</button>
+      </div>
+    </div>`;
+    document.body.appendChild(o);
+
+    document.getElementById('eq_cancel').onclick = () => o.remove();
+    if (!isNew) {
+      document.getElementById('eq_del').onclick = () => {
+        if (confirm('Delete this enquiry?')) {
+          delete window.ENQ[id];
+          window.saveEnq();
+          o.remove();
+          render();
+        }
+      };
+    }
+
+    document.getElementById('eq_save').onclick = () => {
+      const name = document.getElementById('eq_name').value.trim();
+      if (!name) { alert('Client name is required'); return; }
+      e.name = name;
+      e.phone = document.getElementById('eq_phone').value.trim();
+      e.project = document.getElementById('eq_proj').value.trim();
+      e.budget = document.getElementById('eq_bud').value.trim();
+      e.nextFollowUp = document.getElementById('eq_date').value;
+      e.notes = document.getElementById('eq_notes').value.trim();
+      e.status = document.getElementById('eq_status').value;
+      
+      window.ENQ[e.id] = e;
+      window.saveEnq();
+      o.remove();
+      render();
+      flash('Enquiry saved');
+    };
+  }
+
+  // 6. Handle Clicks (New, Edit, Convert)
+  document.addEventListener('click', function(ev) {
+    const btn = ev.target.closest('[data-enq-act]');
+    if (!btn) return;
+    ev.preventDefault();
+    
+    const act = btn.dataset.enqAct;
+    const id = btn.dataset.id;
+    
+    if (act === 'new') openEnqModal();
+    else if (act === 'edit') openEnqModal(id);
+    else if (act === 'convert') {
+      const e = window.ENQ[id];
+      if (!e) return;
+      
+      if (confirm(`Create a new quotation for ${e.name}?`)) {
+        // Use main app's newQ function
+        window.newQ();
+        const q = window.T();
+        if (q) {
+          q.name = e.name;
+          q.contact = e.phone;
+          q.project = e.project || q.project;
+          q.by = window.lastBy();
+          // Save and render
+          window.save('q', q.id);
+        }
+        
+        // Mark enquiry as Quoted
+        e.status = 'Quoted';
+        window.saveEnq();
+        
+        // Switch to Edit tab
+        S.tab = 'e';
+        render();
+        flash('Converted to new quotation');
+      }
+    }
+  });
+
+  console.log('[ModuCraft +] Enquiry Tracker loaded');
+})();
