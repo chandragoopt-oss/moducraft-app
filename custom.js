@@ -38,7 +38,7 @@ const navObserver = new MutationObserver(() => {
         }
     }
 });
-navObserver.observe(document.getElementById('nav'), {childList: true, subtree: true});
+if(document.getElementById('nav')) navObserver.observe(document.getElementById('nav'), {childList: true, subtree: true});
 
 function openFupModal(id, type) {
     const isP = type === 'p';
@@ -345,11 +345,11 @@ function calcCatTotals(q) {
 }
 
 function customDisc(q) {
-    const T = calcCatTotals(q);
+    const catTotals = calcCatTotals(q); // FIXED: Renamed from T to avoid global var shadow
     let d = 0;
-    if (+q.dw > 0) d += T.wood * q.dw / 100;
-    if (+q.dh > 0) d += T.hard * q.dh / 100;
-    if (+q.ds > 0) d += T.site * q.ds / 100;
+    if (+q.dw > 0) d += catTotals.wood * q.dw / 100;
+    if (+q.dh > 0) d += catTotals.hard * q.dh / 100;
+    if (+q.ds > 0) d += catTotals.site * q.ds / 100;
     
     if (d === 0 && +q.dcv > 0) {
         const g = gt0(q);
@@ -362,14 +362,14 @@ function customGt(q) { return gt0(q) - customDisc(q); }
 const origVPrev = vPrev;
 vPrev = function() {
     let html = origVPrev();
-    const q = T();
+    const q = window.T ? window.T() : T(); // FIXED: Safely use global T()
     if (!q) return html;
 
-    const T = calcCatTotals(q);
+    const catTotals = calcCatTotals(q); // FIXED
     const cDisc = customDisc(q);
     const cGt = customGt(q);
     const dw = +q.dw || 0, dh = +q.dh || 0, ds = +q.ds || 0;
-    const dW = T.wood * dw / 100, dH = T.hard * dh / 100, dS = T.site * ds / 100;
+    const dW = catTotals.wood * dw / 100, dH = catTotals.hard * dh / 100, dS = catTotals.site * ds / 100;
 
     let discRows = '';
     if (dW > 0) discRows += `<tr><td>Discount on Wooden Work (${dw}%)<td class="r">− ${fmt(dW)}</tr>`;
@@ -384,27 +384,29 @@ vPrev = function() {
 
     let newTotTable = '';
     if (q.pmo === 'Package') {
-        const grand = T.wood;
+        const grand = catTotals.wood;
         const dW_pkg = grand * dw / 100;
         newTotTable = `<table class="t">
             <tr><td>Sub-total<td class="r">${fmt(grand)}</tr>
             ${dW_pkg > 0 ? `<tr><td>Discount on Package (${dw}%)<td class="r">− ${fmt(dW_pkg)}</tr>` : ''}
             <tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(grand - dW_pkg)}</tr>
         </table>`;
-        html = html.replace(/<table class="t">\s*<tr><td>Sub-total.*?GRAND TOTAL.*?<\/table>/s, newTotTable);
+        html = html.replace(/<table class="t">[\s\S]*?GRAND TOTAL[\s\S]*?<\/table>/, newTotTable);
+        
         const payHtmlOld = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(gt(q)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
         const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt((grand - dW_pkg)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
-        html = html.replace(payHtmlOld, payHtmlNew);
+        if (payHtmlOld.length > 0) html = html.replace(payHtmlOld, payHtmlNew);
     } else {
         newTotTable = `<table class="t">
             <tr><td>Sub-total<td class="r">${fmt(gt0(q))}</tr>
             ${discRows}
             <tr class="tot gt"><td>GRAND TOTAL<td class="r">${fmt(cGt)}</tr>
         </table>`;
-        html = html.replace(/<table class="t">\s*<tr><td>Sub-total.*?GRAND TOTAL.*?<\/table>/s, newTotTable);
+        html = html.replace(/<table class="t">[\s\S]*?GRAND TOTAL[\s\S]*?<\/table>/, newTotTable);
+        
         const payHtmlOld = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(gt(q)*(parseFloat(p.p)||0)/100)}</tr>`).join('');
         const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(cGt*(parseFloat(p.p)||0)/100)}</tr>`).join('');
-        html = html.replace(payHtmlOld, payHtmlNew);
+        if (payHtmlOld.length > 0) html = html.replace(payHtmlOld, payHtmlNew);
     }
     return html;
 };
@@ -847,10 +849,10 @@ document.addEventListener('change', e => {
     }
 });
 
-console.log("Custom patch loaded successfully! All PO prices hidden.");
 
-/* ===== STEP 1: GUIDED RATE SETUP (v2 — dark-mode safe) ===== */
-/* Appended — does not touch any existing code above. Safe to remove by deleting this block. */
+// ==========================================
+// STEP 1: GUIDED RATE SETUP
+// ==========================================
 (function(){
   'use strict';
   if (window.__mcSetupLoaded) { console.log('[ModuCraft +] Guided setup already loaded'); return; }
@@ -1028,25 +1030,61 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       };
       const el = document.querySelector(map[fix.dataset.setupGo] || 'body');
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(function(){ try { el.focus(); } catch(x){} }, 400);
+        const parentCard = el.closest('.card');
+        if (parentCard && parentCard.classList.contains('cxc')) {
+          parentCard.classList.remove('cxc');
+          const k = parentCard.dataset.cxk;
+          if (k) {
+            try {
+              const st = JSON.parse(localStorage.getItem('msq_cl') || '{}');
+              st[k] = 0;
+              localStorage.setItem('msq_cl', JSON.stringify(st));
+            } catch(x) {}
+          }
+        }
+        const details = el.closest('details');
+        if (details) details.open = true;
+        
+        setTimeout(function() {
+          const rect = el.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          try {
+            window.scrollTo({ top: rect.top + scrollTop - 150, behavior: 'smooth' });
+          } catch(x) {
+            el.scrollIntoView();
+          }
+          const prevBg = el.style.backgroundColor;
+          const prevShadow = el.style.boxShadow;
+          el.style.backgroundColor = 'rgba(245, 158, 11, 0.4)';
+          el.style.boxShadow = '0 0 0 4px rgba(245, 158, 11, 0.8)';
+          el.style.transition = 'background-color 0.2s, box-shadow 0.2s';
+          setTimeout(function() {
+            try { el.focus(); } catch(x) {}
+            setTimeout(function() {
+              el.style.backgroundColor = prevBg;
+              el.style.boxShadow = prevShadow;
+              setTimeout(() => { el.style.transition = ''; }, 200);
+            }, 2000);
+          }, 500);
+        }, 50);
       }
       return;
     }
     const tab = e.target.closest('[data-setup-tab]');
     if (tab) { e.preventDefault(); S.tab = 's'; render(); }
-  });
+  }, true);
 
   if ((S.tab === 's' || S.tab === 'h') && typeof render === 'function') {
     setTimeout(function(){ try { render(); } catch(x){} }, 200);
   }
 
-  console.log('[ModuCraft +] Guided rate setup v2 (dark-mode safe) loaded');
+  console.log('[ModuCraft +] Guided rate setup loaded');
 })();
-/* ===== END STEP 1 ===== */
 
-/* ===== STEP 2: GST / NON-GST INVOICE (v2) ===== */
-/* Appended — does not touch any existing code. Safe to remove by deleting this block. */
+
+// ==========================================
+// STEP 2: GST / NON-GST INVOICE
+// ==========================================
 (function(){
   'use strict';
   if (window.__mcInvoiceLoaded_v2) { console.log('[ModuCraft +] Invoice v2 already loaded'); return; }
@@ -1367,7 +1405,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
     '</div>' + docPaper(title, meta, body);
   }
 
-  // ---------- Wiring ----------
   if (typeof PJTABS !== 'undefined' && PJTABS.push && !PJTABS.some(function(t){return t[0]==='inv';})) {
     PJTABS.push(['inv', 'Invoices', 'fs']);
   }
@@ -1454,118 +1491,53 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
 
   console.log('[ModuCraft +] GST / Non-GST invoice v2 loaded');
 })();
-/* ===== END STEP 2 ===== */
 
-/* ===== STEP 1 FIX: ENHANCE FIX BUTTON SCROLL & HIGHLIGHT ===== */
-(function() {
-  document.addEventListener('click', function(e) {
-    const fix = e.target.closest('[data-setup-go]');
-    if (!fix) return;
-    e.preventDefault();
-    
-    const map = {
-      co: 'input[data-p="co|name"]',
-      plr: 'input[data-p^="plr|"][data-p$="|r"]',
-      fin: 'input[data-p^="fin|"][data-p$="|c"]',
-      acc: 'input[data-p^="acc|"][data-p$="|rh"]',
-      lab: 'input[data-p="lab"]',
-      mgn: 'input[data-p="mgn"]',
-      gst: 'input[data-p="gst"]',
-      rooms: 'input[data-p^="rooms|"][data-p$="|r"]'
-    };
-    
-    const el = document.querySelector(map[fix.dataset.setupGo] || 'body');
-    if (el) {
-      // 1. Expand collapsed parent card
-      const parentCard = el.closest('.card');
-      if (parentCard && parentCard.classList.contains('cxc')) {
-        parentCard.classList.remove('cxc');
-        const k = parentCard.dataset.cxk;
-        if (k) {
-          try {
-            const st = JSON.parse(localStorage.getItem('msq_cl') || '{}');
-            st[k] = 0;
-            localStorage.setItem('msq_cl', JSON.stringify(st));
-          } catch(x) {}
-        }
-      }
-      
-      // 2. Expand <details> if inside one
-      const details = el.closest('details');
-      if (details) details.open = true;
-      
-      // 3. Scroll with offset (150px from top so keyboard doesn't hide it)
-      setTimeout(function() {
-        const rect = el.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        
-        // Use both window.scrollTo and scrollIntoView for max compatibility
-        try {
-          window.scrollTo({ top: rect.top + scrollTop - 150, behavior: 'smooth' });
-        } catch(x) {
-          el.scrollIntoView();
-        }
-        
-        // 4. Flash highlight and focus
-        const prevBg = el.style.backgroundColor;
-        const prevShadow = el.style.boxShadow;
-        el.style.backgroundColor = 'rgba(245, 158, 11, 0.4)';
-        el.style.boxShadow = '0 0 0 4px rgba(245, 158, 11, 0.8)';
-        el.style.transition = 'background-color 0.2s, box-shadow 0.2s';
-        
-        setTimeout(function() {
-          try { el.focus(); } catch(x) {}
-          setTimeout(function() {
-            el.style.backgroundColor = prevBg;
-            el.style.boxShadow = prevShadow;
-            setTimeout(() => { el.style.transition = ''; }, 200);
-          }, 2000); // highlight stays for 2 seconds
-        }, 500);
-      }, 50);
-    }
-  }, true); // Capture phase ensures it fires before other app handlers
-})();
 
-/* ===== STEP 3: PACKAGE TEMPLATES (2BHK / 3BHK / ROOM SETS) ===== */
+// ==========================================
+// STEP 3: PACKAGE TEMPLATES
+// ==========================================
 (function(){
   'use strict';
-  if (window.__mcPackagesLoaded) return;
-  window.__mcPackagesLoaded = true;
+  if (window.__mcPackagesLoaded_v2) return;
+  window.__mcPackagesLoaded_v2 = true;
 
-  // Define your standard packages here. 
-  // You can edit these module sizes or IDs later if you want.
   const PACKAGES = {
-    'pkg_kitchen': { name: '🍳 Standard Kitchen', rooms: [
-      { name: 'KITCHEN', t: 'KITCHEN', items: [
-        { mk: 'kb2', q: 4 }, // Base unit - 2 shutter (600mm)
-        { mk: 'kw2', q: 2 }, // Wall unit - 2 shutter (600mm)
-        { mk: 'ktp', q: 1 }, // Tall unit - 2 shutter (600mm)
-        { mk: 'kl2', q: 2 }, // Loft - 2 shutter (600mm)
-        { mk: 'kbsk', q: 1 } // Sink unit (900mm)
-      ]}
+    'pkg_kitchen': { name: '🍳 Only Kitchen (Standard)', rooms: [
+      { name: 'KITCHEN', t: 'KITCHEN', items: [ { mk: 'kb2', q: 4 }, { mk: 'kw2', q: 2 }, { mk: 'ktp', q: 1 }, { mk: 'kl2', q: 2 }, { mk: 'kbsk', q: 1 } ]}
     ]},
-    'pkg_mbed': { name: '🛏️ Master Bedroom', rooms: [
-      { name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [
-        { mk: 'wh3', q: 1 }, // Wardrobe - 3 door (900mm)
-        { mk: 'wl2', q: 1 }, // Wardrobe loft (900mm)
-        { mk: 'bdbx', q: 1 }, // Bed - box storage (Queen)
-        { mk: 'bst', q: 2 }, // Bedside table
-        { mk: 'drs', q: 1 }, // Dressing unit
-        { mk: 'tvw', q: 1 }  // TV wall unit
-      ]}
+    'pkg_mbed': { name: '🛏️ Only Master Bedroom', rooms: [
+      { name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [ { mk: 'wh3', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'drs', q: 1 }, { mk: 'tvw', q: 1 } ]}
     ]},
-    'pkg_2bhk': { name: '🏠 2BHK Package (Kitchen + 2 Beds + Living)', rooms: [
+    'pkg_living': { name: '🛋️ Only Living Room', rooms: [
+      { name: 'LIVING ROOM', t: 'LIVING ROOM', items: [ { mk: 'tvb', q: 1 }, { mk: 'tvp', q: 1 }, { mk: 'shr', q: 1 }, { mk: 'cru', q: 1 } ]}
+    ]},
+    'pkg_beds_only': { name: '🛌 Bedrooms Only (Master + 2)', rooms: [
+      { name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [ { mk: 'wh3', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'drs', q: 1 } ]},
+      { name: 'BEDROOM 2', t: 'BEDROOM 2', items: [ { mk: 'wh2', q: 1 }, { mk: 'wl1', q: 1 }, { mk: 'bdpl', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'std', q: 1 } ]},
+      { name: 'BEDROOM 3', t: 'BEDROOM 3', items: [ { mk: 'wh2', q: 1 }, { mk: 'wl1', q: 1 }, { mk: 'bdpl', q: 1 }, { mk: 'bst', q: 1 }, { mk: 'std', q: 1 } ]}
+    ]},
+    'pkg_1bhk': { name: '🏠 1BHK Package (Kitchen + 1 Bed + Living)', rooms: [
+      { name: 'KITCHEN', t: 'KITCHEN', items: [ { mk: 'kb2', q: 4 }, { mk: 'kw2', q: 2 }, { mk: 'ktp', q: 1 }, { mk: 'kl2', q: 2 }, { mk: 'kbsk', q: 1 } ]},
+      { name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [ { mk: 'wh3', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'drs', q: 1 }, { mk: 'tvw', q: 1 } ]},
+      { name: 'LIVING ROOM', t: 'LIVING ROOM', items: [ { mk: 'tvb', q: 1 }, { mk: 'tvp', q: 1 }, { mk: 'shr', q: 1 }, { mk: 'cru', q: 1 } ]}
+    ]},
+    'pkg_2bhk': { name: '🏘️ 2BHK Package (Kitchen + 2 Beds + Living)', rooms: [
       { name: 'KITCHEN', t: 'KITCHEN', items: [ { mk: 'kb2', q: 4 }, { mk: 'kw2', q: 2 }, { mk: 'ktp', q: 1 }, { mk: 'kl2', q: 2 }, { mk: 'kbsk', q: 1 } ]},
       { name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [ { mk: 'wh3', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'drs', q: 1 } ]},
-      { name: 'BEDROOM 2', t: 'BEDROOM 2', items: [ { mk: 'wh2', q: 1 }, { mk: 'wl1', q: 1 }, { mk: 'bdpl', q: 1 }, { mk: 'bst', q: 1 }, { mk: 'std', q: 1 } ]},
+      { name: 'BEDROOM 2', t: 'BEDROOM 2', items: [ { mk: 'wh2', q: 1 }, { mk: 'wl1', q: 1 }, { mk: 'bdpl', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'std', q: 1 } ]},
       { name: 'LIVING ROOM', t: 'LIVING ROOM', items: [ { mk: 'tvb', q: 1 }, { mk: 'tvp', q: 1 }, { mk: 'shr', q: 1 }, { mk: 'cru', q: 1 } ]}
     ]},
     'pkg_3bhk': { name: '🏢 3BHK Package (Full House)', rooms: [
       { name: 'KITCHEN', t: 'KITCHEN', items: [ { mk: 'kb2', q: 6 }, { mk: 'kw2', q: 3 }, { mk: 'ktp', q: 1 }, { mk: 'kl2', q: 3 }, { mk: 'kbsk', q: 1 } ]},
       { name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [ { mk: 'wh4', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'drs', q: 1 }, { mk: 'tvw', q: 1 } ]},
       { name: 'BEDROOM 2', t: 'BEDROOM 2', items: [ { mk: 'wh3', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'std', q: 1 } ]},
-      { name: 'BEDROOM 3', t: 'BEDROOM 3', items: [ { mk: 'wh2', q: 1 }, { mk: 'wl1', q: 1 }, { mk: 'bdpl', q: 1 }, { mk: 'bst', q: 1 }, { mk: 'std', q: 1 } ]},
+      { name: 'BEDROOM 3', t: 'BEDROOM 3', items: [ { mk: 'wh2', q: 1 }, { mk: 'wl1', q: 1 }, { mk: 'bdpl', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'std', q: 1 } ]},
       { name: 'LIVING ROOM', t: 'LIVING ROOM', items: [ { mk: 'tvb', q: 1 }, { mk: 'tvp', q: 1 }, { mk: 'shr', q: 1 }, { mk: 'cru', q: 1 } ]}
+    ]},
+    'pkg_office': { name: '💼 Office / Commercial Basic', rooms: [
+      { name: 'RECEPTION', t: 'RECEPTION', items: [ { mk: 'utl', q: 1 }, { mk: 'shr', q: 1 }, { mk: 'cru', q: 1 } ]},
+      { name: 'WORKSTATION AREA', t: 'OPEN WORKSTATION AREA', items: [ { mk: 'std', q: 4 } ]},
+      { name: 'CABIN', t: 'PRIVATE CABIN', items: [ { mk: 'std', q: 1 }, { mk: 'utl', q: 1 } ]}
     ]}
   };
 
@@ -1575,7 +1547,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
     
     let q = T();
     if (!q) {
-      // Create a new quote if none exists
       const id = 'q' + Date.now().toString(36);
       S.q[id] = { id, ts: Date.now(), name: '', by: lastBy(), project: '', address: '', contact: '', date: new Date().toISOString().slice(0, 10), rooms: [], ir: {}, grp: id, rev: 0, seq: 1, st: 'draft', pay: cl(S.set.pay), notes: S.set.notes };
       S.cur = id;
@@ -1596,15 +1567,12 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       pkgRoom.items.forEach(item => {
         const m = MOD[item.mk];
         if (!m) return;
-        // Use app's built-in modRow logic to generate a standard row
         const r = modRow(newRoom, m, m.sw[Math.floor(m.sw.length/2)] || m.w0, m.h, q);
         r.q = item.q || 1;
         newRoom.rows.push(r);
       });
       
-      // Auto-apply skirting and counter if the room logic supports it
       if (typeof syncAuto === 'function') syncAuto(newRoom);
-      
       q.rooms.push(newRoom);
     });
 
@@ -1615,59 +1583,48 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
 
   function showPackageModal() {
     const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:100001;padding:20px';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
     
     const btnHtml = Object.entries(PACKAGES).map(([id, p]) => 
-      `<button class="g" style="text-align:left;padding:12px;font-size:15px;margin-bottom:8px;display:block;width:100%" data-pkg-id="${id}">${p.name}</button>`
+      `<button data-pkg-id="${id}" style="background:var(--in);color:var(--ink);border:1px solid var(--line);text-align:left;padding:12px;font-size:15px;margin-bottom:8px;display:block;width:100%;border-radius:8px;font-weight:600;cursor:pointer;transition:background 0.2s">${p.name}</button>`
     ).join('');
 
     modal.innerHTML = `
-      <div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4)">
+      <div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:480px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:auto">
         <h3 style="margin-top:0">Insert Package Template</h3>
         <p class="mut" style="font-size:13px;margin-bottom:16px">Choose a pre-built set of rooms and modules. They will be added to your current quotation, and you can edit the sizes/quantities after.</p>
-        ${btnHtml}
-        <button class="g" id="pkg_cancel" style="margin-top:10px;width:100%;background:transparent;border:1px solid #ccc;color:var(--ink)">Cancel</button>
+        <div style="max-height:60vh;overflow-y:auto;padding-right:4px">${btnHtml}</div>
+        <button id="pkg_cancel" style="margin-top:14px;width:100%;background:transparent;border:1px solid var(--line);color:var(--ink);padding:10px;border-radius:8px;font-weight:600;cursor:pointer">Cancel</button>
       </div>
     `;
     document.body.appendChild(modal);
 
     modal.querySelectorAll('[data-pkg-id]').forEach(btn => {
-      btn.onclick = () => {
-        applyPackage(btn.dataset.pkgId);
-        modal.remove();
-      };
+      btn.onclick = () => { applyPackage(btn.dataset.pkgId); modal.remove(); };
+      btn.onmouseenter = () => btn.style.background = 'var(--bg)';
+      btn.onmouseleave = () => btn.style.background = 'var(--in)';
     });
     document.getElementById('pkg_cancel').onclick = () => modal.remove();
   }
 
-  // Patch vList to add button
   if (window.vList) {
     const _vList = window.vList;
     window.vList = function() {
       let html = _vList();
-      // Insert next to "+ New quotation"
-      html = html.replace(
-        '<button data-a="nq">+ New quotation</button>',
-        '<button data-a="nq">+ New quotation</button><button class="g" id="btn-insert-pkg" style="border-color:#1F4E79;color:#1F4E79;font-weight:600">📦 Insert Package</button>'
-      );
+      html = html.replace('<button data-a="nq">+ New quotation</button>', '<button data-a="nq">+ New quotation</button><button class="g" id="btn-insert-pkg" style="border-color:#1F4E79;color:#1F4E79;font-weight:600">📦 Insert Package</button>');
       return html;
     };
   }
 
-  // Patch vEdit to add button
   if (window.vEdit) {
     const _vEdit = window.vEdit;
     window.vEdit = function() {
       let html = _vEdit();
-      html = html.replace(
-        '<button data-a="sv">Save quotation</button>',
-        '<button data-a="sv">Save quotation</button><button class="g" id="btn-insert-pkg" style="border-color:#1F4E79;color:#1F4E79;font-weight:600">📦 Insert Package</button>'
-      );
+      html = html.replace('<button data-a="sv">Save quotation</button>', '<button data-a="sv">Save quotation</button><button class="g" id="btn-insert-pkg" style="border-color:#1F4E79;color:#1F4E79;font-weight:600">📦 Insert Package</button>');
       return html;
     };
   }
 
-  // Global click listener for the button
   document.addEventListener('click', function(e) {
     if (e.target.id === 'btn-insert-pkg') {
       e.preventDefault();
@@ -1675,6 +1632,5 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
     }
   });
 
-  console.log('[ModuCraft +] Package templates loaded');
+  console.log('[ModuCraft +] Package templates v2 loaded');
 })();
-/* ===== END STEP 3 ===== */
