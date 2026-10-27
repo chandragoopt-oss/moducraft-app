@@ -1692,3 +1692,133 @@ document.addEventListener('change', e => {
 
   console.log('[ModuCraft +] Global Search & Mobile Nav loaded');
 })();
+// ==========================================
+// STEP 12: DESIGN-FIRST WORKFLOW (ENQUIRY -> DESIGN -> QUOTE)
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcDesignFirstLoaded) return;
+  window.__mcDesignFirstLoaded = true;
+
+  // 1. Add "Start Design" button to the Enquiry List
+  const origVEnq = window.vEnq;
+  window.vEnq = function() {
+    let html = origVEnq();
+    
+    // We inject a "Design" button next to the "Edit" and "-> Quote" buttons
+    Object.values(window.ENQ).forEach(e => {
+      const target = `<button class="g" data-enq-act="edit" data-id="${e.id}">Edit</button>`;
+      const designBtn = `<button data-enq-act="design" data-id="${e.id}" style="background:#B08D57;color:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;margin-left:4px">🎨 Design</button>`;
+      
+      if (html.includes(target) && !html.includes(`data-enq-act="design" data-id="${e.id}"`)) {
+        html = html.replace(target, target + designBtn);
+      }
+    });
+    
+    return html;
+  };
+
+  // 2. Handle the Design Action
+  document.addEventListener('click', function(ev) {
+    const btn = ev.target.closest('[data-enq-act="design"]');
+    if (!btn) return;
+    ev.preventDefault(); ev.stopImmediatePropagation();
+
+    const enqId = btn.dataset.id;
+    const enq = window.ENQ[enqId];
+    if (!enq) return;
+
+    // Check if a quotation already exists for this enquiry
+    // We look for a quote that has the same name and hasn't been closed/lost
+    let existingQuoteId = null;
+    Object.values(S.q).forEach(q => {
+      if (q.enqId === enqId) existingQuoteId = q.id;
+    });
+
+    if (existingQuoteId) {
+      // Quote exists, open it
+      S.cur = existingQuoteId;
+      S.tab = 'f'; // Go to Floor Plan
+      render();
+      flash('Opening existing design for ' + enq.name);
+    } else {
+      // Create a new Draft Quotation automatically
+      const newQid = 'q' + Date.now().toString(36);
+      const newQ = {
+        id: newQid,
+        enqId: enqId, // Link to enquiry
+        ts: Date.now(),
+        name: enq.name,
+        contact: enq.phone,
+        project: enq.project,
+        by: lastBy() || uName(),
+        address: '',
+        date: new Date().toISOString().slice(0, 10),
+        rooms: [], // Starts empty, designer will add rooms
+        ir: {},
+        grp: newQid,
+        rev: 0,
+        seq: 1,
+        st: 'draft',
+        pay: cl(S.set.pay),
+        notes: S.set.notes
+      };
+
+      // Add a default room so the floor plan has a starting canvas
+      newQ.rooms.push({
+        id: 'r' + Date.now().toString(36),
+        t: 'MASTER BEDROOM',
+        name: 'MASTER BEDROOM',
+        w: 0,
+        rate: '',
+        rows: [],
+        dim: { L: 3600, W: 3000, H: 2700 }
+      });
+
+      S.q[newQid] = newQ;
+      S.cur = newQid;
+      S.tab = 'f'; // Go directly to Floor Plan
+      
+      // Update Enquiry status
+      enq.status = 'Quoted';
+      window.saveEnq();
+      
+      save('q', newQid);
+      render();
+      flash('Draft quotation created! You can now design the layout.');
+    }
+  }, true);
+
+  // 3. Update the Design and Floor Plan Empty States
+  // If a designer clicks "Design" or "Floor Plan" from the main menu without an active quote, 
+  // they shouldn't get an error. They should get a prompt to start from an enquiry.
+  const origVDesign = window.vDesign;
+  window.vDesign = function() {
+    if (!S.cur || !S.q[S.cur]) {
+      return `<div class="card"><h2>Design Walls</h2><p class="mut">You need an active quotation to use the design tools.</p>
+        <div class="bar"><button data-a="tab" data-v="enq">Go to Enquiries to start a design</button> <button data-a="tab" data-v="q">Go to Quotations</button></div>
+      </div>`;
+    }
+    return origVDesign();
+  };
+
+  const origVPlan = window.vPlan;
+  window.vPlan = function() {
+    if (!S.cur || !S.q[S.cur]) {
+      return `<div class="card"><h2>Floor Plan</h2><p class="mut">You need an active quotation to use the floor plan editor.</p>
+        <div class="bar"><button data-a="tab" data-v="enq">Go to Enquiries to start a design</button> <button data-a="tab" data-v="q">Go to Quotations</button></div>
+      </div>`;
+    }
+    return origVPlan();
+  };
+
+  // 4. Ensure the Edit tab is accessible to Designers so they can add rooms/pricing after drawing
+  // (This is handled by the Department filtering we built in Step 8, but just in case:)
+  if (typeof MC_DEPTS !== 'undefined' && MC_DEPTS.design) {
+    if (!MC_DEPTS.design.tabs.includes('e')) {
+      MC_DEPTS.design.tabs.push('e'); // Designers need Edit tab to add rooms/prices
+    }
+  }
+
+  console.log('[ModuCraft +] Design-First Workflow loaded');
+})();
