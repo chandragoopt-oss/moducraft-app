@@ -345,7 +345,7 @@ function calcCatTotals(q) {
 }
 
 function customDisc(q) {
-    const catTotals = calcCatTotals(q); // FIXED: Renamed from T to avoid global var shadow
+    const catTotals = calcCatTotals(q);
     let d = 0;
     if (+q.dw > 0) d += catTotals.wood * q.dw / 100;
     if (+q.dh > 0) d += catTotals.hard * q.dh / 100;
@@ -362,10 +362,10 @@ function customGt(q) { return gt0(q) - customDisc(q); }
 const origVPrev = vPrev;
 vPrev = function() {
     let html = origVPrev();
-    const q = window.T ? window.T() : T(); // FIXED: Safely use global T()
+    const q = window.T ? window.T() : T();
     if (!q) return html;
 
-    const catTotals = calcCatTotals(q); // FIXED
+    const catTotals = calcCatTotals(q);
     const cDisc = customDisc(q);
     const cGt = customGt(q);
     const dw = +q.dw || 0, dh = +q.dh || 0, ds = +q.ds || 0;
@@ -1635,7 +1635,10 @@ document.addEventListener('change', e => {
   console.log('[ModuCraft +] Package templates v2 loaded');
 })();
 
-/* ===== STEP 4: ENQUIRY TRACKER (PRE-QUOTATION) ===== */
+
+// ==========================================
+// STEP 4: ENQUIRY TRACKER (PRE-QUOTATION)
+// ==========================================
 (function(){
   'use strict';
   if (window.__mcEnqLoaded) return;
@@ -1782,67 +1785,4 @@ document.addEventListener('change', e => {
         
         // Change modal to success/notify screen
         o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto;text-align:center">
-          <h3 style="margin-top:0;color:#22C55E">✅ Enquiry Saved</h3>
-          <p class="mut" style="font-size:13px;margin-bottom:16px">Do you want to alert the team via WhatsApp?</p>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <a href="${waOwner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Owner (9830051060)</a>
-            <a href="${waPartner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Partner (9830864409)</a>
-          </div>
-          <button class="g" id="eq_done" style="margin-top:16px;width:100%">Close</button>
-        </div>`;
-        
-        document.getElementById('eq_done').onclick = () => {
-          o.remove();
-          render();
-          flash('Enquiry saved');
-        };
-      } else {
-        o.remove();
-        render();
-        flash('Enquiry updated');
-      }
-    };
-  }
-
-  // Handle Clicks (New, Edit, Convert)
-  document.addEventListener('click', function(ev) {
-    const btn = ev.target.closest('[data-enq-act]');
-    if (!btn) return;
-    ev.preventDefault();
-    
-    const act = btn.dataset.enqAct;
-    const id = btn.dataset.id;
-    
-    if (act === 'new') openEnqModal();
-    else if (act === 'edit') openEnqModal(id);
-    else if (act === 'convert') {
-      const e = window.ENQ[id];
-      if (!e) return;
-      
-      if (confirm(`Create a new quotation for ${e.name}?`)) {
-        window.newQ();
-        const q = window.T();
-        if (q) {
-          q.name = e.name;
-          q.contact = e.phone;
-          q.project = e.project || q.project;
-          q.by = window.lastBy();
-          window.save('q', q.id);
-        }
-        
-        e.status = 'Quoted';
-        window.saveEnq();
-        
-        S.tab = 'e';
-        render();
-        flash('Converted to new quotation');
-      }
-    }
-  });
-
-  console.log('[ModuCraft +] Enquiry Tracker loaded');
-})();
-/* ===== END STEP 4 ===== */
-
-  console.log('[ModuCraft +] Enquiry Tracker loaded');
-})();
+          <h3 style="margin-top:0;color:#22C
