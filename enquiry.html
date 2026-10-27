@@ -235,12 +235,17 @@
       });
       const result = await res.json();
       
-      if (result.ok) {
+     if (result.ok) {
         document.getElementById('formCard').style.display = 'none';
         document.getElementById('successCard').style.display = 'block';
         document.getElementById('sucName').textContent = data.name;
         document.getElementById('sucEmail').textContent = data.email;
         
+        // --- SHOW IF EMAIL FAILED ---
+        if (result.emailStatus && result.emailStatus.includes('failed')) {
+           alert("Enquiry saved, but email failed: " + result.emailStatus);
+        }
+
         const waText = encodeURIComponent(`Hello Module Studio, I just submitted an interior enquiry on your website. My name is ${data.name}. Please confirm receipt.`);
         document.getElementById('waBtn').href = `https://wa.me/919830864409?text=${waText}`;
       } else {
