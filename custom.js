@@ -849,7 +849,7 @@ document.addEventListener('change', e => {
 
 console.log("Custom patch loaded successfully! All PO prices hidden.");
 
-/* ===== STEP 1: GUIDED RATE SETUP ===== */
+/* ===== STEP 1: GUIDED RATE SETUP (v2 — dark-mode safe) ===== */
 /* Appended — does not touch any existing code above. Safe to remove by deleting this block. */
 (function(){
   'use strict';
@@ -861,7 +861,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
     const co = s.co || {};
     const checks = [];
 
-    // 1. Company details
     const coMissing = ['name','addr','phone','mail'].filter(k => !String(co[k]||'').trim());
     checks.push({
       id: 'co', label: 'Company details',
@@ -870,7 +869,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       action: 'co'
     });
 
-    // 2. Ply rates
     const plr = (s.plr || []).filter(p => p.b && p.g && p.t);
     const plrPriced = plr.filter(p => +(p.r) > 0);
     checks.push({
@@ -884,7 +882,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       action: 'plr'
     });
 
-    // 3. Finishes
     const fin = s.fin || [];
     const finPriced = fin.filter(f => +(f.c) > 0);
     checks.push({
@@ -898,7 +895,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       action: 'fin'
     });
 
-    // 4. Hardware
     const acc = s.acc || [];
     const accPriced = acc.filter(a => +(a.rh)>0 || +(a.re)>0 || +(a.rl)>0);
     checks.push({
@@ -912,7 +908,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       action: 'acc'
     });
 
-    // 5. Labour (critical — no fallback in the app)
     const lab = +(s.lab) || 0;
     checks.push({
       id: 'lab', label: 'Labour & fabrication cost',
@@ -921,7 +916,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       action: 'lab'
     });
 
-    // 6. Margin (partial — app falls back to 35%)
     const mgn = +(s.mgn) || 0;
     checks.push({
       id: 'mgn', label: 'Profit margin',
@@ -930,7 +924,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       action: 'mgn'
     });
 
-    // 7. GST
     const gst = +(s.gst) || 0;
     checks.push({
       id: 'gst', label: 'GST percentage',
@@ -939,7 +932,6 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       action: 'gst'
     });
 
-    // 8. Room rates
     const rooms = (s.rooms || []).filter(r => !r.w);
     const rmsPriced = rooms.filter(r => +(r.r) > 0);
     checks.push({
@@ -957,8 +949,7 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
   }
 
   const statusIcon = s => s === 'ok' ? '✅' : s === 'partial' ? '⚠️' : '❌';
-  const statusColor = s => s === 'ok' ? '#15803d' : s === 'partial' ? '#b45309' : '#b00020';
-  const rowBg = s => s === 'ok' ? '' : s === 'partial' ? '#fffaf0' : '#fff5f5';
+  const statusColor = s => s === 'ok' ? '#22C55E' : s === 'partial' ? '#F59E0B' : '#EF4444';
 
   function setupCard() {
     const checks = setupStatus();
@@ -967,43 +958,45 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
     const missing = checks.filter(c => c.status === 'missing').length;
     const total = checks.length;
     const pct = Math.round(ok / total * 100);
-    const barColor = missing > 0 ? '#DC2626' : partial > 0 ? '#F59E0B' : '#22C55E';
+    const barColor = missing > 0 ? '#EF4444' : partial > 0 ? '#F59E0B' : '#22C55E';
 
     let summary;
     if (missing === 0 && partial === 0) {
-      summary = '✅ All set — quotations will calculate correctly.';
+      summary = '<span style="color:#22C55E;font-weight:600">✅ All set — quotations will calculate correctly.</span>';
     } else if (missing === 0) {
-      summary = '✅ Nothing critical missing. ' + partial + ' item' + (partial > 1 ? 's are' : ' is') + ' partly set — quotations will work, but some entries may show ₹0.';
+      summary = '<span style="color:#F59E0B;font-weight:600">⚠️ Nothing critical missing.</span> ' + partial + ' item' + (partial > 1 ? 's are' : ' is') + ' partly set — quotations will work, but some entries may show ₹0.';
     } else {
-      summary = '❌ ' + missing + ' critical item' + (missing > 1 ? 's are' : ' is') + ' missing — quotations may calculate incorrectly until fixed.';
+      summary = '<span style="color:#EF4444;font-weight:600">❌ ' + missing + ' critical item' + (missing > 1 ? 's are' : ' is') + ' missing</span> — quotations may calculate incorrectly until fixed.';
     }
 
     return '<div class="card" id="setup-card"><h2>Setup checklist</h2>' +
       '<p class="mut" style="margin:4px 0">Before sending quotations, make sure your rates are set up. Each field saves automatically.</p>' +
-      '<div style="background:#e6e0d2;border-radius:8px;height:14px;margin:8px 0 4px;overflow:hidden">' +
+      '<div style="background:rgba(128,128,128,0.2);border-radius:8px;height:14px;margin:8px 0 4px;overflow:hidden">' +
         '<div style="background:' + barColor + ';height:14px;width:' + pct + '%;transition:width .3s"></div>' +
       '</div>' +
-      '<p style="font-size:13px;margin:0 0 4px;color:' + (missing > 0 ? '#b00020' : '#6b7280') + '"><b>' + ok + '/' + total + '</b> complete' + (missing > 0 ? ' · <b>' + missing + '</b> critical' : '') + (partial > 0 ? ' · ' + partial + ' partial' : '') + '</p>' +
+      '<p style="font-size:13px;margin:0 0 4px"><b>' + ok + '/' + total + '</b> complete' + (missing > 0 ? ' · <b style="color:#EF4444">' + missing + '</b> critical' : '') + (partial > 0 ? ' · <span style="color:#F59E0B;font-weight:600">' + partial + ' partial</span>' : '') + '</p>' +
       '<p style="font-size:13px;margin:0 0 12px">' + summary + '</p>' +
-      '<div class="sc"><table class="g" style="min-width:640px"><tr><th style="width:50px">Status</th><th>Item</th><th>Detail</th><th style="width:80px"></th></tr>' +
-      checks.map(c =>
-        '<tr style="background:' + rowBg(c.status) + '">' +
+      '<div class="sc"><table class="g" style="min-width:640px"><tr><th style="width:50px">Status</th><th>Item</th><th>Detail</th><th style="width:90px"></th></tr>' +
+      checks.map(c => {
+        const clr = statusColor(c.status);
+        return '<tr>' +
           '<td style="text-align:center;font-size:18px">' + statusIcon(c.status) + '</td>' +
           '<td><b>' + esc(c.label) + '</b></td>' +
-          '<td style="color:' + statusColor(c.status) + ';font-size:12px">' + esc(c.detail) + '</td>' +
-          '<td>' + (c.status === 'ok' ? '' : '<button class="g" data-setup-go="' + c.action + '">Fix →</button>') + '</td>' +
-        '</tr>'
-      ).join('') +
+          '<td style="color:' + clr + ';font-weight:600;font-size:12px">' + esc(c.detail) + '</td>' +
+          '<td>' + (c.status === 'ok'
+            ? '<span style="color:#22C55E;font-size:18px">✓</span>'
+            : '<button data-setup-go="' + c.action + '" style="background:' + clr + ';color:#fff;border:0;border-radius:6px;padding:5px 10px;font-weight:600;cursor:pointer">Fix →</button>'
+          ) + '</td>' +
+        '</tr>';
+      }).join('') +
       '</table></div></div>';
   }
 
-  // Patch vSet — prepend the checklist to the Settings page
   if (typeof vSet === 'function') {
     const _vSet = vSet;
     window.vSet = vSet = function() { return setupCard() + _vSet(); };
   }
 
-  // Patch todayCard — prepend red banner if any critical missing
   if (typeof todayCard === 'function') {
     const _todayCard = todayCard;
     window.todayCard = todayCard = function() {
@@ -1011,15 +1004,14 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
       const critical = setupStatus().filter(c => c.status === 'missing');
       if (critical.length === 0) return existing;
       const names = critical.map(c => c.label).join(', ');
-      const banner = '<div class="card" style="border-left:6px solid #DC2626;background:#fff5f5">' +
-        '<b style="color:#b00020">⚙️ Setup not complete — ' + critical.length + ' critical item' + (critical.length > 1 ? 's' : '') + ' need attention</b>' +
+      const banner = '<div class="card" style="border-left:6px solid #EF4444;background:rgba(239,68,68,0.12)">' +
+        '<b style="color:#EF4444">⚙️ Setup not complete — ' + critical.length + ' critical item' + (critical.length > 1 ? 's' : '') + ' need attention</b>' +
         '<p class="mut" style="margin:4px 0 8px;font-size:13px">Quotations may calculate incorrectly until setup is complete: ' + esc(names) + '.</p>' +
-        '<button data-setup-tab style="background:#b00020">Open setup checklist →</button></div>';
+        '<button data-setup-tab style="background:#EF4444;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer">Open setup checklist →</button></div>';
       return banner + existing;
     };
   }
 
-  // Fix → scrolls to the exact field
   document.addEventListener('click', function(e){
     const fix = e.target.closest('[data-setup-go]');
     if (fix) {
@@ -1045,11 +1037,10 @@ console.log("Custom patch loaded successfully! All PO prices hidden.");
     if (tab) { e.preventDefault(); S.tab = 's'; render(); }
   });
 
-  // If user is already on Settings or Today when this loads, re-render so they see the new content immediately
   if ((S.tab === 's' || S.tab === 'h') && typeof render === 'function') {
     setTimeout(function(){ try { render(); } catch(x){} }, 200);
   }
 
-  console.log('[ModuCraft +] Guided rate setup loaded');
+  console.log('[ModuCraft +] Guided rate setup v2 (dark-mode safe) loaded');
 })();
 /* ===== END STEP 1 ===== */
