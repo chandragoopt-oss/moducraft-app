@@ -585,7 +585,7 @@ document.addEventListener('change', e => {
     const tab = e.target.closest('[data-setup-tab]');
     if (tab) { e.preventDefault(); S.tab = 's'; render(); }
   }, true);
-  if ((S.tab === 's' || S.tab === 'h') && typeof render === 'function') setTimeout(function(){ try { render(); } catch(x){} }, 200);
+  if ((S.tab === 's' || S.tab === 'h') && typeof render === 'function') setTimeout(function(){ render(); }, 200);
 })();
 
 // ==========================================
