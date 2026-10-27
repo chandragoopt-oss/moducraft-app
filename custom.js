@@ -2000,3 +2000,95 @@ document.addEventListener('change', e => {
     window.__mobNavT = setTimeout(rebuildMobileNav, 200);
   });
 })();
+
+// ==========================================
+// FIX: Public Enquiries Sync (Date, Time, Platform)
+// ==========================================
+(function() {
+  if (window.__mcEnqSyncLoaded) return;
+  window.__mcEnqSyncLoaded = true;
+
+  const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
+  const API_KEY = "ModuCraft@2026";
+
+  async function fetchEnquiries() {
+    try {
+      const res = await fetch(GOOGLE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'read', collection: 'enquiries', apiKey: API_KEY })
+      });
+      const data = await res.json();
+      
+      if (data.ok && data.data) {
+        let updated = false;
+        Object.values(data.data).forEach(row => {
+          if (!window.ENQ[row.id]) {
+            window.ENQ[row.id] = {
+              id: row.id,
+              name: row.name,
+              phone: row.phone,
+              project: row.project,
+              budget: row.budget,
+              notes: row.notes,
+              platform: row.platform || 'App',
+              date: row.date ? row.date.split('T')[0] : new Date().toISOString().split('T')[0],
+              time: row.date ? new Date(row.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '',
+              status: 'Enquiry'
+            };
+            updated = true;
+          }
+        });
+        
+        if (updated) {
+          window.saveEnq();
+          if (S.tab === 'enq') render();
+        }
+      }
+    } catch(e) {
+      console.log("Enquiry sync error:", e);
+    }
+  }
+
+  // Override the Enquiries View to show Platform, Date & Time
+  const _vEnq = window.vEnq;
+  window.vEnq = function() {
+    let html = _vEnq();
+    html = html.replace('<th>Next Follow Up</th>', '<th>Source & Date</th><th>Next Follow Up</th>');
+    
+    Object.values(window.ENQ).forEach(e => {
+      const rowTarget = `<tr><td><b>${esc(e.name)}</b><br><span class="mut">${esc(e.phone)}</span></td><td>${esc(e.project)}</td><td>${esc(e.budget || '—')}</td>`;
+      const sourceInfo = `<td><b style="color:#B08D57">${esc(e.platform || 'Manual')}</b><br><span class="mut" style="font-size:11px">${dmy(e.date)} ${e.time || ''}</span></td>`;
+      
+      if (html.includes(rowTarget)) {
+        html = html.replace(rowTarget, rowTarget + sourceInfo);
+      }
+    });
+    
+    return html;
+  };
+
+  setTimeout(fetchEnquiries, 1500);
+  setInterval(fetchEnquiries, 15000);
+
+  document.addEventListener('click', e => {
+    if (e.target.closest && e.target.closest('[data-enq-act="refresh"]')) {
+      e.preventDefault();
+      fetchEnquiries();
+      alert("Checking for new enquiries...");
+    }
+  });
+
+  const _render = window.render;
+  window.render = function() {
+    _render.apply(this, arguments);
+    if (S.tab === 'enq') {
+      setTimeout(() => {
+        const bar = document.querySelector('.card .bar.noprint');
+        if (bar && !bar.querySelector('[data-enq-act="refresh"]')) {
+          bar.innerHTML += `<button class="g" data-enq-act="refresh" style="margin-left:10px">↻ Sync</button>`;
+        }
+      }, 100);
+    }
+  };
+})();
