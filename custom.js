@@ -1137,6 +1137,162 @@ document.addEventListener('change', e => {
       return;
     }
   }, true);
+    // ==========================================
+// STEP 7: CARPENTER / LABOUR PIECE-RATE BILLING
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcCarpLoaded) return;
+  window.__mcCarpLoaded = true;
+
+  // 1. Add the "Carpenter Billing" tab
+  if (typeof PJTABS !== 'undefined' && PJTABS.push && !PJTABS.some(t => t[0]==='carp')) {
+    PJTABS.push(['carp', 'Carpenter / Labour', 'fs']);
+  }
+  if (typeof ERPT !== 'undefined' && ERPT.push && ERPT.indexOf('carp') < 0) {
+    ERPT.push('carp');
+  }
+
+  // 2. Render the Carpenter Billing Tab
+  function carpTab(p) {
+    const q = S.q[p.qid];
+    const totalSqft = q ? (typeof est === 'function' ? est(q).sq : 0) : 0;
+    
+    // Initialize data structure
+    p.carp = p.carp || { rate: 0, extras: [], pays: [] };
+    
+    const rate = +p.carp.rate || 0;
+    const baseCost = totalSqft * rate;
+    const extraTotal = (p.carp.extras || []).reduce((a, x) => a + (+x.amt || 0), 0);
+    const totalPayable = baseCost + extraTotal;
+    const paidTotal = (p.carp.pays || []).reduce((a, x) => a + (+x.amt || 0), 0);
+    const balance = totalPayable - paidTotal;
+    const can = S.w;
+
+    const payRows = (p.carp.pays || []).map((x, i) => `
+      <tr>
+        <td>${bdt('pj', p.id, 'carp.pays.'+i+'.date', x.date)}</td>
+        <td>${bn('pj', p.id, 'carp.pays.'+i+'.amt', x.amt, 'style="width:100px"')}</td>
+        <td>${bs('pj', p.id, 'carp.pays.'+i+'.mode', x.mode || 'Cash', ['Cash', 'UPI', 'Bank'])}</td>
+        <td>${bi('pj', p.id, 'carp.pays.'+i+'.note', x.note, 'style="min-width:150px"')}</td>
+        <td>${can ? ba('cpdel', '✕', 'data-i="'+i+'"', 'data-type="pay"') : ''}</td>
+      </tr>
+    `).join('');
+
+    const extraRows = (p.carp.extras || []).map((x, i) => `
+      <tr>
+        <td>${bi('pj', p.id, 'carp.extras.'+i+'.desc', x.desc, 'style="min-width:200px"')}</td>
+        <td>${bn('pj', p.id, 'carp.extras.'+i+'.amt', x.amt, 'style="width:100px"')}</td>
+        <td>${can ? ba('cpdel', '✕', 'data-i="'+i+'"', 'data-type="extra"') : ''}</td>
+      </tr>
+    `).join('');
+
+    return `<div class="card">
+      <div class="bar noprint">
+        <h3>🔨 Carpenter / Labour Billing</h3>
+        ${!q ? '<span style="color:#b00020;font-size:12px;margin-left:10px">⚠ No quotation linked to this project.</span>' : ''}
+      </div>
+      <p class="mut">Calculate labor payments based on the BOQ square footage.</p>
+      
+      <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:10px 0">
+        <div style="padding:10px;background:var(--in);border-radius:8px">
+          <div class="mut" style="font-size:11px">Total Work (SQ.FT)</div>
+          <div style="font-size:20px;font-weight:bold;color:#1F4E79">${totalSqft}</div>
+        </div>
+        <div style="padding:10px;background:var(--in);border-radius:8px">
+          <div class="mut" style="font-size:11px">Labour Rate (₹/sqft)</div>
+          <div>${bn('pj', p.id, 'carp.rate', p.carp.rate, 'style="font-size:20px;font-weight:bold;width:100px"')}</div>
+        </div>
+        <div style="padding:10px;background:var(--in);border-radius:8px">
+          <div class="mut" style="font-size:11px">Calculated Labour Cost</div>
+          <div style="font-size:20px;font-weight:bold;color:#1F4E79">${fmt(baseCost)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start">
+      <div class="card">
+        <h3>Extra Work / Additions</h3>
+        <p class="mut" style="font-size:12px">Add polishing, extra fittings, or work outside the BOQ.</p>
+        <div class="sc">
+          <table class="g">
+            <tr><th>Description</th><th>Amount</th><th></th></tr>
+            ${extraRows || '<tr><td colspan="3" class="mut">No extra work added.</td></tr>'}
+          </table>
+        </div>
+        <div class="bar noprint">${can ? ba('cpadd', '+ Add Extra Work', '', 'data-type="extra"') : ''}</div>
+      </div>
+
+      <div class="card">
+        <h3>Payment History</h3>
+        <p class="mut" style="font-size:12px">Track advances and milestone payments made to the carpenter.</p>
+        <div class="sc">
+          <table class="g" style="min-width:450px">
+            <tr><th>Date</th><th>Amount</th><th>Mode</th><th>Note</th><th></th></tr>
+            ${payRows || '<tr><td colspan="5" class="mut">No payments recorded.</td></tr>'}
+          </table>
+        </div>
+        <div class="bar noprint">${can ? ba('cpadd', '+ Record Payment', '', 'data-type="pay"') : ''}</div>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:6px solid ${balance <= 0 ? '#15803d' : '#F59E0B'}">
+      <h3>Summary</h3>
+      <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <div><span class="mut">Base Labour Cost</span><br><b>${fmt(baseCost)}</b></div>
+        <div><span class="mut">Extra Work</span><br><b>${fmt(extraTotal)}</b></div>
+        <div><span class="mut">Total Payable</span><br><b>${fmt(totalPayable)}</b></div>
+        <div><span class="mut">Total Paid</span><br><b style="color:#15803d">${fmt(paidTotal)}</b></div>
+        <div><span class="mut">Balance Remaining</span><br><b style="color:${balance > 0 ? '#b00020' : '#15803d'}">${fmt(balance)}</b></div>
+      </div>
+    </div>`;
+  }
+
+  // 3. Intercept Project render to show the tab
+  if (window.erpTab) {
+    const _erpTab = window.erpTab;
+    window.erpTab = function(p, T) {
+      if (T === 'carp') return carpTab(p);
+      return _erpTab(p, T);
+    };
+  }
+
+  // 4. Handle Add/Delete
+  document.addEventListener('click', e => {
+    const bAdd = e.target.closest('[data-bza="cpadd"]');
+    const bDel = e.target.closest('[data-bza="cpdel"]');
+    if (!bAdd && !bDel) return;
+    
+    e.preventDefault(); e.stopImmediatePropagation();
+    const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+    if (!p || !S.w) return;
+    
+    p.carp = p.carp || { rate: 0, extras: [], pays: [] };
+    
+    if (bAdd) {
+      const type = bAdd.dataset.type;
+      if (type === 'pay') p.carp.pays.push({ date: today(), amt: 0, mode: 'Cash', note: '' });
+      else p.carp.extras.push({ desc: '', amt: 0 });
+      bzSave('pj', p.id); render();
+    } else if (bDel) {
+      if (confirm('Delete this record?')) {
+        const type = bDel.dataset.type, idx = +bDel.dataset.i;
+        if (type === 'pay') p.carp.pays.splice(idx, 1);
+        else p.carp.extras.splice(idx, 1);
+        bzSave('pj', p.id); render();
+      }
+    }
+  }, true);
+  
+  // Re-render when rate or amounts change to update totals instantly
+  document.addEventListener('change', e => {
+    if (e.target.dataset && e.target.dataset.bz && e.target.dataset.bz.startsWith('pj|') && e.target.dataset.bz.includes('carp.')) {
+      setTimeout(render, 100);
+    }
+  });
+
+  console.log('[ModuCraft +] Carpenter Billing loaded');
+})();
 
   console.log('[ModuCraft +] Daily Site Report loaded');
 })();
