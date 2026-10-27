@@ -740,8 +740,12 @@ document.addEventListener('change', e => {
   'use strict';
   if (window.__mcEnqLoaded) return;
   window.__mcEnqLoaded = true;
-  window.ENQ = JSON.parse(localStorage.getItem('msq_enq_data') || '{}');
-  window.saveEnq = function() { localStorage.setItem('msq_enq_data', JSON.stringify(window.ENQ)); };
+  
+  let savedEnq = {};
+  try { savedEnq = JSON.parse(localStorage.getItem('msq_enq_data') || '{}'); } catch(e) {}
+  window.ENQ = savedEnq;
+  window.saveEnq = function() { try { localStorage.setItem('msq_enq_data', JSON.stringify(window.ENQ)); } catch(e) {} };
+  
   window.vEnq = function() {
     const list = Object.values(window.ENQ).sort((a, b) => (b.date || '').localeCompare(a.date || '')), t = today();
     const rows = list.map(e => {
@@ -1105,7 +1109,11 @@ document.addEventListener('change', e => {
       return;
     }
   }, true);
-    // ==========================================
+
+  console.log('[ModuCraft +] Daily Site Report loaded');
+})();
+
+// ==========================================
 // STEP 7: CARPENTER / LABOUR PIECE-RATE BILLING
 // ==========================================
 (function(){
@@ -1252,10 +1260,8 @@ document.addEventListener('change', e => {
   console.log('[ModuCraft +] Carpenter Billing loaded');
 })();
 
-  console.log('[ModuCraft +] Daily Site Report loaded');
-})();
 // ==========================================
-// STEP 8 & 9: DEPARTMENT SEGREGATION & ADVANCED ACCESS CONTROL (FIXED)
+// STEP 8 & 9: DEPARTMENT SEGREGATION & ADVANCED ACCESS CONTROL
 // ==========================================
 (function(){
   'use strict';
@@ -1949,7 +1955,7 @@ document.addEventListener('change', e => {
   if (window.__mcDailyChecklistLoaded) return;
   window.__mcDailyChecklistLoaded = true;
 
-  window.addEventListener('DOMContentLoaded', () => {
+  function initChecklist() {
     const today = new Date().toDateString();
     const lastCheck = localStorage.getItem(`checklist_${today}`);
 
@@ -1966,7 +1972,7 @@ document.addEventListener('change', e => {
         setupChecklist(modal, today);
       }
     }, 500);
-  });
+  }
 
   function setupChecklist(modal, today) {
     const isAdmin = (S.role === 'Owner' || S.role === 'Editor' || !S.role);
@@ -2009,5 +2015,11 @@ document.addEventListener('change', e => {
       modal.style.display = 'none';
       if (typeof render === 'function') render();
     };
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initChecklist);
+  } else {
+    initChecklist();
   }
 })();
