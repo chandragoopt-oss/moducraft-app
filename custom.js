@@ -1,4 +1,32 @@
 // ==========================================
+// GLOBAL SAFE FALLBACKS (PREVENT REFERENCE ERRORS)
+// ==========================================
+if (typeof window.vDash === 'undefined') window.vDash = window.todayCard || function() { return '<div class="card"><h2>Dashboard</h2><p>Base dashboard missing.</p></div>'; };
+if (typeof window.vList === 'undefined') window.vList = function() { return '<div class="card"><h2>Quotations</h2></div>'; };
+if (typeof window.vEdit === 'undefined') window.vEdit = function() { return '<div class="card"><h2>Edit Quotation</h2></div>'; };
+if (typeof window.vPrev === 'undefined') window.vPrev = function() { return '<div class="card"><h2>Preview</h2></div>'; };
+if (typeof window.fixSet === 'undefined') window.fixSet = function() { };
+if (typeof window.vSet === 'undefined') window.vSet = function() { return '<div class="card"><h2>Settings</h2></div>'; };
+if (typeof window.paperToPdf === 'undefined') window.paperToPdf = async function() { };
+if (typeof window.vEst === 'undefined') window.vEst = function() { return '<div class="card"><h2>Estimate</h2></div>'; };
+if (typeof window.poFromEst === 'undefined') window.poFromEst = function() { };
+if (typeof window.poEdit === 'undefined') window.poEdit = function() { return '<div class="card"><h2>PO Edit</h2></div>'; };
+if (typeof window.poDoc === 'undefined') window.poDoc = function() { return '<div class="card"><h2>PO Doc</h2></div>'; };
+if (typeof window.vDesign === 'undefined') window.vDesign = function() { return '<div class="card"><h2>Design</h2></div>'; };
+if (typeof window.vPlan === 'undefined') window.vPlan = function() { return '<div class="card"><h2>Plan</h2></div>'; };
+if (typeof window.vEnq === 'undefined') window.vEnq = function() { return '<div class="card"><h2>Enquiries</h2></div>'; };
+if (typeof window.erpTab === 'undefined') window.erpTab = function() { return ''; };
+if (typeof window.vProj === 'undefined') window.vProj = function() { return '<div class="card"><h2>Project</h2></div>'; };
+if (typeof window.render === 'undefined') window.render = function() { console.log('Render called, base render missing'); };
+if (typeof window.applyLvl === 'undefined') window.applyLvl = function() { };
+if (typeof window.save === 'undefined') window.save = function() { };
+if (typeof window.saveAcl === 'undefined') window.saveAcl = function() { };
+if (typeof window.flash === 'undefined') window.flash = function(msg) { alert(msg); };
+if (typeof window.canRate === 'undefined') window.canRate = function() { return true; };
+if (typeof window.lastBy === 'undefined') window.lastBy = function() { return ''; };
+if (typeof window.uName === 'undefined') window.uName = function() { return ''; };
+
+// ==========================================
 // PATCH: Advanced Follow Up System & Today Dashboard
 // ==========================================
 const isProjectActive = p => p && !['Closed', 'Closure'].includes(p.stage);
@@ -85,8 +113,8 @@ document.addEventListener('click', e => {
     }
 }, true);
 
-const origTodayCard = vDash;
-vDash = function() {
+const origTodayCard = window.vDash;
+window.vDash = function() {
     let html = origTodayCard();
     const u = (typeof uName === 'function') ? uName() : (localStorage.getItem('msq_me') || '');
     const displayName = u ? (u.includes('@') ? u.split('@')[0] : u) : 'User';
@@ -125,8 +153,8 @@ vDash = function() {
     if (chipEnd !== -1) { html = html.substring(0, chipEnd + 6) + newHtml + html.substring(chipEnd + 6); }
     return html;
 };
-const origVList = vList;
-vList = function() {
+const origVList = window.vList;
+window.vList = function() {
     let html = origVList();
     Object.values(S.q).forEach(q => {
         if (q.st === 'shared' && q.out !== 'lost') {
@@ -205,8 +233,8 @@ function removeWarranty() { const wp = document.getElementById('warranty-page');
 // ==========================================
 // PATCH: Advanced Pricing Bases & Material Summary & Discounts
 // ==========================================
-const origVEdit = vEdit;
-vEdit = function() {
+const origVEdit = window.vEdit;
+window.vEdit = function() {
     let html = origVEdit();
     const q = T();
     if (!q) return html;
@@ -248,8 +276,8 @@ function customDisc(q) {
     return d;
 }
 function customGt(q) { return gt0(q) - customDisc(q); }
-const origVPrev = vPrev;
-vPrev = function() {
+const origVPrev = window.vPrev;
+window.vPrev = function() {
     let html = origVPrev();
     const q = window.T ? window.T() : T();
     if (!q) return html;
@@ -302,14 +330,14 @@ function removeMaterialSummary() { const el = document.getElementById('material-
 // ==========================================
 // PATCH: Structured Finishes (Laminate, Acrylic, etc.)
 // ==========================================
-const origFixSet = fixSet;
-fixSet = function() {
+const origFixSet = window.fixSet;
+window.fixSet = function() {
     origFixSet();
     if (!S.set.finm) S.set.finm = ['Standard', 'Merino', 'Century', 'Greenlam'];
 };
 const STD_FINS = ['0.8mm Matt', '0.8mm Gloss', '0.8mm High Gloss', '0.8mm Texture', '0.8mm Special', '0.8mm Stone Finish','1mm Matt', '1mm Gloss', '1mm High Gloss', '1mm Texture', '1mm Special', '1mm Stone Finish','Acrylic Matt', 'Acrylic Gloss','Membrane Matt', 'Membrane Gloss','Veneer'];
-const origVSet = vSet;
-vSet = function() {
+const origVSet = window.vSet;
+window.vSet = function() {
     let html = origVSet();
     const regex = /<div class="card"><h2>Outer \/ inner finishes.*?<button data-a="sa" data-k="fin">\+ Add row<\/button><\/div><\/div>/s;
     if (!regex.test(html)) return html;
@@ -350,8 +378,8 @@ document.addEventListener('change', e => { if (e.target.id === 'fin_maker_sel') 
 // ==========================================
 // PATCH: Master Interceptors for PDF & HTML
 // ==========================================
-const origPaperToPdf_Master = paperToPdf;
-paperToPdf = async function(mode) {
+const origPaperToPdf_Master = window.paperToPdf;
+window.paperToPdf = async function(mode) {
     const wInj = injectWarranty();
     const mInj = injectMaterialSummary();
     try { return await origPaperToPdf_Master.apply(this, arguments); } 
@@ -392,8 +420,8 @@ function calcConsumables(q) {
     if (skirtLen > 0) cons.push({ d: 'Skirting Clips', q: Math.ceil(skirtLen * 3.33), u: 'nos' });
     return cons;
 }
-const origVEst = vEst;
-vEst = function() {
+const origVEst = window.vEst;
+window.vEst = function() {
     let html = origVEst();
     const q = T();
     if (!q) return html;
@@ -405,8 +433,8 @@ vEst = function() {
     }
     return html;
 };
-const origPoFromEst = poFromEst;
-poFromEst = function(po, src) {
+const origPoFromEst = window.poFromEst;
+window.poFromEst = function(po, src) {
     const p = BZ.pj[po.pid], q = p && S.q[p.qid];
     if (!q) { flash('Link this PO to a project that has a quotation first'); return; }
     const L = po.lines = po.lines || [], v = BZ.vd[po.vid] || {};
@@ -437,8 +465,8 @@ const getCatName = (desc) => {
     if (/granite|marble|quartz|stone|corian|solid surface/i.test(d)) return 'Stone';
     return 'Other';
 };
-const origPoEdit = poEdit;
-poEdit = function(o) {
+const origPoEdit = window.poEdit;
+window.poEdit = function(o) {
     let html = origPoEdit(o);
     const oldSel = `<select id="po_src" style="max-width:260px"><option value="ply">From estimate: plywood sheets</option><option value="lam">From estimate: laminate / finish</option><option value="hw">From estimate: hardware</option><option value="stone">From estimate: counter-top stone</option></select>`;
     const newSel = `<select id="po_src" style="max-width:260px"><option value="ply">From estimate: Plywood</option><option value="lam">From estimate: Laminate / Finish</option><option value="hw">From estimate: Hardware & Consumables</option><option value="elec">From estimate: Electrical Items</option><option value="site">From estimate: Site Work (Paint/Civil/Gypsum)</option><option value="stone">From estimate: Stone / Countertop</option></select>`;
@@ -459,8 +487,8 @@ poEdit = function(o) {
     if (html.includes(anchor)) html = html.replace(anchor, payHtml + anchor); else html += payHtml;
     return html;
 };
-const origPoDoc_Adv = poDoc;
-poDoc = function(o) {
+const origPoDoc_Adv = window.poDoc;
+window.poDoc = function(o) {
     const v = BZ.vd[o.vid] || {}, p = BZ.pj[o.pid] || {}, q = S.q[p.qid];
     const groups = { ply: [], lam: [], hw: [], elec: [], site: [], stone: [], other: [] };
     (o.lines||[]).forEach(l => { if (l.d) { const c = getCatName(l.d), key = c === 'Plywood' ? 'ply' : c === 'Laminate' ? 'lam' : c === 'Hardware' ? 'hw' : c === 'Electrical' ? 'elec' : c === 'Site Work' ? 'site' : c === 'Stone' ? 'stone' : 'other'; groups[key].push(l); } });
@@ -524,10 +552,10 @@ document.addEventListener('change', e => {
     let summary = (missing === 0 && partial === 0) ? '<span style="color:#22C55E;font-weight:600">✅ All set</span>' : missing === 0 ? '<span style="color:#F59E0B;font-weight:600">⚠️ Nothing critical missing.</span>' : '<span style="color:#EF4444;font-weight:600">❌ ' + missing + ' critical item(s) missing</span>';
     return '<div class="card" id="setup-card"><h2>Setup checklist</h2><p class="mut" style="margin:4px 0">Before sending quotations, make sure your rates are set up.</p><div style="background:rgba(128,128,128,0.2);border-radius:8px;height:14px;margin:8px 0 4px;overflow:hidden"><div style="background:' + barColor + ';height:14px;width:' + pct + '%;transition:width .3s"></div></div><p style="font-size:13px;margin:0 0 4px"><b>' + ok + '/' + total + '</b> complete</p><p style="font-size:13px;margin:0 0 12px">' + summary + '</p><div class="sc"><table class="g" style="min-width:640px"><tr><th style="width:50px">Status</th><th>Item</th><th>Detail</th><th style="width:90px"></th></tr>' + checks.map(c => { const clr = statusColor(c.status); return '<tr><td style="text-align:center;font-size:18px">' + statusIcon(c.status) + '</td><td><b>' + esc(c.label) + '</b></td><td style="color:' + clr + ';font-weight:600;font-size:12px">' + esc(c.detail) + '</td><td>' + (c.status === 'ok' ? '<span style="color:#22C55E;font-size:18px">✓</span>' : '<button data-setup-go="' + c.action + '" style="background:' + clr + ';color:#fff;border:0;border-radius:6px;padding:5px 10px;font-weight:600;cursor:pointer">Fix →</button>') + '</td></tr>'; }).join('') + '</table></div></div>';
   }
-  if (typeof vSet === 'function') { const _vSet = vSet; window.vSet = vSet = function() { return setupCard() + _vSet(); }; }
+  if (typeof vSet === 'function') { const _vSet = window.vSet; window.vSet = function() { return setupCard() + _vSet(); }; }
   if (typeof vDash === 'function') {
-    const _todayCard = vDash;
-    window.vDash = vDash = function() {
+    const _todayCard = window.vDash;
+    window.vDash = function() {
       const existing = _todayCard(), critical = setupStatus().filter(c => c.status === 'missing');
       if (critical.length === 0) return existing;
       const names = critical.map(c => c.label).join(', ');
@@ -889,8 +917,8 @@ document.addEventListener('change', e => {
     }
   }, true);
 
-  const origTodayCard = vDash;
-  vDash = function() {
+  const origTodayCard = window.vDash;
+  window.vDash = function() {
     let html = origTodayCard();
     let inflow = 0, outflow = 0;
     const t = today(), t30 = addDays(t, 30);
@@ -1427,8 +1455,8 @@ document.addEventListener('change', e => {
     window.open('mailto:' + em + '?subject=' + encodeURIComponent('Access to ' + co().name + ' quotation app') + '&body=' + encodeURIComponent('Hello,\n\nPlease open our quotation app: ' + ARTL + '\n(Sign in to claude.ai with this email address.)\n\nYour access level: ' + LN[lv] + '\nDepartment: ' + MC_DEPTS[dept].name + '\n\n' + co().name), '_blank');
   }, true);
 
-  const origTodayCard = vDash;
-  vDash = function() {
+  const origTodayCard = window.vDash;
+  window.vDash = function() {
     let html = origTodayCard();
     if (curDept !== 'admin' && curDept !== 'accounts') return html;
 
