@@ -2092,3 +2092,178 @@ document.addEventListener('change', e => {
     }
   };
 })();
+
+// ==========================================
+// ENHANCED ENQUIRIES: Filtering, Grouping, Deleting
+// ==========================================
+(function() {
+  if (window.__mcEnqManagerLoaded) return;
+  window.__mcEnqManagerLoaded = true;
+
+  const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
+  const API_KEY = "ModuCraft@2026";
+
+  // 1. Handle Deleting
+  window.mcDeleteEnq = async function(id) {
+    if(!confirm("Are you sure you want to permanently delete this enquiry? This will also remove it from Google Sheets.")) return;
+    
+    // Remove from local memory and save
+    delete window.ENQ[id];
+    window.saveEnq();
+    
+    // Remove from Google Sheets
+    try {
+      await fetch(GOOGLE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete', collection: 'enquiries', id: id, apiKey: API_KEY })
+      });
+    } catch(e) { console.log("Failed to delete from cloud", e); }
+    
+    render(); // Refresh screen
+  };
+
+  // 2. Handle Status Changes
+  window.mcUpdateEnqStatus = function(id, newStatus) {
+    if(window.ENQ[id]) {
+      window.ENQ[id].status = newStatus;
+      window.saveEnq();
+      render(); // Refresh to move it to the right tab
+    }
+  };
+
+  // 3. The New Enquiries View
+  const _vEnq = window.vEnq;
+  window.vEnq = function() {
+    // Get all enquiries and sort by date (newest first)
+    const allEnqs = Object.values(window.ENQ || {}).sort((a,b) => {
+      const d1 = new Date(a.date + ' ' + (a.time || '00:00')).getTime();
+      const d2 = new Date(b.date + ' ' + (b.time || '00:00')).getTime();
+      return d2 - d1;
+    });
+
+    if (!S.enqFilter) S.enqFilter = 'all';
+    
+    // Tabs definition
+    const tabs = [
+      ['all', 'All Leads'],
+      ['new', 'New'],
+      ['followup', 'Follow-up'],
+      ['quoted', 'Quoted'],
+      ['won', 'Won 🏆'],
+      ['lost', 'Lost ❌']
+    ];
+
+    // Filter logic
+    const filtered = allEnqs.filter(e => {
+      if (S.enqFilter === 'all') return true;
+      const st = (e.status || 'Enquiry').toLowerCase();
+      if (S.enqFilter === 'new') return st === 'enquiry' || st === 'new';
+      if (S.enqFilter === 'quoted') return st === 'quoted';
+      if (S.enqFilter === 'won') return st === 'won';
+      if (S.enqFilter === 'lost') return st === 'lost';
+      if (S.enqFilter === 'followup') return e.nfu && e.nfu <= today();
+      return true;
+    });
+
+    // Group by Date
+    const grouped = {};
+    filtered.forEach(e => {
+      let dateStr = e.date || new Date().toISOString().split('T')[0];
+      // Format the date nicely
+      const dObj = new Date(dateStr);
+      const isToday = dateStr === today();
+      const isYesterday = dateStr === addDays(today(), -1);
+      
+      const displayDate = isToday ? "TODAY" : isYesterday ? "YESTERDAY" : dObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      
+      if (!grouped[displayDate]) grouped[displayDate] = [];
+      grouped[displayDate].push(e);
+    });
+
+    // Build UI
+    let html = `<div class="card" style="border-top: 4px solid #1F4E79;">
+      <div class="bar noprint">
+        <h2>Enquiries & Leads</h2>
+        <button data-enq-act="new" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;margin-left:auto">+ Manual Enquiry</button>
+        <button class="g" data-enq-act="refresh" style="margin-left:8px">↻ Sync</button>
+      </div>
+      
+      <div class="bar" style="margin-bottom:15px; gap:5px; flex-wrap:wrap;">
+        ${tabs.map(([key, label]) => {
+          const active = S.enqFilter === key;
+          const count = key === 'all' ? allEnqs.length : allEnqs.filter(e => {
+            const st = (e.status || 'Enquiry').toLowerCase();
+            if(key === 'new') return st === 'enquiry' || st === 'new';
+            if(key === 'followup') return e.nfu && e.nfu <= today();
+            return st === key;
+          }).length;
+          
+          return `<button class="${active ? '' : 'g'}" style="padding:5px 15px; border-radius:20px; ${active ? 'background:#B08D57;border-color:#B08D57;color:#fff;' : ''}" data-enq-filter="${key}">${label} (${count})</button>`;
+        }).join('')}
+      </div>`;
+
+    if (Object.keys(grouped).length === 0) {
+      html += `<p class="mut" style="text-align:center; padding: 20px;">No enquiries found in this category.</p>`;
+    } else {
+      Object.keys(grouped).forEach(dateLabel => {
+        html += `<div style="margin-top: 15px; margin-bottom: 5px; font-weight: bold; color: #666; font-size: 13px; border-bottom: 2px solid #eee; padding-bottom: 4px;">📅 ${dateLabel}</div>`;
+        html += `<div class="sc"><table class="g" style="min-width: 950px;">
+          <tr>
+            <th style="width: 20%;">Client Details</th>
+            <th style="width: 25%;">Project / Address</th>
+            <th style="width: 15%;">Budget & Source</th>
+            <th style="width: 15%;">Status</th>
+            <th style="width: 25%; text-align: right;">Actions</th>
+          </tr>`;
+          
+        grouped[dateLabel].forEach(e => {
+          const stColor = e.status === 'Won' ? '#15803d' : e.status === 'Lost' ? '#b00020' : '#1F4E79';
+          
+          html += `<tr>
+            <td>
+              <b style="font-size: 15px;">${esc(e.name)}</b><br>
+              <span class="mut" style="font-size:12px">📞 ${esc(e.phone)}</span><br>
+              <span class="mut" style="font-size:11px">${e.email ? '✉️ '+esc(e.email) : ''}</span>
+            </td>
+            <td>
+              <b>${esc(e.project || '—')}</b><br>
+              <span class="mut" style="font-size:11px">📍 ${esc(e.address || 'No address')}</span>
+            </td>
+            <td>
+              <b style="color:#B08D57">${esc(e.budget || '—')}</b><br>
+              <span class="mut" style="font-size:11px">${esc(e.platform || 'Website')} • ${e.time || ''}</span>
+              ${e.notes ? `<br><button class="g" onclick="alert('REQUIREMENTS:\\n\\n' + \`${esc(e.notes).replace(/`/g, "'")}\`)" style="padding:2px 6px;font-size:10px;margin-top:4px">View Details</button>` : ''}
+            </td>
+            <td>
+              <select onchange="mcUpdateEnqStatus('${e.id}', this.value)" style="font-weight: bold; color: ${stColor}; border-color: ${stColor}; padding: 4px; border-radius: 4px;">
+                <option value="Enquiry" ${e.status === 'Enquiry' ? 'selected' : ''}>New</option>
+                <option value="Quoted" ${e.status === 'Quoted' ? 'selected' : ''}>Quoted</option>
+                <option value="Won" ${e.status === 'Won' ? 'selected' : ''}>Won</option>
+                <option value="Lost" ${e.status === 'Lost' ? 'selected' : ''}>Lost</option>
+              </select>
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+              ${e.status !== 'Won' ? `<button data-enq-act="convert" data-id="${e.id}" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px">Quote</button>` : ''}
+              <button onclick="mcDeleteEnq('${e.id}')" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px;font-weight:bold;">🗑️</button>
+            </td>
+          </tr>`;
+        });
+        html += `</table></div>`;
+      });
+    }
+    html += `</div>`;
+    return html;
+  };
+
+  // 4. Handle Filter Clicks
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-enq-filter]');
+    if (btn) {
+      e.preventDefault();
+      S.enqFilter = btn.dataset.enqFilter;
+      render();
+    }
+  });
+})();
