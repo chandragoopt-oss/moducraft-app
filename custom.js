@@ -1511,3 +1511,30 @@ document.addEventListener('change', e => {
 
   console.log('[ModuCraft +] Department Segregation & Advanced Access v2 loaded');
 })();
+// ==========================================
+// STEP 10: SET BROWSER TAB FAVICON TO APP LOGO
+// ==========================================
+(function(){
+  'use strict';
+  function setFavicon() {
+    const logoImg = document.getElementById('tl');
+    // Only run if the logo image exists and has loaded a base64/src
+    if (logoImg && logoImg.src) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.type = 'image/png';
+      link.href = logoImg.src;
+    }
+  }
+
+  // Run when the page loads
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setFavicon);
+  } else {
+    setFavicon();
+  }
+})();
