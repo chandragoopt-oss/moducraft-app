@@ -848,3 +848,208 @@ document.addEventListener('change', e => {
 });
 
 console.log("Custom patch loaded successfully! All PO prices hidden.");
+
+/* ===== STEP 1: GUIDED RATE SETUP ===== */
+/* Appended — does not touch any existing code above. Safe to remove by deleting this block. */
+(function(){
+  'use strict';
+  if (window.__mcSetupLoaded) { console.log('[ModuCraft +] Guided setup already loaded'); return; }
+  window.__mcSetupLoaded = true;
+
+  function setupStatus() {
+    const s = (typeof S !== 'undefined' && S.set) || {};
+    const co = s.co || {};
+    const checks = [];
+
+    // 1. Company details
+    const coMissing = ['name','addr','phone','mail'].filter(k => !String(co[k]||'').trim());
+    checks.push({
+      id: 'co', label: 'Company details',
+      status: coMissing.length === 0 ? 'ok' : 'missing',
+      detail: coMissing.length === 0 ? 'Name, address, phone, email set' : 'Missing: ' + coMissing.join(', '),
+      action: 'co'
+    });
+
+    // 2. Ply rates
+    const plr = (s.plr || []).filter(p => p.b && p.g && p.t);
+    const plrPriced = plr.filter(p => +(p.r) > 0);
+    checks.push({
+      id: 'plr', label: 'Plywood sheet rates',
+      status: plrPriced.length === 0 ? 'missing' : plrPriced.length === plr.length ? 'ok' : 'partial',
+      detail: plrPriced.length === 0
+        ? 'No plywood sheet has a rate — material costing will not work'
+        : plrPriced.length === plr.length
+          ? 'All ' + plr.length + ' sheets priced'
+          : plrPriced.length + ' of ' + plr.length + ' sheets priced — grades with no rate will fall back to ₹0',
+      action: 'plr'
+    });
+
+    // 3. Finishes
+    const fin = s.fin || [];
+    const finPriced = fin.filter(f => +(f.c) > 0);
+    checks.push({
+      id: 'fin', label: 'Laminate / finish sheet costs',
+      status: finPriced.length === 0 ? 'missing' : finPriced.length === fin.length ? 'ok' : 'partial',
+      detail: finPriced.length === 0
+        ? 'No finish has a cost — material costing will not work'
+        : finPriced.length === fin.length
+          ? 'All ' + fin.length + ' finishes priced'
+          : finPriced.length + ' of ' + fin.length + ' finishes priced — unused finishes at ₹0 are fine',
+      action: 'fin'
+    });
+
+    // 4. Hardware
+    const acc = s.acc || [];
+    const accPriced = acc.filter(a => +(a.rh)>0 || +(a.re)>0 || +(a.rl)>0);
+    checks.push({
+      id: 'acc', label: 'Hardware / accessory costs',
+      status: accPriced.length === 0 ? 'missing' : accPriced.length === acc.length ? 'ok' : 'partial',
+      detail: accPriced.length === 0
+        ? 'No accessory has a brand cost — margin will be over-estimated'
+        : accPriced.length === acc.length
+          ? 'All ' + acc.length + ' accessories priced'
+          : accPriced.length + ' of ' + acc.length + ' accessories priced',
+      action: 'acc'
+    });
+
+    // 5. Labour (critical — no fallback in the app)
+    const lab = +(s.lab) || 0;
+    checks.push({
+      id: 'lab', label: 'Labour & fabrication cost',
+      status: lab > 0 ? 'ok' : 'missing',
+      detail: lab > 0 ? '₹' + lab + ' per sq.ft' : 'Not set — cost is under-estimated (margin will look higher than it is)',
+      action: 'lab'
+    });
+
+    // 6. Margin (partial — app falls back to 35%)
+    const mgn = +(s.mgn) || 0;
+    checks.push({
+      id: 'mgn', label: 'Profit margin',
+      status: mgn > 0 ? 'ok' : 'partial',
+      detail: mgn > 0 ? mgn + '%' : 'Using default 35% — set explicitly to override',
+      action: 'mgn'
+    });
+
+    // 7. GST
+    const gst = +(s.gst) || 0;
+    checks.push({
+      id: 'gst', label: 'GST percentage',
+      status: gst > 0 ? 'ok' : 'missing',
+      detail: gst > 0 ? gst + '%' : 'Not set — purchase orders will not have GST',
+      action: 'gst'
+    });
+
+    // 8. Room rates
+    const rooms = (s.rooms || []).filter(r => !r.w);
+    const rmsPriced = rooms.filter(r => +(r.r) > 0);
+    checks.push({
+      id: 'rooms', label: 'Room type rates',
+      status: rmsPriced.length === 0 ? 'missing' : rmsPriced.length === rooms.length ? 'ok' : 'partial',
+      detail: rmsPriced.length === 0
+        ? 'No room has a rate — module pricing will be ₹0'
+        : rmsPriced.length === rooms.length
+          ? 'All ' + rooms.length + ' room types priced'
+          : rmsPriced.length + ' of ' + rooms.length + ' room types priced',
+      action: 'rooms'
+    });
+
+    return checks;
+  }
+
+  const statusIcon = s => s === 'ok' ? '✅' : s === 'partial' ? '⚠️' : '❌';
+  const statusColor = s => s === 'ok' ? '#15803d' : s === 'partial' ? '#b45309' : '#b00020';
+  const rowBg = s => s === 'ok' ? '' : s === 'partial' ? '#fffaf0' : '#fff5f5';
+
+  function setupCard() {
+    const checks = setupStatus();
+    const ok = checks.filter(c => c.status === 'ok').length;
+    const partial = checks.filter(c => c.status === 'partial').length;
+    const missing = checks.filter(c => c.status === 'missing').length;
+    const total = checks.length;
+    const pct = Math.round(ok / total * 100);
+    const barColor = missing > 0 ? '#DC2626' : partial > 0 ? '#F59E0B' : '#22C55E';
+
+    let summary;
+    if (missing === 0 && partial === 0) {
+      summary = '✅ All set — quotations will calculate correctly.';
+    } else if (missing === 0) {
+      summary = '✅ Nothing critical missing. ' + partial + ' item' + (partial > 1 ? 's are' : ' is') + ' partly set — quotations will work, but some entries may show ₹0.';
+    } else {
+      summary = '❌ ' + missing + ' critical item' + (missing > 1 ? 's are' : ' is') + ' missing — quotations may calculate incorrectly until fixed.';
+    }
+
+    return '<div class="card" id="setup-card"><h2>Setup checklist</h2>' +
+      '<p class="mut" style="margin:4px 0">Before sending quotations, make sure your rates are set up. Each field saves automatically.</p>' +
+      '<div style="background:#e6e0d2;border-radius:8px;height:14px;margin:8px 0 4px;overflow:hidden">' +
+        '<div style="background:' + barColor + ';height:14px;width:' + pct + '%;transition:width .3s"></div>' +
+      '</div>' +
+      '<p style="font-size:13px;margin:0 0 4px;color:' + (missing > 0 ? '#b00020' : '#6b7280') + '"><b>' + ok + '/' + total + '</b> complete' + (missing > 0 ? ' · <b>' + missing + '</b> critical' : '') + (partial > 0 ? ' · ' + partial + ' partial' : '') + '</p>' +
+      '<p style="font-size:13px;margin:0 0 12px">' + summary + '</p>' +
+      '<div class="sc"><table class="g" style="min-width:640px"><tr><th style="width:50px">Status</th><th>Item</th><th>Detail</th><th style="width:80px"></th></tr>' +
+      checks.map(c =>
+        '<tr style="background:' + rowBg(c.status) + '">' +
+          '<td style="text-align:center;font-size:18px">' + statusIcon(c.status) + '</td>' +
+          '<td><b>' + esc(c.label) + '</b></td>' +
+          '<td style="color:' + statusColor(c.status) + ';font-size:12px">' + esc(c.detail) + '</td>' +
+          '<td>' + (c.status === 'ok' ? '' : '<button class="g" data-setup-go="' + c.action + '">Fix →</button>') + '</td>' +
+        '</tr>'
+      ).join('') +
+      '</table></div></div>';
+  }
+
+  // Patch vSet — prepend the checklist to the Settings page
+  if (typeof vSet === 'function') {
+    const _vSet = vSet;
+    window.vSet = vSet = function() { return setupCard() + _vSet(); };
+  }
+
+  // Patch todayCard — prepend red banner if any critical missing
+  if (typeof todayCard === 'function') {
+    const _todayCard = todayCard;
+    window.todayCard = todayCard = function() {
+      const existing = _todayCard();
+      const critical = setupStatus().filter(c => c.status === 'missing');
+      if (critical.length === 0) return existing;
+      const names = critical.map(c => c.label).join(', ');
+      const banner = '<div class="card" style="border-left:6px solid #DC2626;background:#fff5f5">' +
+        '<b style="color:#b00020">⚙️ Setup not complete — ' + critical.length + ' critical item' + (critical.length > 1 ? 's' : '') + ' need attention</b>' +
+        '<p class="mut" style="margin:4px 0 8px;font-size:13px">Quotations may calculate incorrectly until setup is complete: ' + esc(names) + '.</p>' +
+        '<button data-setup-tab style="background:#b00020">Open setup checklist →</button></div>';
+      return banner + existing;
+    };
+  }
+
+  // Fix → scrolls to the exact field
+  document.addEventListener('click', function(e){
+    const fix = e.target.closest('[data-setup-go]');
+    if (fix) {
+      e.preventDefault();
+      const map = {
+        co: 'input[data-p="co|name"]',
+        plr: 'input[data-p^="plr|"][data-p$="|r"]',
+        fin: 'input[data-p^="fin|"][data-p$="|c"]',
+        acc: 'input[data-p^="acc|"][data-p$="|rh"]',
+        lab: 'input[data-p="lab"]',
+        mgn: 'input[data-p="mgn"]',
+        gst: 'input[data-p="gst"]',
+        rooms: 'input[data-p^="rooms|"][data-p$="|r"]'
+      };
+      const el = document.querySelector(map[fix.dataset.setupGo] || 'body');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(function(){ try { el.focus(); } catch(x){} }, 400);
+      }
+      return;
+    }
+    const tab = e.target.closest('[data-setup-tab]');
+    if (tab) { e.preventDefault(); S.tab = 's'; render(); }
+  });
+
+  // If user is already on Settings or Today when this loads, re-render so they see the new content immediately
+  if ((S.tab === 's' || S.tab === 'h') && typeof render === 'function') {
+    setTimeout(function(){ try { render(); } catch(x){} }, 200);
+  }
+
+  console.log('[ModuCraft +] Guided rate setup loaded');
+})();
+/* ===== END STEP 1 ===== */
