@@ -795,3 +795,151 @@ document.addEventListener('change', e => {
     }
   });
 })();
+// ==========================================
+// STEP 5: PROJECT EXPENSES & CASH-FLOW FORECAST
+// ==========================================
+(function(){
+  'use strict';
+  if (window.__mcExpensesLoaded) return;
+  window.__mcExpensesLoaded = true;
+
+  // 1. Add the "Expenses" tab to the Project view
+  if (typeof PJTABS !== 'undefined' && PJTABS.push && !PJTABS.some(t => t[0]==='exp')) {
+    PJTABS.push(['exp', 'Expenses', 'fs']);
+  }
+  if (typeof ERPT !== 'undefined' && ERPT.push && ERPT.indexOf('exp') < 0) {
+    ERPT.push('exp');
+  }
+
+  // 2. Render the Expenses Tab inside a Project
+  function expTab(p) {
+    const fl = canRate();
+    const can = S.w && (fl || S.lvl=='staff');
+    const exps = p.expenses || [];
+    const total = exps.reduce((a, x) => a + (+x.amt || 0), 0);
+    const catTotals = {};
+    exps.forEach(x => { catTotals[x.cat || 'Other'] = (catTotals[x.cat || 'Other'] || 0) + (+x.amt || 0); });
+
+    const rows = exps.map((x, i) => `
+      <tr>
+        <td>${bdt('pj', p.id, 'expenses.'+i+'.date', x.date)}</td>
+        <td>${bs('pj', p.id, 'expenses.'+i+'.cat', x.cat || 'Other', ['Transport', 'Labour', 'Material', 'Food / Water', 'Site Misc', 'Other'])}</td>
+        <td>${bi('pj', p.id, 'expenses.'+i+'.desc', x.desc, 'style="min-width:180px"')}</td>
+        <td>${bn('pj', p.id, 'expenses.'+i+'.amt', x.amt, 'style="width:100px"')}</td>
+        <td>${bi('pj', p.id, 'expenses.'+i+'.by', x.by, 'style="width:100px" placeholder="Paid by"')}</td>
+        <td>${can ? ba('exdel', '✕', 'data-i="'+i+'"') : ''}</td>
+      </tr>
+    `).join('');
+
+    const summary = Object.entries(catTotals).map(([c, a]) => 
+      `<span class="chip" style="margin-right:4px">${esc(c)}: ${fmt(a)}</span>`
+    ).join('');
+
+    return `<div class="card">
+      <div class="bar noprint">
+        <h3>Project Expenses</h3>
+        ${can ? ba('exadd', '+ Add Expense', '', '') : ''}
+        <span style="margin-left:auto;font-size:16px"><b>Total: ${fmt(total)}</b></span>
+      </div>
+      <p class="mut">Track direct project costs not covered by Purchase Orders (labour, transport, site misc). This calculates your true profit.</p>
+      <div class="bar" style="margin-bottom:10px">${summary || '<span class="mut">No categories yet.</span>'}</div>
+      
+      <div class="sc">
+        <table class="g" style="min-width:600px">
+          <tr><th>Date</th><th>Category</th><th>Description</th><th>Amount (₹)</th><th>Paid By</th><th></th></tr>
+          ${rows || '<tr><td colspan="6" class="mut">No expenses recorded for this project yet.</td></tr>'}
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Profitability Check</h3>
+      <div class="dgrid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div><span class="mut">Contract Value</span><br><b>${fmt(p.val)}</b></div>
+        <div><span class="mut">Vendor POs</span><br><b>${fmt(pjSpend(p.id))}</b></div>
+        <div><span class="mut">Direct Expenses</span><br><b>${fmt(total)}</b></div>
+        <div><span class="mut">Real Profit</span><br><b style="color:${(+p.val||0) - (pjSpend(p.id) + total) > 0 ? '#15803d' : '#b00020'}">${fmt((+p.val||0) - (pjSpend(p.id) + total))}</b></div>
+      </div>
+    </div>`;
+  }
+
+  // 3. Intercept the Project render to show the tab
+  if (window.erpTab) {
+    const _erpTab = window.erpTab;
+    window.erpTab = function(p, T) {
+      if (T === 'exp') return expTab(p);
+      return _erpTab(p, T);
+    };
+  }
+
+  // 4. Handle Add/Delete Expenses
+  document.addEventListener('click', e => {
+    const bAdd = e.target.closest('[data-bza="exadd"]');
+    if (bAdd) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+      if (!p || !S.w) return;
+      p.expenses = p.expenses || [];
+      p.expenses.push({ date: today(), cat: 'Transport', desc: '', amt: 0, by: uName() });
+      bzSave('pj', p.id); render(); return;
+    }
+    const bDel = e.target.closest('[data-bza="exdel"]');
+    if (bDel) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      const p = (S.bzdoc && S.bzdoc.id) ? BZ.pj[S.bzdoc.id] : BZ.pj[S.pj];
+      if (!p || !S.w) return;
+      if (confirm('Delete this expense?')) {
+        p.expenses.splice(+bDel.dataset.i, 1);
+        bzSave('pj', p.id); render();
+      }
+      return;
+    }
+  }, true);
+
+  // 5. Add Cash Flow Forecast to the Today Dashboard
+  const origTodayCard = todayCard;
+  todayCard = function() {
+    let html = origTodayCard();
+    let inflow = 0, outflow = 0;
+    const t = today(), t30 = addDays(t, 30);
+
+    // Calculate Inflow (Client Payments Due)
+    Object.values(BZ.pj).filter(isProjectActive).forEach(p => {
+      pjPend(p).forEach(o => {
+        if (o.pend > 0 && o.x.due && o.x.due <= t30) inflow += o.pend;
+      });
+    });
+
+    // Calculate Outflow (Vendor POs Due)
+    Object.values(BZ.po).filter(o => ['Sent', 'Part received'].includes(o.st)).forEach(o => {
+      if (o.del && o.del <= t30) {
+        const tTot = poTot(o).tot;
+        let paid = 0;
+        (o.pays || []).forEach(p => paid += (+p.amt || 0));
+        const bal = tTot - paid;
+        if (bal > 0) outflow += bal;
+      }
+    });
+
+    const net = inflow - outflow;
+    
+    if (inflow > 0 || outflow > 0) {
+      const cfHtml = `<div class="card" style="border-left:6px solid #F59E0B; background:#fffdf5">
+        <h3>💵 Cash Flow Forecast (Next 30 Days)</h3>
+        <div class="dgrid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+          <div><span class="mut">Expected Inflow (Clients)</span><br><b style="color:#15803d;font-size:18px">${fmt(inflow)}</b></div>
+          <div><span class="mut">Expected Outflow (Vendors)</span><br><b style="color:#b00020;font-size:18px">${fmt(outflow)}</b></div>
+          <div><span class="mut">Net Projection</span><br><b style="color:${net >= 0 ? '#15803d' : '#b00020'};font-size:18px">${fmt(net)}</b></div>
+        </div>
+        <p class="mut" style="margin:8px 0 0;font-size:12px">Based on client payment milestones and vendor delivery dates due in the next 30 days.</p>
+      </div>`;
+
+      // Insert after the Welcome header
+      const chipEnd = html.indexOf('</div>', html.indexOf('<h2>'));
+      if (chipEnd !== -1) { html = html.substring(0, chipEnd + 6) + cfHtml + html.substring(chipEnd + 6); }
+    }
+
+    return html;
+  };
+
+  console.log('[ModuCraft +] Expenses & Cash-Flow loaded');
+})();
