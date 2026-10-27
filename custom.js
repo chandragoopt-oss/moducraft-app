@@ -85,8 +85,8 @@ document.addEventListener('click', e => {
     }
 }, true);
 
-const origTodayCard = todayCard;
-todayCard = function() {
+const origTodayCard = vDash;
+vDash = function() {
     let html = origTodayCard();
     const u = (typeof uName === 'function') ? uName() : (localStorage.getItem('msq_me') || '');
     const displayName = u ? (u.includes('@') ? u.split('@')[0] : u) : 'User';
@@ -525,9 +525,9 @@ document.addEventListener('change', e => {
     return '<div class="card" id="setup-card"><h2>Setup checklist</h2><p class="mut" style="margin:4px 0">Before sending quotations, make sure your rates are set up.</p><div style="background:rgba(128,128,128,0.2);border-radius:8px;height:14px;margin:8px 0 4px;overflow:hidden"><div style="background:' + barColor + ';height:14px;width:' + pct + '%;transition:width .3s"></div></div><p style="font-size:13px;margin:0 0 4px"><b>' + ok + '/' + total + '</b> complete</p><p style="font-size:13px;margin:0 0 12px">' + summary + '</p><div class="sc"><table class="g" style="min-width:640px"><tr><th style="width:50px">Status</th><th>Item</th><th>Detail</th><th style="width:90px"></th></tr>' + checks.map(c => { const clr = statusColor(c.status); return '<tr><td style="text-align:center;font-size:18px">' + statusIcon(c.status) + '</td><td><b>' + esc(c.label) + '</b></td><td style="color:' + clr + ';font-weight:600;font-size:12px">' + esc(c.detail) + '</td><td>' + (c.status === 'ok' ? '<span style="color:#22C55E;font-size:18px">✓</span>' : '<button data-setup-go="' + c.action + '" style="background:' + clr + ';color:#fff;border:0;border-radius:6px;padding:5px 10px;font-weight:600;cursor:pointer">Fix →</button>') + '</td></tr>'; }).join('') + '</table></div></div>';
   }
   if (typeof vSet === 'function') { const _vSet = vSet; window.vSet = vSet = function() { return setupCard() + _vSet(); }; }
-  if (typeof todayCard === 'function') {
-    const _todayCard = todayCard;
-    window.todayCard = todayCard = function() {
+  if (typeof vDash === 'function') {
+    const _todayCard = vDash;
+    window.vDash = vDash = function() {
       const existing = _todayCard(), critical = setupStatus().filter(c => c.status === 'missing');
       if (critical.length === 0) return existing;
       const names = critical.map(c => c.label).join(', ');
@@ -889,8 +889,8 @@ document.addEventListener('change', e => {
     }
   }, true);
 
-  const origTodayCard = todayCard;
-  todayCard = function() {
+  const origTodayCard = vDash;
+  vDash = function() {
     let html = origTodayCard();
     let inflow = 0, outflow = 0;
     const t = today(), t30 = addDays(t, 30);
@@ -1427,8 +1427,8 @@ document.addEventListener('change', e => {
     window.open('mailto:' + em + '?subject=' + encodeURIComponent('Access to ' + co().name + ' quotation app') + '&body=' + encodeURIComponent('Hello,\n\nPlease open our quotation app: ' + ARTL + '\n(Sign in to claude.ai with this email address.)\n\nYour access level: ' + LN[lv] + '\nDepartment: ' + MC_DEPTS[dept].name + '\n\n' + co().name), '_blank');
   }, true);
 
-  const origTodayCard = todayCard;
-  todayCard = function() {
+  const origTodayCard = vDash;
+  vDash = function() {
     let html = origTodayCard();
     if (curDept !== 'admin' && curDept !== 'accounts') return html;
 
