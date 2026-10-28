@@ -2267,106 +2267,91 @@ document.addEventListener('change', e => {
 })();
 
 // ==========================================
-// STEP 13: ADVANCED FINANCIAL REPORTING (P&L)
+// STEP 13: ADVANCED FINANCIAL REPORTING (P&L) - DOM INJECTOR
 // ==========================================
 (function() {
     'use strict';
-    if (window.__mcPnlLoaded) return;
-    window.__mcPnlLoaded = true;
+    if (window.__mcPnlLoaded_v2) return;
+    window.__mcPnlLoaded_v2 = true;
 
-    // We hook into the existing Reports tab (vRep or vReports)
-    const origVRep = window.vRep || window.vReports;
-    if (!origVRep) {
-        console.log("Could not find Reports function to override.");
-        return;
-    }
-
-    window.vRep = window.vReports = function() {
-        let html = origVRep();
+    const _render = window.render;
+    window.render = function() {
+        _render.apply(this, arguments);
         
-        let rows = '';
-        let totRev = 0, totCost = 0, totProfit = 0;
+        // Only inject if we are on the Reports tab ('r')
+        if (S.tab === 'r') {
+            const app = document.getElementById('app');
+            if (!app || document.getElementById('pnl-card-injected')) return;
 
-        Object.values(BZ.pj).forEach(p => {
-            if (!isProjectActive(p)) return; // only show active projects
-            
-            const q = S.q[p.qid];
-            
-            // 1. Revenue (Contract Value)
-            const rev = +p.val || (q && typeof gt === 'function' ? gt(q) : 0);
-            
-            // 2. Vendor Costs (POs)
-            const poCost = typeof pjSpend === 'function' ? pjSpend(p.id) : 0;
-            
-            // 3. Labour Costs (Carpenter Projected Cost)
-            let labCost = 0;
-            if (p.carp) {
-                const sqft = q && typeof est === 'function' ? est(q).sq : 0;
-                const base = sqft * (+p.carp.rate || 0);
-                const extras = (p.carp.extras || []).reduce((a,x) => a + (+x.amt || 0), 0);
-                labCost = base + extras;
+            let rows = '', totRev = 0, totCost = 0, totProfit = 0;
+
+            Object.values(BZ.pj).forEach(p => {
+                if (typeof isProjectActive === 'function' && !isProjectActive(p)) return;
+                const q = S.q[p.qid];
+                const rev = +p.val || (q && typeof gt === 'function' ? gt(q) : 0);
+                const poCost = typeof pjSpend === 'function' ? pjSpend(p.id) : 0;
+                
+                let labCost = 0;
+                if (p.carp) {
+                    const sqft = q && typeof est === 'function' ? est(q).sq : 0;
+                    labCost = (sqft * (+p.carp.rate || 0)) + (p.carp.extras || []).reduce((a,x) => a + (+x.amt || 0), 0);
+                }
+                
+                const expCost = (p.expenses || []).reduce((a,x) => a + (+x.amt || 0), 0);
+                const totalCost = poCost + labCost + expCost;
+                const profit = rev - totalCost;
+                const margin = rev > 0 ? (profit / rev) * 100 : 0;
+
+                totRev += rev; totCost += totalCost; totProfit += profit;
+
+                if (rev > 0 || totalCost > 0) {
+                    rows += `<tr>
+                        <td><b>${esc(p.name)}</b><br><span class="mut">${esc(p.client || '')}</span></td>
+                        <td class="ro">${fmt(rev)}</td>
+                        <td class="ro" style="color:#b00020">${fmt(poCost)}</td>
+                        <td class="ro" style="color:#b00020">${fmt(labCost)}</td>
+                        <td class="ro" style="color:#b00020">${fmt(expCost)}</td>
+                        <td class="ro"><b>${fmt(totalCost)}</b></td>
+                        <td class="ro" style="color:${profit >= 0 ? '#15803d' : '#b00020'}"><b>${fmt(profit)}</b></td>
+                        <td class="ro" style="color:${margin >= 0 ? '#15803d' : '#b00020'}">${margin.toFixed(1)}%</td>
+                    </tr>`;
+                }
+            });
+
+            if (rows) {
+                const pnlHtml = `
+                <div class="card" id="pnl-card-injected" style="border-left: 4px solid #B08D57; margin-bottom: 20px; background: rgba(176, 141, 87, 0.05);">
+                    <h3>📊 True Project Profit & Loss (P&L)</h3>
+                    <p class="mut">Your real profit based on Contract Value minus Vendor POs, Carpenter/Labour projections, and Direct Site Expenses.</p>
+                    <div class="sc">
+                        <table class="g" style="min-width: 950px;">
+                            <tr>
+                                <th>Project / Client</th>
+                                <th class="ro">Contract Value</th>
+                                <th class="ro">Vendor POs</th>
+                                <th class="ro">Labour (Proj.)</th>
+                                <th class="ro">Direct Exp.</th>
+                                <th class="ro">Total Cost</th>
+                                <th class="ro">Profit</th>
+                                <th class="ro">Margin %</th>
+                            </tr>
+                            ${rows}
+                            <tr style="background:var(--in); font-weight:bold; border-top: 2px solid var(--line);">
+                                <td>TOTAL PORTFOLIO</td>
+                                <td class="ro">${fmt(totRev)}</td>
+                                <td class="ro" colspan="3">Total Costs: ${fmt(totCost)}</td>
+                                <td class="ro">${fmt(totCost)}</td>
+                                <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${fmt(totProfit)}</td>
+                                <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${totRev > 0 ? ((totProfit/totRev)*100).toFixed(1) : 0}%</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>`;
+                
+                // Insert it right at the top of the page content
+                app.insertAdjacentHTML('afterbegin', pnlHtml);
             }
-            
-            // 4. Direct Site Expenses
-            const expCost = (p.expenses || []).reduce((a,x) => a + (+x.amt || 0), 0);
-            
-            // Math
-            const totalCost = poCost + labCost + expCost;
-            const profit = rev - totalCost;
-            const margin = rev > 0 ? (profit / rev) * 100 : 0;
-
-            totRev += rev;
-            totCost += totalCost;
-            totProfit += profit;
-
-            if (rev > 0 || totalCost > 0) {
-                rows += `<tr>
-                    <td><b>${esc(p.name)}</b><br><span class="mut">${esc(p.client || '')}</span></td>
-                    <td class="ro">${fmt(rev)}</td>
-                    <td class="ro" style="color:#b00020">${fmt(poCost)}</td>
-                    <td class="ro" style="color:#b00020">${fmt(labCost)}</td>
-                    <td class="ro" style="color:#b00020">${fmt(expCost)}</td>
-                    <td class="ro"><b>${fmt(totalCost)}</b></td>
-                    <td class="ro" style="color:${profit >= 0 ? '#15803d' : '#b00020'}"><b>${fmt(profit)}</b></td>
-                    <td class="ro" style="color:${margin >= 0 ? '#15803d' : '#b00020'}">${margin.toFixed(1)}%</td>
-                </tr>`;
-            }
-        });
-
-        if (!rows) rows = '<tr><td colspan="8" class="mut">No active projects to calculate.</td></tr>';
-
-        const pnlHtml = `
-        <div class="card" style="border-left: 4px solid #B08D57; margin-top:20px; background: rgba(176, 141, 87, 0.05);">
-            <h3>📊 True Project Profit & Loss (P&L)</h3>
-            <p class="mut">Calculates your exact profit based on Contract Value minus Vendor POs, Carpenter/Labour projections, and Direct Site Expenses.</p>
-            <div class="sc">
-                <table class="g" style="min-width: 950px;">
-                    <tr>
-                        <th>Project / Client</th>
-                        <th class="ro">Contract Value</th>
-                        <th class="ro">Vendor POs</th>
-                        <th class="ro">Labour (Proj.)</th>
-                        <th class="ro">Direct Exp.</th>
-                        <th class="ro">Total Cost</th>
-                        <th class="ro">Profit</th>
-                        <th class="ro">Margin %</th>
-                    </tr>
-                    ${rows}
-                    <tr style="background:var(--in); font-weight:bold; border-top: 2px solid var(--line);">
-                        <td>TOTAL PORTFOLIO</td>
-                        <td class="ro">${fmt(totRev)}</td>
-                        <td class="ro" colspan="3">Total Costs: ${fmt(totCost)}</td>
-                        <td class="ro">${fmt(totCost)}</td>
-                        <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${fmt(totProfit)}</td>
-                        <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${totRev > 0 ? ((totProfit/totRev)*100).toFixed(1) : 0}%</td>
-                    </tr>
-                </table>
-            </div>
-        </div>`;
-
-        // Safely put the new P&L table at the very top of the Reports page
-        return pnlHtml + html;
+        }
     };
-
-    console.log('[ModuCraft +] Advanced Financial P&L Reporting loaded');
+    console.log('[ModuCraft +] Advanced Financial P&L Reporting (DOM) loaded');
 })();
