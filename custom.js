@@ -734,7 +734,6 @@ document.addEventListener('change', e => {
 })();
 
 // ==========================================
-// ==========================================
 // STEP 4: ENQUIRY TRACKER (PRE-QUOTATION)
 // ==========================================
 (function(){
@@ -858,26 +857,39 @@ document.addEventListener('change', e => {
       window.ENQ[e.id] = e; 
       window.saveEnq();
       
-           // --- NEW: ACTUALLY SAVE TO GOOGLE SHEETS (DEBUG MODE) ---
-      fetch(GOOGLE_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ 
-              action: 'save', 
-              collection: 'enquiries',
-              id: e.id,
-              data: e,
-              apiKey: API_KEY
+      // --- ACTUALLY SAVE TO GOOGLE SHEETS ---
+      try {
+          fetch(GOOGLE_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({ 
+                  action: 'save', 
+                  collection: 'enquiries',
+                  id: e.id,
+                  data: e,
+                  apiKey: API_KEY
+              })
           })
-      })
-      .then(res => res.json())
-      .then(res => console.log("✅ CLOUD SAVE SUCCESS:", res))
-      .catch(err => {
-          console.error("❌ CLOUD SAVE FAILED:", err);
-          alert("Save failed: " + err.message);
-      });
+          .then(res => res.json())
+          .then(res => console.log("✅ CLOUD SAVE SUCCESS:", res))
+          .catch(err => console.error("❌ CLOUD SAVE FAILED:", err));
+      } catch(err) { 
+          console.log("Cloud save failed", err); 
+      }
 
-  // --- RESTORED LISTENER (This was the missing piece!) ---
+      if (isNew) {
+        const wText = `New Enquiry Alert!\n\nClient: ${e.name}\nProject: ${e.project || 'Not specified'}\nPhone: ${e.phone || 'Not provided'}\nBudget: ${e.budget || 'Not specified'}\nNext Follow-up: ${e.nextFollowUp || 'None'}\n\nSent from ModuCraft.`, waOwner = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`, waPartner = `https://wa.me/919830864409?text=${encodeURIComponent(wText)}`;
+        o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto;text-align:center"><h3 style="margin-top:0;color:#22C55E">✅ Enquiry Saved</h3><p class="mut" style="font-size:13px;margin-bottom:16px">Do you want to alert the team via WhatsApp?</p><div style="display:flex;flex-direction:column;gap:8px"><a href="${waOwner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Owner (9830051060)</a><a href="${waPartner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Partner (9830864409)</a></div><button class="g" id="eq_done" style="margin-top:16px;width:100%">Close</button></div>`;
+        document.getElementById('eq_done').onclick = () => { o.remove(); render(); flash('Enquiry saved'); };
+      } else { 
+        o.remove(); 
+        render(); 
+        flash('Enquiry updated'); 
+      }
+    };
+  }
+
+  // --- LISTENER (This was the missing piece!) ---
   document.addEventListener('click', function(ev) {
     const btn = ev.target.closest('[data-enq-act]'); if (!btn) return; ev.preventDefault();
     const act = btn.dataset.enqAct, id = btn.dataset.id;
