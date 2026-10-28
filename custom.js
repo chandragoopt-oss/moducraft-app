@@ -2267,22 +2267,21 @@ document.addEventListener('change', e => {
 })();
 
 // ==========================================
-// STEP 13: ADVANCED FINANCIAL REPORTING (P&L) - V6 (UNSTOPPABLE)
+// STEP 13: ADVANCED FINANCIAL REPORTING (P&L) - FINAL
 // ==========================================
+console.log("P&L SCRIPT STARTING...");
 (function() {
     'use strict';
-    if (window.__mcPnlLoaded_v6) return;
-    window.__mcPnlLoaded_v6 = true;
+    if (window.__mcPnlLoaded_vFinal) return;
+    window.__mcPnlLoaded_vFinal = true;
 
-    function injectPnl() {
+    setInterval(function() {
         try {
-            const app = document.getElementById('app');
-            if (!app) return;
+            if (typeof S === 'undefined' || S.tab !== 'r') return;
             
-            // If already injected, do nothing
-            if (document.getElementById('pnl-card-injected')) return;
+            const app = document.getElementById('app');
+            if (!app || document.getElementById('pnl-card-injected')) return;
 
-            // Find the exact "Reports & analytics" card on the screen
             let reportsCard = null;
             const cards = app.querySelectorAll('.card');
             for (let c of cards) {
@@ -2291,50 +2290,69 @@ document.addEventListener('change', e => {
                     break;
                 }
             }
-
-            // If we aren't on the Reports page, stop here
             if (!reportsCard) return;
 
             let rows = '', totRev = 0, totCost = 0, totProfit = 0;
-
-            // Loop through active projects safely
             const pjs = (typeof BZ !== 'undefined' && BZ.pj) ? Object.values(BZ.pj) : [];
+
             pjs.forEach(p => {
+                if (p.stage === 'Closed' || p.stage === 'Closure') return;
+                
+                const q = (S.q && p.qid) ? S.q[p.qid] : null;
+                
+                // Safe Math
+                let rev = 0;
+                try { rev = +(p.val || (q && gt ? gt(q) : 0)) || 0; } catch(e) {}
+                
+                let poCost = 0;
+                try { poCost = +(pjSpend ? pjSpend(p.id) : 0) || 0; } catch(e) {}
+                
+                let labCost = 0;
                 try {
-                    if (p.stage === 'Closed' || p.stage === 'Closure') return;
-                    
-                    const q = (S.q && p.qid) ? S.q[p.qid] : null;
-                    
-                    const rev = +p.val || (q && typeof gt === 'function' ? gt(q) : 0);
-                    const poCost = typeof pjSpend === 'function' ? pjSpend(p.id) : 0;
-                    
-                    let labCost = 0;
                     if (p.carp) {
-                        const sqft = (q && typeof est === 'function') ? est(q).sq : 0;
-                        labCost = (sqft * (+p.carp.rate || 0)) + (p.carp.extras || []).reduce((a,x) => a + (+x.amt || 0), 0);
+                        const sqft = (q && est) ? (est(q).sq || 0) : 0;
+                        const extras = (p.carp.extras || []).reduce((a,x) => a + (+x.amt || 0), 0);
+                        labCost = (sqft * (+p.carp.rate || 0)) + extras;
                     }
-                    
-                    const expCost = (p.expenses || []).reduce((a,x) => a + (+x.amt || 0), 0);
-                    const totalCost = poCost + labCost + expCost;
-                    const profit = rev - totalCost;
-                    const margin = rev > 0 ? (profit / rev) * 100 : 0;
+                } catch(e) {}
+                
+                let expCost = 0;
+                try { expCost = (p.expenses || []).reduce((a,x) => a + (+x.amt || 0), 0); } catch(e) {}
 
-                    totRev += rev; totCost += totalCost; totProfit += profit;
+                const totalCost = poCost + labCost + expCost;
+                const profit = rev - totalCost;
+                const margin = rev > 0 ? (profit / rev) * 100 : 0;
 
-                    rows += `<tr>
-                        <td><b>${esc(p.name)}</b><br><span class="mut">${esc(p.client || '')}</span></td>
-                        <td class="ro">${fmt(rev)}</td>
-                        <td class="ro" style="color:#b00020">${fmt(poCost)}</td>
-                        <td class="ro" style="color:#b00020">${fmt(labCost)}</td>
-                        <td class="ro" style="color:#b00020">${fmt(expCost)}</td>
-                        <td class="ro"><b>${fmt(totalCost)}</b></td>
-                        <td class="ro" style="color:${profit >= 0 ? '#15803d' : '#b00020'}"><b>${fmt(profit)}</b></td>
-                        <td class="ro" style="color:${margin >= 0 ? '#15803d' : '#b00020'}">${margin.toFixed(1)}%</td>
-                    </tr>`;
-                } catch(e) { console.error('Project math error:', e); }
+                totRev += rev; totCost += totalCost; totProfit += profit;
+
+                const fRev = typeof fmt === 'function' ? fmt(rev) : rev;
+                const fPo = typeof fmt === 'function' ? fmt(poCost) : poCost;
+                const fLab = typeof fmt === 'function' ? fmt(labCost) : labCost;
+                const fExp = typeof fmt === 'function' ? fmt(expCost) : expCost;
+                const fTot = typeof fmt === 'function' ? fmt(totalCost) : totalCost;
+                const fProf = typeof fmt === 'function' ? fmt(profit) : profit;
+                const eName = typeof esc === 'function' ? esc(p.name) : p.name;
+                const eClient = typeof esc === 'function' ? esc(p.client || '') : (p.client || '');
+
+                rows += `
+                <tr>
+                    <td><b>${eName}</b><br><span class="mut">${eClient}</span></td>
+                    <td class="ro">${fRev}</td>
+                    <td class="ro" style="color:#b00020">${fPo}</td>
+                    <td class="ro" style="color:#b00020">${fLab}</td>
+                    <td class="ro" style="color:#b00020">${fExp}</td>
+                    <td class="ro"><b>${fTot}</b></td>
+                    <td class="ro" style="color:${profit >= 0 ? '#15803d' : '#b00020'}"><b>${fProf}</b></td>
+                    <td class="ro" style="color:${margin >= 0 ? '#15803d' : '#b00020'}">${margin.toFixed(1)}%</td>
+                </tr>`;
             });
 
             if (!rows) rows = '<tr><td colspan="8" class="mut" style="text-align:center;">No active projects found.</td></tr>';
+
+            const fTR = typeof fmt === 'function' ? fmt(totRev) : totRev;
+            const fTC = typeof fmt === 'function' ? fmt(totCost) : totCost;
+            const fTP = typeof fmt === 'function' ? fmt(totProfit) : totProfit;
+            const totalMargin = totRev > 0 ? ((totProfit / totRev) * 100).toFixed(1) : '0.0';
 
             const pnlHtml = `
             <div class="card" id="pnl-card-injected" style="border-left: 4px solid #B08D57; margin-bottom: 20px; background: rgba(176, 141, 87, 0.05);">
@@ -2355,27 +2373,23 @@ document.addEventListener('change', e => {
                         ${rows}
                         <tr style="background:var(--in); font-weight:bold; border-top: 2px solid var(--line);">
                             <td>TOTAL PORTFOLIO</td>
-                            <td class="ro">${fmt(totRev)}</td>
-                            <td class="ro" colspan="3">Total Costs: ${fmt(totCost)}</td>
-                            <td class="ro">${fmt(totCost)}</td>
-                            <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${fmt(totProfit)}</td>
-                            <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${totRev > 0 ? ((totProfit/totRev)*100).toFixed(1) : 0}%</td>
+                            <td class="ro">${fTR}</td>
+                            <td class="ro" colspan="3">Total Costs: ${fTC}</td>
+                            <td class="ro">${fTC}</td>
+                            <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${fTP}</td>
+                            <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${totalMargin}%</td>
                         </tr>
                     </table>
                 </div>
             </div>`;
 
-            // Insert the P&L card right before the Reports card
             reportsCard.insertAdjacentHTML('beforebegin', pnlHtml);
             console.log("P&L Card successfully injected!");
 
         } catch (err) {
             console.error("P&L Script error: ", err);
         }
-    }
-
-    // Run every 500ms. It's extremely lightweight and guarantees we catch the page.
-    setInterval(injectPnl, 500);
+    }, 1000);
     
-    console.log('[ModuCraft +] Advanced Financial P&L Reporting (V6) loaded');
+    console.log('[ModuCraft +] Advanced Financial P&L Reporting (FINAL) loaded');
 })();
