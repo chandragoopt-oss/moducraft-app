@@ -287,6 +287,53 @@ button,select{min-height:38px}input[type=checkbox]{min-height:0}
     <button id="loginBtn" style="width: 100%; padding: 12px; background: #1976d2; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;">Log In</button>
   </div>
 </div>
+<script>
+  if (localStorage.getItem('mc_token')) {
+  document.getElementById('loginOverlay').style.display = 'none';
+}
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  
+  if (!email || !pass) {
+    err.textContent = "Please enter both email and password.";
+    err.style.display = 'block';
+    return;
+  }
+
+  btn.textContent = "Logging in...";
+  btn.disabled = true;
+  err.style.display = 'none';
+
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'login', email: email, password: pass })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      // Save the token so the app knows you are logged in
+      localStorage.setItem('mc_token', data.token);
+      localStorage.setItem('mc_user_email', email);
+      document.getElementById('loginOverlay').style.display = 'none';
+    } else {
+      err.textContent = data.message || "Login failed.";
+      err.style.display = 'block';
+      btn.textContent = "Log In";
+      btn.disabled = false;
+    }
+  } catch (error) {
+    err.textContent = "Network error. Please try again.";
+    err.style.display = 'block';
+    btn.textContent = "Log In";
+    btn.disabled = false;
+  }
+});
+</script>  
 <div class="top"><div class="lg"><img id="tl" alt="MODULE STUDIO"></div><div><b>ModuCraft ERP</b><small id="ci"></small><small style="display:block;color:#F59E0B;font-weight:bold">Design • BOQ • Execute • Deliver</small></div><nav id="nav"></nav><span id="st" class="noprint" style="font-size:12px;width:100%;text-align:right"></span></div><div id="err" class="warn noprint" style="display:none;margin:8px 16px"></div>
 <main id="app"></main><div id="fl"></div>
 <datalist id="il"></datalist><datalist id="ml"></datalist>
