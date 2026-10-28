@@ -2047,32 +2047,34 @@ db.collection('quotes').onSnapshot(sn=>{sn.docChanges().forEach(c=>{if(c.doc.met
 db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(!d.metadata.hasPendingWrites&&!pend.s&&!(fly.s>0)){S.set=Object.assign(cl(DEF),cl(d.data()));if(!typing())render()}},e=>{saveErr='Cannot read cloud data: '+((e&&e.message)||'');setSt()});bzInit(db);erpInit(db);db.doc('access/main').onSnapshot(d=>{S.acl=d.exists?cl(d.data().list||[]):[];applyLvl();if(!typing())render()},()=>0)}}catch(x){}render()})();
 </script>
 <script src="custom.js"></script>
-  <script>
-    document.getElementById('logoutBtn').addEventListener('click', () => {
+<script>
+  // --- Logout Button ---
+  document.getElementById('logoutBtn').addEventListener('click', () => {
     localStorage.removeItem('mc_token');
     localStorage.removeItem('mc_user_email');
     localStorage.removeItem('mc_user_role');
     window.location.reload();
   });
-</script>
-  <script>
+
+  // --- Show Admin Button if logged in as admin ---
   if (localStorage.getItem('mc_user_role') === 'admin') {
     document.getElementById('adminUsersBtn').style.display = 'inline-block';
   }
-</script>
-    <script> 
+
+  // --- Modal Open / Close ---
   document.getElementById('adminUsersBtn').addEventListener('click', () => {
     document.getElementById('adminUsersModal').style.display = 'flex';
-    loadAdminUsers(); // <--- ADD THIS LINE
+    loadAdminUsers();
   });
+  
   document.getElementById('closeAdminUsers').addEventListener('click', () => {
     document.getElementById('adminUsersModal').style.display = 'none';
   });
-</script>
-  <script>
+
+  // --- Admin User Management Logic ---
   const MC_API_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
 
-    async function loadAdminUsers() {
+  async function loadAdminUsers() {
     const box = document.getElementById('adminUsersList');
     box.innerHTML = '<p style="color:#666">Loading users...</p>';
     
@@ -2178,7 +2180,6 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
     const data = await res.json();
     if (data.ok) loadAdminUsers();
     else alert(data.message);
-  }
   }
 </script>
 </body>
