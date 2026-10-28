@@ -2506,55 +2506,6 @@ console.log("P&L SCRIPT STARTING...");
     console.log('[ModuCraft +] Advanced Financial P&L Reporting (FINAL) loaded');
 })();
 
-// ==========================================
-// LOCK FOR QUOTATIONS & DESIGNS
-// ==========================================
-document.addEventListener('click', async function(e) {
-    // Find if they clicked a button to edit a quotation
-    const editBtn = e.target.closest('button[data-a="eq"], button[data-a="qe"], button[data-a="editq"]');
-    
-    if (editBtn) {
-        e.preventDefault(); // Stop the app from opening it immediately
-        e.stopImmediatePropagation(); // Stop other clicks
-        
-        // Figure out which quotation ID they are trying to open
-        const quoteId = editBtn.dataset.i || editBtn.dataset.id || S.cur;
-        if (!quoteId) { alert("Could not find Quote ID."); return; }
-
-        const userName = 'User_' + Math.floor(Math.random() * 1000);
-        
-        // Show a quick loading message
-        flash('Checking if someone else is editing...');
-
-        try {
-            const lockRes = await fetch(GOOGLE_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'lock_record', sheetName: 'quotes', recordId: quoteId, userName: userName })
-            });
-            const lockData = await lockRes.json();
-            
-            if (!lockData.success) {
-                alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this quotation. Please wait.`);
-                return; // Stop! Don't open the quote.
-            }
-            
-            // If lock is successful, proceed to open the quote normally
-            window.currentQuoteOpenedAt = S.q[quoteId] ? (S.q[quoteId].updated_at || Date.now()) : Date.now();
-            S.tab = 'e'; 
-            S.cur = quoteId; 
-            render(); // Open the Edit tab
-            
-        } catch(err) {
-            console.error("Lock check failed:", err);
-            // If the internet fails, just let them open it anyway
-            S.tab = 'e'; 
-            S.cur = quoteId; 
-            render();
-        }
-    }
-}, true); // The 'true' makes this run before your app's normal click listener
-
 
 // ==========================================
 // CONFLICT CHECK WHEN SAVING QUOTATIONS
@@ -2624,42 +2575,67 @@ document.addEventListener('click', async function(e) {
     }
 }, true); // The 'true' makes this run before the app's normal save
 
+// ==========================================
+// REAL OPTIMISTIC LOCK FOR QUOTATIONS
+// ==========================================
 document.addEventListener('click', async function(e) {
-    const btn = e.target.closest('button[data-a="oq"]');
-    if (btn) {
-        const quoteId = btn.dataset.i;
-        alert("TEST 1: Caught the Edit button for quote: " + quoteId + ". Now asking Google for lock...");
+    const editBtn = e.target.closest('button[data-a="oq"]');
+    if (!editBtn) return;
+
+    const quoteId = editBtn.dataset.i;
+    if (!quoteId) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    // 1. OPEN THE QUOTE INSTANTLY (No waiting!)
+    S.tab = 'e';
+    S.cur = quoteId;
+    render();
+
+    // 2. Lock the Save button in the background
+    const saveBtn = document.querySelector('button[data-a="sv"]');
+    let originalSaveText = 'Save quotation';
+    if (saveBtn) {
+        originalSaveText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '🔒 Checking...';
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = '0.5';
+    }
+
+    // 3. Ask Google for the lock
+    const userName = 'User_' + Math.floor(Math.random() * 1000);
+    try {
+        const lockRes = await fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'lock_record', sheetName: 'quotes', recordId: quoteId, userName: userName })
+        });
+        const lockData = await lockRes.json();
         
-        e.preventDefault();
-        e.stopImmediatePropagation();
-
-        try {
-            // We use the exact URL from your code
-            const lockRes = await fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'lock_record', sheetName: 'quotes', recordId: quoteId, userName: 'TestUser' })
-            });
-            const lockData = await lockRes.json();
-            
-            alert("TEST 2: Google replied: " + JSON.stringify(lockData));
-            
-            if (!lockData.success) {
-                alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this quotation.`);
-                return; 
-            }
-
-            // If lock is successful, open the quote
-            S.tab = 'e';
-            S.cur = quoteId;
+        if (!lockData.success) {
+            // KICK THEM OUT if someone else has it
+            alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this quotation.`);
+            S.tab = 'q'; // Go back to the quotations list
             render();
-            
-        } catch(err) {
-            alert("TEST 3 (ERROR): " + err.message);
-            // Open anyway so you aren't stuck
-            S.tab = 'e';
-            S.cur = quoteId;
-            render();
+            return; 
+        }
+
+        // SUCCESS! Unlock the Save button
+        window.currentQuoteOpenedAt = S.q[quoteId] ? (S.q[quoteId].updated_at || Date.now()) : Date.now();
+        if (saveBtn) {
+            saveBtn.innerHTML = originalSaveText;
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
+        }
+        
+    } catch(err) {
+        console.error("Lock failed:", err);
+        // If internet fails, just let them edit so they don't lose work
+        if (saveBtn) {
+            saveBtn.innerHTML = originalSaveText;
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = '1';
         }
     }
 }, true);
