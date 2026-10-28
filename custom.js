@@ -734,14 +734,20 @@ document.addEventListener('change', e => {
 })();
 
 // ==========================================
+// ==========================================
 // STEP 4: ENQUIRY TRACKER (PRE-QUOTATION)
 // ==========================================
 (function(){
   'use strict';
   if (window.__mcEnqLoaded) return;
   window.__mcEnqLoaded = true;
+  
+  const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
+  const API_KEY = "ModuCraft@2026";
+
   window.ENQ = JSON.parse(localStorage.getItem('msq_enq_data') || '{}');
   window.saveEnq = function() { localStorage.setItem('msq_enq_data', JSON.stringify(window.ENQ)); };
+  
   window.vEnq = function() {
     const list = Object.values(window.ENQ).sort((a, b) => (b.date || '').localeCompare(a.date || '')), t = today();
     const rows = list.map(e => {
@@ -750,27 +756,28 @@ document.addEventListener('change', e => {
     }).join('');
     return `<div class="card"><div class="bar noprint"><h2>Enquiries / Leads</h2><button data-enq-act="new" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer;margin-left:auto">+ New Enquiry</button></div><p class="mut">Track potential clients before creating a quotation.</p><div class="sc"><table class="g" style="min-width:760px"><tr><th>Client</th><th>Project / Requirement</th><th>Budget</th><th>Next Follow Up</th><th>Status</th><th></th></tr>${rows || '<tr><td colspan="6" class="mut">No enquiries logged yet.</td></tr>'}</table></div></div>`;
   };
+
   const navObserver = new MutationObserver(() => {
     const nav = document.getElementById('nav');
     if (!nav || document.querySelector('#nav button[data-v="enq"]') || (typeof navOK === 'function' && !navOK('q'))) return;
     const btn = document.createElement('button'); btn.dataset.a = 'tab'; btn.dataset.v = 'enq'; btn.className = (S.tab === 'enq') ? 'on' : ''; btn.textContent = 'Enquiries'; btn.onclick = () => { S.tab = 'enq'; render(); };
     const firstBtn = nav.querySelector('button'); if (firstBtn) firstBtn.after(btn); else nav.appendChild(btn);
   });
+  
   if (document.getElementById('nav')) navObserver.observe(document.getElementById('nav'), { childList: true });
+  
   const _render = window.render;
   window.render = function() {
     if (S.tab === 'enq') { document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === 'enq')); document.getElementById('app').innerHTML = window.vEnq(); const btn = document.querySelector('#nav button[data-v="enq"]'); if (btn) btn.classList.add('on'); return; }
     const btn = document.querySelector('#nav button[data-v="enq"]'); if (btn) btn.classList.remove('on'); _render.apply(this, arguments);
   };
-    async function openEnqModal(id) {
+
+  async function openEnqModal(id) {
     const isNew = !id;
-    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
-    const API_KEY = "ModuCraft@2026";
 
     // --- NEW LOCK CHECK ---
     if (!isNew) {
         const userName = 'User_' + Math.floor(Math.random() * 1000);
-        
         try {
             const lockRes = await fetch(GOOGLE_URL, {
                 method: 'POST',
@@ -781,11 +788,9 @@ document.addEventListener('change', e => {
             
             if (!lockData.success) {
                 alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this record. Please wait or refresh.`);
-                return; // Stops the modal from opening
+                return; 
             }
-            
             window.currentEditOpenedAt = window.ENQ[id].updated_at || Date.now(); 
-            
         } catch(err) {
             console.error("Lock check failed:", err);
         }
@@ -881,6 +886,9 @@ document.addEventListener('change', e => {
       }
     };
   }
+
+  // --- RESTORED LISTENER (This was the missing piece!) ---
+  document.addEventListener('click', function(ev) {
     const btn = ev.target.closest('[data-enq-act]'); if (!btn) return; ev.preventDefault();
     const act = btn.dataset.enqAct, id = btn.dataset.id;
     if (act === 'new') openEnqModal();
