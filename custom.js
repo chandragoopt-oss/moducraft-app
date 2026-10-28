@@ -2623,3 +2623,10 @@ document.addEventListener('click', async function(e) {
         saveBtn.click();
     }
 }, true); // The 'true' makes this run before the app's normal save
+
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('button[data-a="eq"]');
+    if (btn) {
+        alert("TEST: I caught the Edit button click!");
+    }
+}, true);
