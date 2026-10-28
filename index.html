@@ -2060,7 +2060,7 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
     document.getElementById('adminUsersBtn').style.display = 'inline-block';
   }
 </script>
-    <script>                                                    ← ✅ added
+    <script> 
   document.getElementById('adminUsersBtn').addEventListener('click', () => {
     document.getElementById('adminUsersModal').style.display = 'flex';
     loadAdminUsers(); // <--- ADD THIS LINE
