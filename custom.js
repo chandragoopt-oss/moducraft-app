@@ -2624,9 +2624,42 @@ document.addEventListener('click', async function(e) {
     }
 }, true); // The 'true' makes this run before the app's normal save
 
-document.addEventListener('click', function(e) {
-    const btn = e.target.closest('button[data-a="eq"]');
+document.addEventListener('click', async function(e) {
+    const btn = e.target.closest('button[data-a="oq"]');
     if (btn) {
-        alert("TEST: I caught the Edit button click!");
+        const quoteId = btn.dataset.i;
+        alert("TEST 1: Caught the Edit button for quote: " + quoteId + ". Now asking Google for lock...");
+        
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        try {
+            // We use the exact URL from your code
+            const lockRes = await fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'lock_record', sheetName: 'quotes', recordId: quoteId, userName: 'TestUser' })
+            });
+            const lockData = await lockRes.json();
+            
+            alert("TEST 2: Google replied: " + JSON.stringify(lockData));
+            
+            if (!lockData.success) {
+                alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this quotation.`);
+                return; 
+            }
+
+            // If lock is successful, open the quote
+            S.tab = 'e';
+            S.cur = quoteId;
+            render();
+            
+        } catch(err) {
+            alert("TEST 3 (ERROR): " + err.message);
+            // Open anyway so you aren't stuck
+            S.tab = 'e';
+            S.cur = quoteId;
+            render();
+        }
     }
 }, true);
