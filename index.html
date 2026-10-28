@@ -254,6 +254,21 @@ async function paperToPdf(mode){const W=794,H=1123,S=2,el=document.querySelector
 const over='.pdfroot{font:14px/1.45 Calibri,"Segoe UI",system-ui,sans-serif;color:#24313A;background:#fff;width:794px;box-sizing:border-box}.pdfroot .paper{border:0;padding:0;margin:0;max-width:none;width:794px}.pdfroot table.doc>thead>tr>td{padding:9mm 10mm 0}.pdfroot table.doc>tbody>tr>td{padding:0 10mm}.pdfroot table.doc>tfoot>tr>td{padding:0 10mm 9mm}.pdfroot .noprint{display:none!important}.pdfroot svg[viewBox]{display:block;margin-left:auto;margin-right:auto}.pdfroot img{vertical-align:top}';
 let fr=null,host=null,st=null;
 const cssForPdf = await getCss();
+
+// Fetch the logo and convert to base64 so it works inside the PDF canvas
+let logoB64 = '';
+try {
+  const img = document.querySelector('.paper img');
+  if (img && img.src) {
+    const res = await fetch(img.src);
+    const blob = await res.blob();
+    logoB64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  }
+} catch(e) { console.warn('Could not embed logo', e); }
 try{fr=document.createElement('iframe');fr.style.cssText='position:fixed;left:-10000px;top:0;width:794px;height:1200px;border:0;visibility:hidden';const baseUrl = location.href.replace(/\/[^\/]*$/, '/');
 fr.srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><base href="'+baseUrl+'"><style>'+cssForPdf+over+'</style></head><body style="margin:0;background:#fff"><div class="pdfroot">'+el.outerHTML+'</div></body></html>';document.body.appendChild(fr);await Promise.race([new Promise(ok=>{fr.onload=ok}),new Promise(ok=>setTimeout(ok,4000))]);const fd=fr.contentDocument;host=fd&&fd.querySelector('.pdfroot');if(host){try{await fd.fonts.ready}catch(e){}await Promise.all([...fd.images].map(i=>i.complete?1:new Promise(ok=>{i.onload=i.onerror=ok})))}}catch(e){host=null}
 if(!host){if(fr)fr.remove();fr=null;host=document.createElement('div');st=document.createElement('style');host.className='pdfroot';host.style.cssText='position:fixed;left:-10000px;top:0';st.textContent=over;host.appendChild(el.cloneNode(true));document.head.appendChild(st);document.body.appendChild(host)}
@@ -265,6 +280,9 @@ const keeps=[...host.querySelectorAll('tbody .keep')].map(e=>({y0:Y(e),y1:Y(e)+e
 const sl=[];let pos=yc;while(pos<yf-1){const hd=hdrAt(pos),hh=hd?hd.hh:0;let end=pos+avail-hh;const f=forced.find(y=>y>pos+1&&y<=end);if(f)end=f;else if(end>=yf)end=yf;else{const kp=keeps.find(k=>k.y0>pos+80&&k.y0<end&&k.y1>end);if(kp)end=kp.y0;else{const c=cand.filter(y=>y>pos+60&&y<=end&&!ban.has(Math.round(y)));if(c.length)end=c[c.length-1]}}sl.push([pos,end,hd]);pos=end}
 for(let i=sl.length-1;i>=1;i--){const[a,b,hd]=sl[i],h=(b-a)+(hd?hd.hh:0);if(h>=avail*.3)continue;const pv=sl[i-1];if(pv[1]!==a||forced.some(y=>Math.abs(y-a)<2))continue;const want=(b+pv[0])/2,cs=cand.filter(y=>y>pv[0]+avail*.35&&y<a-5&&!ban.has(Math.round(y))&&!inKeep(y)&&(b-y)+(hdrAt(y)?hdrAt(y).hh:0)<=avail);if(!cs.length)continue;let m=cs[0],bd=1e9;cs.forEach(y=>{const d=Math.abs(y-want);if(d<bd){bd=d;m=y}});pv[1]=m;sl[i]=[m,b,hdrAt(m)]}
 const NP=sl.length;
+if(logoB64){
+  host.querySelectorAll('img').forEach(i=>i.src=logoB64);
+}
 host.style.cssText='width:794px';const css=(cssForPdf+over).replace(/&/g,'&amp;').replace(/</g,'&lt;'),ser=new XMLSerializer().serializeToString(host);
 const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${total}"><foreignObject x="0" y="0" width="${W}" height="${total}"><style xmlns="http://www.w3.org/1999/xhtml">${css}</style>${ser}</foreignObject></svg>`;
 const img=new Image();img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);await new Promise((ok,no)=>{img.onload=ok;img.onerror=no});
