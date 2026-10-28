@@ -33,6 +33,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       localStorage.setItem('mc_token', data.token);
       localStorage.setItem('mc_user_email', email);
       localStorage.setItem('mc_user_role', data.role);
+      localStorage.setItem('mc_user_name', data.name || email.split('@')[0]);
       if (data.role === 'admin') {
         document.getElementById('adminUsersBtn').style.display = 'inline-block';
       }
