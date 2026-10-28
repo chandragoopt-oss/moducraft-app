@@ -768,7 +768,7 @@ document.addEventListener('change', e => {
     // --- NEW LOCK CHECK ---
     if (!isNew) {
         // ⚠️ IMPORTANT: Replace 'Admin' with your logged-in user variable if you have one!
-        const userName = 'Admin'; 
+        const userName = 'User_' + Math.floor(Math.random() * 1000);
         
         try {
             const lockRes = await fetch(GOOGLE_URL, {
@@ -806,7 +806,7 @@ document.addEventListener('change', e => {
 
       // --- NEW CONFLICT CHECK & UNLOCK START ---
       if (!isNew) {
-          const userName = 'Admin'; // Use your actual logged-in user variable here if you have one
+          const userName = 'User_' + Math.floor(Math.random() * 1000);// Use your actual logged-in user variable here if you have one
           try {
               const conflictRes = await fetch(GOOGLE_URL, {
                   method: 'POST',
