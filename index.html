@@ -2086,7 +2086,7 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
         })
       });
       const data = await res.json();
-
+console.log("BACKEND SAID:", data); // <--- ADD THIS LINE
       if (data.ok && data.users && data.users.length > 0) {
         let html = '<table style="width:100%; border-collapse:collapse; font-size:14px;">';
         html += '<tr style="background:#f4f7f6; text-align:left;">';
