@@ -95,7 +95,7 @@
   };
   console.log("Secured Google DB Adapter loaded.");
 })();
-</script><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="author" content="Module Studio"><meta name="application-name" content="ModuCraft"><meta name="copyright" content="© 2026 Module Studio. All rights reserved."><title>--- ModuCraft ---</title>
+</script><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="author" content="Module Studio"><meta name="application-name" content="ModuCraft"><meta name="copyright" content="© 2026 Module Studio. All rights reserved."><title>ModuCraft</title>
 <link rel="stylesheet" href="styles.css">
 </head><body>
   <div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f4f7f6; z-index: 99999; display: flex; align-items: center; justify-content: center; font-family: sans-serif;">
@@ -165,15 +165,20 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       btn.textContent = "Log In";
       btn.disabled = false;
     }
-  } catch (error) {
+   } catch (error) {
     err.textContent = "Network error. Please try again.";
     err.style.display = 'block';
     btn.textContent = "Log In";
     btn.disabled = false;
   }
 });
-</script>  
-<div class="top"><div class="lg"><img id="tl" alt="MODULE STUDIO"></div><div><b>ModuCraft ERP</b><small id="ci"></small><small style="display:block;color:#F59E0B;font-weight:bold">Design • BOQ • Execute • Deliver</small></div><nav id="nav"></nav><button id="adminUsersBtn" style="display: none; margin-left: 10px; background: #1976d2; border: none; color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer;">Manage Users</button><button id="logoutBtn" style="margin-left: 10px; background: #a33; border: none; color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer;">Log Out</button><span id="st" class="noprint" style="font-size:12px;width:100%;text-align:right"></span></div><div id="err" class="warn noprint" style="display:none;margin:8px 16px"></div>
+
+// Allow pressing Enter in the password field to log in
+document.getElementById('loginPassword').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('loginBtn').click();
+});
+</script>
+<div class="top"><div class="lg"><img id="tl" src="logo(2).png" alt="MODULE STUDIO"></div><div><b>ModuCraft ERP</b><small id="ci"></small><small style="display:block;color:#F59E0B;font-weight:bold">Design • BOQ • Execute • Deliver</small></div><nav id="nav"></nav><button id="adminUsersBtn" style="display: none; margin-left: 10px; background: #1976d2; border: none; color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer;">Manage Users</button><button id="logoutBtn" style="margin-left: 10px; background: #a33; border: none; color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer;">Log Out</button><span id="st" class="noprint" style="font-size:12px;width:100%;text-align:right"></span></div><div id="err" class="warn noprint" style="display:none;margin:8px 16px"></div>
 <main id="app"></main><div id="fl"></div>
 <datalist id="il"></datalist><datalist id="ml"></datalist>
 <script>
@@ -227,11 +232,28 @@ let S={acl:[],set:cl(DEF),q:{},cur:null,tab:'q',db:null,w:true,dl:null};
 const T=()=>S.q[S.cur],co=()=>S.set.co;
 const accF=n=>S.set.acc.find(a=>a.n==n)||{},accRate=(n,q)=>{const o=q&&(q.ar||[]).find(x=>x.n==n);return o?+o.r||0:+accF(n).r||0},accU=n=>accF(n).u||'nos',accP=(r,q)=>rowAcc(r).reduce((t,a)=>t+(+a.q||0)*accRate(a.n,q),0),accT=r=>[...rowAcc(r).map(a=>a.n+(a.q>1?' × '+a.q:'')),r.a].filter(Boolean).join(', ');
 const LK='msq_v2',lastBy=()=>{try{return localStorage.getItem('msq_by')||''}catch(e){return''}};
+
+// Cache of styles.css as text. PDF / print / share / download all need
+// to embed a copy of the stylesheet inside an iframe or an HTML file,
+// where <link rel="stylesheet"> won't resolve. This fetches it once.
+let _cssCache = null;
+async function getCss() {
+  if (_cssCache !== null) return _cssCache;
+  try {
+    const link = document.querySelector('link[href*="styles.css"]')
+              || document.querySelector('link[rel="stylesheet"]');
+    _cssCache = link ? await (await fetch(link.href)).text() : '';
+  } catch (e) {
+    console.warn('Could not load styles.css for PDF / share / print:', e);
+    _cssCache = '';
+  }
+  return _cssCache;
+}
 function askDo(msg,fn){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px';const bx=document.createElement('div');bx.style.cssText='background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:18px;max-width:380px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.35)';const p=document.createElement('p');p.textContent=msg;p.style.cssText='margin:0 0 14px;font-size:15px';const y=document.createElement('button');y.textContent='Yes, do it';const n=document.createElement('button');n.textContent='Cancel';n.className='g';n.style.marginLeft='8px';y.onclick=()=>{o.remove();fn()};n.onclick=()=>o.remove();bx.append(p,y,n);o.appendChild(bx);document.body.appendChild(o)}
 async function paperToPdf(mode){const W=794,H=1123,S=2,el=document.querySelector('.paper');if(!el)throw 0;
 const over='.pdfroot{font:14px/1.45 Calibri,"Segoe UI",system-ui,sans-serif;color:#24313A;background:#fff;width:794px;box-sizing:border-box}.pdfroot .paper{border:0;padding:0;margin:0;max-width:none;width:794px}.pdfroot table.doc>thead>tr>td{padding:9mm 10mm 0}.pdfroot table.doc>tbody>tr>td{padding:0 10mm}.pdfroot table.doc>tfoot>tr>td{padding:0 10mm 9mm}.pdfroot .noprint{display:none!important}.pdfroot svg[viewBox]{display:block;margin-left:auto;margin-right:auto}.pdfroot img{vertical-align:top}';
 let fr=null,host=null,st=null;
-try{fr=document.createElement('iframe');fr.style.cssText='position:fixed;left:-10000px;top:0;width:794px;height:1200px;border:0;visibility:hidden';fr.srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>'+document.querySelector('style').textContent+over+'</style></head><body style="margin:0;background:#fff"><div class="pdfroot">'+el.outerHTML+'</div></body></html>';document.body.appendChild(fr);await Promise.race([new Promise(ok=>{fr.onload=ok}),new Promise(ok=>setTimeout(ok,4000))]);const fd=fr.contentDocument;host=fd&&fd.querySelector('.pdfroot');if(host){try{await fd.fonts.ready}catch(e){}await Promise.all([...fd.images].map(i=>i.complete?1:new Promise(ok=>{i.onload=i.onerror=ok})))}}catch(e){host=null}
+try{const cssForPdf=await getCss();fr=document.createElement('iframe');fr.style.cssText='position:fixed;left:-10000px;top:0;width:794px;height:1200px;border:0;visibility:hidden';fr.srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>'+cssForPdf+over+'</style></head><body style="margin:0;background:#fff"><div class="pdfroot">'+el.outerHTML+'</div></body></html>';document.body.appendChild(fr);await Promise.race([new Promise(ok=>{fr.onload=ok}),new Promise(ok=>setTimeout(ok,4000))]);const fd=fr.contentDocument;host=fd&&fd.querySelector('.pdfroot');if(host){try{await fd.fonts.ready}catch(e){}await Promise.all([...fd.images].map(i=>i.complete?1:new Promise(ok=>{i.onload=i.onerror=ok})))}}catch(e){host=null}
 if(!host){if(fr)fr.remove();fr=null;host=document.createElement('div');st=document.createElement('style');host.className='pdfroot';host.style.cssText='position:fixed;left:-10000px;top:0';st.textContent=over;host.appendChild(el.cloneNode(true));document.head.appendChild(st);document.body.appendChild(host)}
 try{const top=host.getBoundingClientRect().top,Y=e=>e.getBoundingClientRect().top-top,th=host.querySelector('table.doc>thead'),tf=host.querySelector('table.doc>tfoot'),total=Math.ceil(host.scrollHeight),yc=Math.round(Y(th)+th.offsetHeight),yf=Math.floor(Y(tf)),fh=total-yf,avail=H-yc-fh;
 const forced=[...host.querySelectorAll('tbody .pg')].map(Y).filter(y=>y>yc+5).sort((a,b)=>a-b),cand=[...host.querySelectorAll('tbody .t tr,tbody .sh,tbody .pg,tbody .kv,tbody .cr,tbody .nt,tbody .hero,tbody .dw1')].filter(e=>!(e.tagName=='TR'&&e.querySelector('th'))&&(!e.closest('.dw1')||e.classList.contains('dw1'))).map(Y).filter(y=>y>yc).sort((a,b)=>a-b);
@@ -241,7 +263,7 @@ const keeps=[...host.querySelectorAll('tbody .keep')].map(e=>({y0:Y(e),y1:Y(e)+e
 const sl=[];let pos=yc;while(pos<yf-1){const hd=hdrAt(pos),hh=hd?hd.hh:0;let end=pos+avail-hh;const f=forced.find(y=>y>pos+1&&y<=end);if(f)end=f;else if(end>=yf)end=yf;else{const kp=keeps.find(k=>k.y0>pos+80&&k.y0<end&&k.y1>end);if(kp)end=kp.y0;else{const c=cand.filter(y=>y>pos+60&&y<=end&&!ban.has(Math.round(y)));if(c.length)end=c[c.length-1]}}sl.push([pos,end,hd]);pos=end}
 for(let i=sl.length-1;i>=1;i--){const[a,b,hd]=sl[i],h=(b-a)+(hd?hd.hh:0);if(h>=avail*.3)continue;const pv=sl[i-1];if(pv[1]!==a||forced.some(y=>Math.abs(y-a)<2))continue;const want=(b+pv[0])/2,cs=cand.filter(y=>y>pv[0]+avail*.35&&y<a-5&&!ban.has(Math.round(y))&&!inKeep(y)&&(b-y)+(hdrAt(y)?hdrAt(y).hh:0)<=avail);if(!cs.length)continue;let m=cs[0],bd=1e9;cs.forEach(y=>{const d=Math.abs(y-want);if(d<bd){bd=d;m=y}});pv[1]=m;sl[i]=[m,b,hdrAt(m)]}
 const NP=sl.length;
-host.style.cssText='width:794px';const css=(document.querySelector('style').textContent+over).replace(/&/g,'&amp;').replace(/</g,'&lt;'),ser=new XMLSerializer().serializeToString(host);
+host.style.cssText='width:794px';const css=(cssForPdf+over).replace(/&/g,'&amp;').replace(/</g,'&lt;'),ser=new XMLSerializer().serializeToString(host);
 const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${total}"><foreignObject x="0" y="0" width="${W}" height="${total}"><style xmlns="http://www.w3.org/1999/xhtml">${css}</style>${ser}</foreignObject></svg>`;
 const img=new Image();img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);await new Promise((ok,no)=>{img.onload=ok;img.onerror=no});
 const pages=sl.map(([a,b,hd],pi)=>{const c=document.createElement('canvas');c.width=W*S;c.height=H*S;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,W,yc,0,0,W*S,yc*S);const hh=hd?hd.hh:0;if(hd)x.drawImage(img,0,hd.hy,W,hh,0,yc*S,W*S,hh*S);x.drawImage(img,0,a,W,b-a,0,(yc+hh)*S,W*S,(b-a)*S);x.drawImage(img,0,yf,W,fh,0,(H-fh)*S,W*S,fh*S);if(pi==0){try{const dd=x.getImageData(0,0,c.width,Math.min(c.height,700*S)).data;let ink=0;for(let k=0;k<dd.length;k+=64)if(dd[k]<235)ink++;if(!ink)throw new Error('blank page render')}catch(e){if(e.message=='blank page render')throw e}}
@@ -258,7 +280,7 @@ function persist(){try{localStorage.setItem(LK,JSON.stringify({q:S.q,s:S.set}))}
 function loadLocal(){try{const x=JSON.parse(localStorage.getItem(LK)||'null');if(x){S.q=x.q||{};S.set=Object.assign(cl(DEF),x.s||{})}}catch(e){}}
 function saveAll(){persist();bzPersist();if(!S.db)return setSt();doSave('s');Object.keys(S.q).forEach(id=>doSave('q',id));Object.keys(BZC).forEach(k=>Object.keys(BZ[k]).forEach(id=>bzSave(k,id)))}
 async function saveFile(name,data){try{const d=await claude.use('downloads');if(!d)throw 0;await d.save({filename:name,data})}catch(e){try{const bl=data instanceof Blob?data:new Blob([data],{type:/\.csv$/.test(name)?'text/csv':/\.json$/.test(name)?'application/json':/\.dxf$/.test(name)?'application/dxf':'text/html'}),a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(a.href)},800)}catch(x){flash('Download not available here')}}}
-const qd=q=>q.date?q.date.split('-').reverse().join(' / '):'',greet=q=>String(q.dear&&q.dear.trim()?q.dear:(S.set.dear||'Dear {name},')).replace(/\{name\}/gi,(q.name||'Client').trim()),need=()=>{const q=T();if(!q.by||!q.by.trim()){flash('Please enter the “Prepared by” name in the Edit tab first');return 1}},fnm=q=>`Quotation-${(q.name||'client').replace(/\W+/g,'_')}.html`,sumTxt=q=>`${greet(q)} please find quotation ${qno(q)} from ${co().name} for ${q.project||'your project'}. Total: ${fmt(gt(q))}. Prepared by: ${q.by}. Contact: ${co().phone} | ${co().mail||CE} | ${co().web}`,clientHtml=()=>`<!DOCTYPE html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Quotation - ${esc((T()||{}).name||'')}</title><style>${document.querySelector('style').textContent}</style><div class="paper">${document.querySelector('.paper').innerHTML}</div>`;
+const qd=q=>q.date?q.date.split('-').reverse().join(' / '):'',greet=q=>String(q.dear&&q.dear.trim()?q.dear:(S.set.dear||'Dear {name},')).replace(/\{name\}/gi,(q.name||'Client').trim()),need=()=>{const q=T();if(!q.by||!q.by.trim()){flash('Please enter the “Prepared by” name in the Edit tab first');return 1}},fnm=q=>`Quotation-${(q.name||'client').replace(/\W+/g,'_')}.html`,sumTxt=q=>`${greet(q)} please find quotation ${qno(q)} from ${co().name} for ${q.project||'your project'}. Total: ${fmt(gt(q))}. Prepared by: ${q.by}. Contact: ${co().phone} | ${co().mail||CE} | ${co().web}`,clientHtml=async()=>`<!DOCTYPE html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Quotation - ${esc((T()||{}).name||'')}</title><style>${await getCss()}</style><div class="paper">${document.querySelector('.paper').innerHTML}</div>`;
 const srt=(a,f=x=>x)=>[...a].sort((x,y)=>String(f(x)).localeCompare(String(f(y)),undefined,{numeric:true,sensitivity:'base'})),sidx=(a,f)=>a.map((_,i)=>i).sort((x,y)=>String(f(a[x])).localeCompare(String(f(a[y])),undefined,{numeric:true,sensitivity:'base'}));
 function refreshIl(){const KN={all:'',kitchen:'KITCHEN',dining:'DINNING',bath:'TOILET',pooja:'POOJA ROOM',study:'STUDY',bedroom:'MASTER BEDROOM',living:'LIVING ROOM',utility:'UTILITY ROOM',entrance:'CORRIDOR'};Object.entries(KN).forEach(([k,n])=>{let d=document.getElementById('il_'+k);if(!d){d=document.createElement('datalist');d.id='il_'+k;document.body.appendChild(d)}const rm={t:n};d.innerHTML=srt(S.set.items,i=>i.n).filter(i=>itemOk(i.n,rm)).map(i=>`<option value="${esc(i.n)}">`).join('')})}
 function refreshLists(){const t=S.set;$('#il').innerHTML=srt(t.items,i=>i.n).map(i=>`<option value="${esc(i.n)}">`).join('');$('#ml').innerHTML=srt(t.mats.filter(Boolean)).map(i=>`<option value="${esc(i)}">`).join('')}
@@ -749,7 +771,7 @@ dr:()=>{askDo('Remove this area and all its items?',()=>{T().rooms.splice(i,1);s
 ap:()=>{q.pay.push({m:'',p:0,t:''});save('q',S.cur)},dp:()=>{q.pay.splice(i,1);save('q',S.cur)},
 sa:()=>{S.set[k].push(k=='rooms'?{n:'NEW AREA',r:0,w:0}:k=='items'?{n:'New item',b:'sqft',r:0}:k=='acc'?{c:'Other',n:'New accessory',u:'nos',r:0}:k=='svc'?{c:'Other',n:'New service',u:'nos',r:0,s:''}:k=='plr'?{b:'',g:'BSL+BWR',t:'18mm',r:0}:k=='fin'?{n:'',r:0,c:0}:k=='am'?{i:'',a:[]}:{m:'',p:0,t:''});save('s')},sd:()=>{S.set[k].splice(i,1);save('s')},rs:()=>{askDo('Reset ALL settings (rates, items, terms) to the original defaults?',()=>{S.set=cl(DEF);save('s');render()});return 1},
 pr:()=>{if(need())return 1;printPaper();return 1},
-dh:async()=>{if(need())return 1;await saveFile(fnm(q),clientHtml());return 1},
+dh:async()=>{if(need())return 1;await saveFile(fnm(q),await clientHtml());return 1},
 sh:async()=>{if(need())return 1;markSh();const h=clientHtml(),f=new File([h],fnm(q),{type:'text/html'});try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'Quotation - '+q.name,text:sumTxt(q)});return 1}}catch(x){if(x&&x.name=='AbortError')return 1}await saveFile(fnm(q),h);flash('File ready — attach it to your message to the client');return 1},
 wa:()=>{if(need())return 1;markSh();window.open('https://wa.me/?text='+encodeURIComponent(sumTxt(q)),'_blank');return 1},
 em:()=>{if(need())return 1;markSh();const to=/@/.test(q.contact||'')?q.contact.trim():'';window.open('mailto:'+to+'?subject='+encodeURIComponent('Quotation '+qno(q)+' - '+co().name)+'&body='+encodeURIComponent(sumTxt(q)),'_blank');return 1},
@@ -1874,11 +1896,19 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
 <script>
   // --- Logout Button ---
   document.getElementById('logoutBtn').addEventListener('click', () => {
-    localStorage.removeItem('mc_token');
-    localStorage.removeItem('mc_user_email');
-    localStorage.removeItem('mc_user_role');
-    window.location.reload();
-  });
+  localStorage.removeItem('mc_token');
+  localStorage.removeItem('mc_user_email');
+  localStorage.removeItem('mc_user_role');
+  
+  // Wipe cached user data (quotations, projects, vendors, audit log, UI prefs).
+  // Keep device / licensing keys so the owner does not need to re-import the signing key.
+  const KEEP = new Set(['msq_dev','msq_lic','msq_lic_seq','msq_lic_floor','msq_lic_name','msq_seen','msq_owner_key']);
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('msq_') && !KEEP.has(k))
+    .forEach(k => localStorage.removeItem(k));
+    
+  window.location.reload();
+});
 
   // --- Show Admin Button if logged in as admin ---
   if (localStorage.getItem('mc_user_role') === 'admin') {
@@ -1977,10 +2007,10 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
     });
     const data = await res.json();
     if (data.ok) {
-      loadAdminUsers(); 
-    } else {
-      msg.textContent = data.message;
-    }
+    loadAdminUsers();
+  } else {
+    msg.textContent = data.message || 'Request failed';
+  }
   }
 
   async function toggleUserStatus(email, active) {
@@ -1991,8 +2021,8 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
     });
     const data = await res.json();
     if (data.ok) loadAdminUsers();
-    else alert(data.message);
-  }
+  else alert(data.message || 'Request failed');
+}
 
   async function deleteUser(email) {
     if (!confirm("Are you sure you want to delete " + email + "?")) return;
@@ -2003,8 +2033,8 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
     });
     const data = await res.json();
     if (data.ok) loadAdminUsers();
-    else alert(data.message);
-  }
+  else alert(data.message || 'Request failed');
+}
 </script>
 </body>
 </html>
