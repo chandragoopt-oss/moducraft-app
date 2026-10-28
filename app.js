@@ -1727,5 +1727,4 @@ else if(a=='bk'){const x=document.querySelector('[data-a=ex]');if(x)x.click()}})
 if(db){S.db=db;const typing=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName);
 db.collection('quotes').onSnapshot(sn=>{sn.docChanges().forEach(c=>{if(c.doc.metadata.hasPendingWrites||pend['q'+c.doc.id]||fly['q'+c.doc.id]>0)return;if(c.type=='removed'){delete S.q[c.doc.id];if(S.cur==c.doc.id)S.cur=null}else S.q[c.doc.id]=cl(c.doc.data())});if(!typing())render()},e=>{saveErr='Cannot read cloud data: '+((e&&e.message)||'');setSt()});
 db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(!d.metadata.hasPendingWrites&&!pend.s&&!(fly.s>0)){S.set=Object.assign(cl(DEF),cl(d.data()));if(!typing())render()}},e=>{saveErr='Cannot read cloud data: '+((e&&e.message)||'');setSt()});bzInit(db);erpInit(db);db.doc('access/main').onSnapshot(d=>{S.acl=d.exists?cl(d.data().list||[]):[];applyLvl();if(!typing())render()},()=>0)}}catch(x){}render()})();
-</script>
-<script src="custom.js">
+
