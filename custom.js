@@ -762,12 +762,13 @@ document.addEventListener('change', e => {
     if (S.tab === 'enq') { document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === 'enq')); document.getElementById('app').innerHTML = window.vEnq(); const btn = document.querySelector('#nav button[data-v="enq"]'); if (btn) btn.classList.add('on'); return; }
     const btn = document.querySelector('#nav button[data-v="enq"]'); if (btn) btn.classList.remove('on'); _render.apply(this, arguments);
   };
-  async function openEnqModal(id) {
+    async function openEnqModal(id) {
     const isNew = !id;
+    const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
+    const API_KEY = "ModuCraft@2026";
 
     // --- NEW LOCK CHECK ---
     if (!isNew) {
-        // ⚠️ IMPORTANT: Replace 'Admin' with your logged-in user variable if you have one!
         const userName = 'User_' + Math.floor(Math.random() * 1000);
         
         try {
@@ -783,72 +784,103 @@ document.addEventListener('change', e => {
                 return; // Stops the modal from opening
             }
             
-            // Save the time we opened it, for the conflict check later
             window.currentEditOpenedAt = window.ENQ[id].updated_at || Date.now(); 
             
-                } catch(err) {
+        } catch(err) {
             console.error("Lock check failed:", err);
-            alert("DEBUG ERROR: " + err.message); 
         }
     }
     // --- END LOCK CHECK ---
 
     const e = isNew ? { id: 'e' + Date.now().toString(36), date: today(), status: 'Enquiry' } : window.ENQ[id];
-    // ... Rest of line 766 stays the same ...
-    const o = document.createElement('div'); o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
+    const o = document.createElement('div'); 
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
+    
     o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto"><h3 style="margin-top:0">${isNew ? 'New Enquiry' : 'Edit Enquiry'}</h3><div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px"><div style="grid-column:1/-1"><label>Client Name *</label><input id="eq_name" value="${esc(e.name||'')}"></div><div><label>Phone / Email</label><input id="eq_phone" value="${esc(e.phone||'')}"></div><div><label>Project (e.g. 2BHK)</label><input id="eq_proj" value="${esc(e.project||'')}"></div><div><label>Budget</label><input id="eq_bud" value="${esc(e.budget||'')}"></div><div><label>Next Follow Up</label><input type="date" id="eq_date" value="${e.nextFollowUp||''}"></div><div style="grid-column:1/-1"><label>Notes</label><textarea id="eq_notes" rows="2">${esc(e.notes||'')}</textarea></div><div style="grid-column:1/-1"><label>Status</label><select id="eq_status">${['Enquiry','Quoted','Won','Lost'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div><div class="bar" style="margin-top:14px;justify-content:flex-end">${!isNew ? `<button class="g" id="eq_del" style="margin-right:auto;color:#b00020;border-color:#fca5a5">Delete</button>` : ''}<button class="g" id="eq_cancel">Cancel</button><button id="eq_save" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:8px 20px;font-weight:600;cursor:pointer">Save</button></div></div>`;
+    
     document.body.appendChild(o);
+    
     document.getElementById('eq_cancel').onclick = () => o.remove();
-    if (!isNew) document.getElementById('eq_del').onclick = () => { if (confirm('Delete this enquiry?')) { delete window.ENQ[id]; window.saveEnq(); o.remove(); render(); } };
-        document.getElementById('eq_save').onclick = async () => {
-      const name = document.getElementById('eq_name').value.trim(); if (!name) return alert('Client name is required.');
+    if (!isNew) {
+      document.getElementById('eq_del').onclick = () => { 
+        if (confirm('Delete this enquiry?')) { 
+          delete window.ENQ[id]; 
+          window.saveEnq(); 
+          o.remove(); 
+          render(); 
+        } 
+      };
+    }
+    
+    document.getElementById('eq_save').onclick = async () => {
+      const name = document.getElementById('eq_name').value.trim(); 
+      if (!name) return alert('Client name is required.');
       
-      e.name = name; e.phone = document.getElementById('eq_phone').value.trim(); e.project = document.getElementById('eq_proj').value.trim(); e.budget = document.getElementById('eq_bud').value.trim(); e.nextFollowUp = document.getElementById('eq_date').value; e.notes = document.getElementById('eq_notes').value.trim(); e.status = document.getElementById('eq_status').value;
+      e.name = name; 
+      e.phone = document.getElementById('eq_phone').value.trim(); 
+      e.project = document.getElementById('eq_proj').value.trim(); 
+      e.budget = document.getElementById('eq_bud').value.trim(); 
+      e.nextFollowUp = document.getElementById('eq_date').value; 
+      e.notes = document.getElementById('eq_notes').value.trim(); 
+      e.status = document.getElementById('eq_status').value;
 
-      // --- NEW CONFLICT CHECK & UNLOCK START ---
+      // --- CONFLICT CHECK & UNLOCK ---
       if (!isNew) {
-          const userName = 'User_' + Math.floor(Math.random() * 1000);// Use your actual logged-in user variable here if you have one
+          const userName = 'User_' + Math.floor(Math.random() * 1000);
           try {
               const conflictRes = await fetch(GOOGLE_URL, {
                   method: 'POST',
                   headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                  body: JSON.stringify({ 
-                      action: 'check_conflict', 
-                      sheetName: 'enquiries', 
-                      recordId: id, 
-                      openedAt: window.currentEditOpenedAt, 
-                      userName: userName 
-                  })
+                  body: JSON.stringify({ action: 'check_conflict', sheetName: 'enquiries', recordId: id, openedAt: window.currentEditOpenedAt, userName: userName })
               });
               const conflictData = await conflictRes.json();
               
               if (conflictData.hasConflict) {
-                  alert(conflictData.message); // Shows who edited it and when
-                  return; // Stops the save!
+                  alert(conflictData.message);
+                  return; 
               }
 
-              // If we get here, it's safe to save. Unlock it.
               fetch(GOOGLE_URL, {
                   method: 'POST',
                   headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                   body: JSON.stringify({ action: 'unlock_record', sheetName: 'enquiries', recordId: id })
               });
-
           } catch (err) {
               console.error("Conflict check failed", err);
           }
       }
-      // --- NEW CONFLICT CHECK & UNLOCK END ---
 
-      window.ENQ[e.id] = e; window.saveEnq();
+      window.ENQ[e.id] = e; 
+      window.saveEnq();
+      
+      // --- NEW: ACTUALLY SAVE TO GOOGLE SHEETS ---
+      try {
+          fetch(GOOGLE_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({ 
+                  action: 'save', 
+                  collection: 'enquiries',
+                  id: e.id,
+                  data: e,
+                  apiKey: API_KEY
+              })
+          });
+      } catch(err) { 
+          console.log("Cloud save failed", err); 
+      }
+
       if (isNew) {
         const wText = `New Enquiry Alert!\n\nClient: ${e.name}\nProject: ${e.project || 'Not specified'}\nPhone: ${e.phone || 'Not provided'}\nBudget: ${e.budget || 'Not specified'}\nNext Follow-up: ${e.nextFollowUp || 'None'}\n\nSent from ModuCraft.`, waOwner = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`, waPartner = `https://wa.me/919830864409?text=${encodeURIComponent(wText)}`;
         o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto;text-align:center"><h3 style="margin-top:0;color:#22C55E">✅ Enquiry Saved</h3><p class="mut" style="font-size:13px;margin-bottom:16px">Do you want to alert the team via WhatsApp?</p><div style="display:flex;flex-direction:column;gap:8px"><a href="${waOwner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Owner (9830051060)</a><a href="${waPartner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">📱 Notify Partner (9830864409)</a></div><button class="g" id="eq_done" style="margin-top:16px;width:100%">Close</button></div>`;
         document.getElementById('eq_done').onclick = () => { o.remove(); render(); flash('Enquiry saved'); };
-      } else { o.remove(); render(); flash('Enquiry updated'); }
+      } else { 
+        o.remove(); 
+        render(); 
+        flash('Enquiry updated'); 
+      }
     };
   }
-  document.addEventListener('click', function(ev) {
     const btn = ev.target.closest('[data-enq-act]'); if (!btn) return; ev.preventDefault();
     const act = btn.dataset.enqAct, id = btn.dataset.id;
     if (act === 'new') openEnqModal();
