@@ -82,11 +82,13 @@
       const email = (localStorage.getItem('mc_user_email') || '').toLowerCase().trim();
       const isOwner = (email === OWNER_EMAIL.toLowerCase());
 
-      // 3. Let them in
+     // 3. Let them in
       return { 
         can: async () => true, 
         id: async () => 'user-' + email.replace(/[^a-z0-9]/g, ''),
         email: async () => email,
+        name: async () => localStorage.getItem('mc_user_name') || email, // <-- ADDED
+        profiles: async () => ({}),                                     // <-- ADDED
         isOwner: async () => isOwner,
         canEdit: async () => true
       };
