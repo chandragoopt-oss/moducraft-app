@@ -2554,3 +2554,72 @@ document.addEventListener('click', async function(e) {
         }
     }
 }, true); // The 'true' makes this run before your app's normal click listener
+
+
+// ==========================================
+// CONFLICT CHECK WHEN SAVING QUOTATIONS
+// ==========================================
+document.addEventListener('click', async function(e) {
+    // Find if they clicked the Save button for a quotation
+    const saveBtn = e.target.closest('button[data-a="sv"]');
+    
+    // If it's not the save button, or if we already checked it, let it pass
+    if (!saveBtn || saveBtn.dataset.bypassLock === "true") return;
+
+    const quoteId = S.cur;
+    
+    // If it's a brand new quotation (no updated_at yet), just save normally
+    if (!quoteId || !S.q[quoteId] || !S.q[quoteId].updated_at) {
+        return; 
+    }
+
+    // Stop the normal save process for a second
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = 'Checking...';
+    saveBtn.disabled = true;
+
+    const userName = 'User_' + Math.floor(Math.random() * 1000);
+
+    try {
+        // 1. Ask Google if anyone else saved it
+        const conflictRes = await fetch(GOOGLE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                action: 'check_conflict', 
+                sheetName: 'quotes', 
+                recordId: quoteId, 
+                openedAt: window.currentQuoteOpenedAt, 
+                userName: userName 
+            })
+        });
+        const conflictData = await conflictRes.json();
+        
+        if (conflictData.hasConflict) {
+            alert(conflictData.message);
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+            return; // STOP! Do not save.
+        }
+
+        // 2. Unlock the record so others can edit it now
+        fetch(GOOGLE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'unlock_record', sheetName: 'quotes', recordId: quoteId })
+        });
+
+        // 3. Proceed with the actual save
+        saveBtn.dataset.bypassLock = "true"; // Tell our code to ignore it this time
+        saveBtn.click(); // Click it again to let the app save normally
+
+    } catch(err) {
+        console.error("Conflict check failed", err);
+        // If the internet fails, just save anyway so you don't lose work
+        saveBtn.dataset.bypassLock = "true";
+        saveBtn.click();
+    }
+}, true); // The 'true' makes this run before the app's normal save
