@@ -319,6 +319,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       // Save the token so the app knows you are logged in
       localStorage.setItem('mc_token', data.token);
       localStorage.setItem('mc_user_email', email);
+      localStorage.setItem('mc_user_role', data.role);
       document.getElementById('loginOverlay').style.display = 'none';
     } else {
       err.textContent = data.message || "Login failed.";
