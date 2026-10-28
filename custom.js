@@ -2267,36 +2267,44 @@ document.addEventListener('change', e => {
 })();
 
 // ==========================================
-// STEP 13: ADVANCED FINANCIAL REPORTING (P&L) - V5 (BULLETPROOF)
+// STEP 13: ADVANCED FINANCIAL REPORTING (P&L) - V6 (UNSTOPPABLE)
 // ==========================================
 (function() {
     'use strict';
-    if (window.__mcPnlLoaded_v5) return;
-    window.__mcPnlLoaded_v5 = true;
+    if (window.__mcPnlLoaded_v6) return;
+    window.__mcPnlLoaded_v6 = true;
 
     function injectPnl() {
         try {
-            // 1. Only run if we are on the Reports tab
-            if (typeof S === 'undefined' || S.tab !== 'r') return;
-            
             const app = document.getElementById('app');
             if (!app) return;
             
-            // 2. Check if we are actually looking at the Reports page
-            const isReportsPage = app.innerHTML.includes('Reports &amp; analytics') || app.innerHTML.includes('Reports & analytics');
-            
-            // 3. If we are on the reports page, and the card is NOT there, inject it!
-            if (isReportsPage && !document.getElementById('pnl-card-injected')) {
-                let rows = '', totRev = 0, totCost = 0, totProfit = 0;
+            // If already injected, do nothing
+            if (document.getElementById('pnl-card-injected')) return;
 
-                // Loop through active projects
-                const pjs = (typeof BZ !== 'undefined' && BZ.pj) ? Object.values(BZ.pj) : [];
-                pjs.forEach(p => {
+            // Find the exact "Reports & analytics" card on the screen
+            let reportsCard = null;
+            const cards = app.querySelectorAll('.card');
+            for (let c of cards) {
+                if (c.textContent && c.textContent.includes('Reports & analytics')) {
+                    reportsCard = c;
+                    break;
+                }
+            }
+
+            // If we aren't on the Reports page, stop here
+            if (!reportsCard) return;
+
+            let rows = '', totRev = 0, totCost = 0, totProfit = 0;
+
+            // Loop through active projects safely
+            const pjs = (typeof BZ !== 'undefined' && BZ.pj) ? Object.values(BZ.pj) : [];
+            pjs.forEach(p => {
+                try {
                     if (p.stage === 'Closed' || p.stage === 'Closure') return;
                     
                     const q = (S.q && p.qid) ? S.q[p.qid] : null;
                     
-                    // Math calculations
                     const rev = +p.val || (q && typeof gt === 'function' ? gt(q) : 0);
                     const poCost = typeof pjSpend === 'function' ? pjSpend(p.id) : 0;
                     
@@ -2323,53 +2331,51 @@ document.addEventListener('change', e => {
                         <td class="ro" style="color:${profit >= 0 ? '#15803d' : '#b00020'}"><b>${fmt(profit)}</b></td>
                         <td class="ro" style="color:${margin >= 0 ? '#15803d' : '#b00020'}">${margin.toFixed(1)}%</td>
                     </tr>`;
-                });
+                } catch(e) { console.error('Project math error:', e); }
+            });
 
-                if (!rows) rows = '<tr><td colspan="8" class="mut" style="text-align:center;">No active projects found.</td></tr>';
+            if (!rows) rows = '<tr><td colspan="8" class="mut" style="text-align:center;">No active projects found.</td></tr>';
 
-                const pnlHtml = `
-                <div class="card" id="pnl-card-injected" style="border-left: 4px solid #B08D57; margin-bottom: 20px; background: rgba(176, 141, 87, 0.05);">
-                    <h3>📊 True Project Profit & Loss (P&L)</h3>
-                    <p class="mut">Your real profit based on Contract Value minus Vendor POs, Carpenter/Labour projections, and Direct Site Expenses.</p>
-                    <div class="sc">
-                        <table class="g" style="min-width: 950px;">
-                            <tr>
-                                <th>Project / Client</th>
-                                <th class="ro">Contract Value</th>
-                                <th class="ro">Vendor POs</th>
-                                <th class="ro">Labour (Proj.)</th>
-                                <th class="ro">Direct Exp.</th>
-                                <th class="ro">Total Cost</th>
-                                <th class="ro">Profit</th>
-                                <th class="ro">Margin %</th>
-                            </tr>
-                            ${rows}
-                            <tr style="background:var(--in); font-weight:bold; border-top: 2px solid var(--line);">
-                                <td>TOTAL PORTFOLIO</td>
-                                <td class="ro">${fmt(totRev)}</td>
-                                <td class="ro" colspan="3">Total Costs: ${fmt(totCost)}</td>
-                                <td class="ro">${fmt(totCost)}</td>
-                                <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${fmt(totProfit)}</td>
-                                <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${totRev > 0 ? ((totProfit/totRev)*100).toFixed(1) : 0}%</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>`;
+            const pnlHtml = `
+            <div class="card" id="pnl-card-injected" style="border-left: 4px solid #B08D57; margin-bottom: 20px; background: rgba(176, 141, 87, 0.05);">
+                <h3>📊 True Project Profit & Loss (P&L)</h3>
+                <p class="mut">Your real profit based on Contract Value minus Vendor POs, Carpenter/Labour projections, and Direct Site Expenses.</p>
+                <div class="sc">
+                    <table class="g" style="min-width: 950px;">
+                        <tr>
+                            <th>Project / Client</th>
+                            <th class="ro">Contract Value</th>
+                            <th class="ro">Vendor POs</th>
+                            <th class="ro">Labour (Proj.)</th>
+                            <th class="ro">Direct Exp.</th>
+                            <th class="ro">Total Cost</th>
+                            <th class="ro">Profit</th>
+                            <th class="ro">Margin %</th>
+                        </tr>
+                        ${rows}
+                        <tr style="background:var(--in); font-weight:bold; border-top: 2px solid var(--line);">
+                            <td>TOTAL PORTFOLIO</td>
+                            <td class="ro">${fmt(totRev)}</td>
+                            <td class="ro" colspan="3">Total Costs: ${fmt(totCost)}</td>
+                            <td class="ro">${fmt(totCost)}</td>
+                            <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${fmt(totProfit)}</td>
+                            <td class="ro" style="color:${totProfit >= 0 ? '#15803d' : '#b00020'}">${totRev > 0 ? ((totProfit/totRev)*100).toFixed(1) : 0}%</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>`;
 
-                // Insert directly at the top of the container
-                app.insertAdjacentHTML('afterbegin', pnlHtml);
-                console.log("P&L Card successfully injected!");
-            }
-        } catch (e) {
-            console.error("P&L Injection Error:", e);
+            // Insert the P&L card right before the Reports card
+            reportsCard.insertAdjacentHTML('beforebegin', pnlHtml);
+            console.log("P&L Card successfully injected!");
+
+        } catch (err) {
+            console.error("P&L Script error: ", err);
         }
     }
 
-    // Run this check every 1 second. It's lightweight and guarantees we catch the page.
-    setInterval(injectPnl, 1000);
+    // Run every 500ms. It's extremely lightweight and guarantees we catch the page.
+    setInterval(injectPnl, 500);
     
-    console.log('[ModuCraft +] Advanced Financial P&L Reporting (Interval) loaded');
-})();
-    
-    console.log('[ModuCraft +] Advanced Financial P&L Reporting (Observer) loaded');
+    console.log('[ModuCraft +] Advanced Financial P&L Reporting (V6) loaded');
 })();
