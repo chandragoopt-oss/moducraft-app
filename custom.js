@@ -786,8 +786,9 @@ document.addEventListener('change', e => {
             // Save the time we opened it, for the conflict check later
             window.currentEditOpenedAt = window.ENQ[id].updated_at || Date.now(); 
             
-        } catch(err) {
-            console.error("Lock check failed, allowing edit.", err);
+                } catch(err) {
+            console.error("Lock check failed:", err);
+            alert("DEBUG ERROR: " + err.message); 
         }
     }
     // --- END LOCK CHECK ---
