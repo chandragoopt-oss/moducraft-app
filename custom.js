@@ -771,31 +771,8 @@ document.addEventListener('change', e => {
     const btn = document.querySelector('#nav button[data-v="enq"]'); if (btn) btn.classList.remove('on'); _render.apply(this, arguments);
   };
 
-  async function openEnqModal(id) {
+    function openEnqModal(id) {
     const isNew = !id;
-
-    // --- NEW LOCK CHECK ---
-    if (!isNew) {
-        const userName = 'User_' + Math.floor(Math.random() * 1000);
-        try {
-            const lockRes = await fetch(GOOGLE_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'lock_record', sheetName: 'enquiries', recordId: id, userName: userName })
-            });
-            const lockData = await lockRes.json();
-            
-            if (!lockData.success) {
-                alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this record. Please wait or refresh.`);
-                return; 
-            }
-            window.currentEditOpenedAt = window.ENQ[id].updated_at || Date.now(); 
-        } catch(err) {
-            console.error("Lock check failed:", err);
-        }
-    }
-    // --- END LOCK CHECK ---
-
     const e = isNew ? { id: 'e' + Date.now().toString(36), date: today(), status: 'Enquiry' } : window.ENQ[id];
     const o = document.createElement('div'); 
     o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
@@ -803,6 +780,32 @@ document.addEventListener('change', e => {
     o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto"><h3 style="margin-top:0">${isNew ? 'New Enquiry' : 'Edit Enquiry'}</h3><div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px"><div style="grid-column:1/-1"><label>Client Name *</label><input id="eq_name" value="${esc(e.name||'')}"></div><div><label>Phone / Email</label><input id="eq_phone" value="${esc(e.phone||'')}"></div><div><label>Project (e.g. 2BHK)</label><input id="eq_proj" value="${esc(e.project||'')}"></div><div><label>Budget</label><input id="eq_bud" value="${esc(e.budget||'')}"></div><div><label>Next Follow Up</label><input type="date" id="eq_date" value="${e.nextFollowUp||''}"></div><div style="grid-column:1/-1"><label>Notes</label><textarea id="eq_notes" rows="2">${esc(e.notes||'')}</textarea></div><div style="grid-column:1/-1"><label>Status</label><select id="eq_status">${['Enquiry','Quoted','Won','Lost'].map(s=>`<option ${e.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div><div class="bar" style="margin-top:14px;justify-content:flex-end">${!isNew ? `<button class="g" id="eq_del" style="margin-right:auto;color:#b00020;border-color:#fca5a5">Delete</button>` : ''}<button class="g" id="eq_cancel">Cancel</button><button id="eq_save" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:8px 20px;font-weight:600;cursor:pointer">Save</button></div></div>`;
     
     document.body.appendChild(o);
+        // NEW: Do the lock check in the background so it doesn't freeze the app
+    if (!isNew) {
+        const saveBtn = document.getElementById('eq_save');
+        if(saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Locking...'; }
+        
+        const userName = 'User_' + Math.floor(Math.random() * 1000);
+        fetch(GOOGLE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'lock_record', sheetName: 'enquiries', recordId: id, userName: userName })
+        })
+        .then(res => res.json())
+        .then(lockData => {
+            if (!lockData.success) {
+                alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this record. Please wait or refresh.`);
+                o.remove(); // Close the window since they can't edit it
+                return; 
+            }
+            window.currentEditOpenedAt = window.ENQ[id].updated_at || Date.now(); 
+            if(saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        })
+        .catch(err => {
+            console.error("Lock check failed:", err);
+            if(saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        });
+    }
     
     document.getElementById('eq_cancel').onclick = () => o.remove();
     if (!isNew) {
@@ -2502,3 +2505,52 @@ console.log("P&L SCRIPT STARTING...");
     
     console.log('[ModuCraft +] Advanced Financial P&L Reporting (FINAL) loaded');
 })();
+
+// ==========================================
+// LOCK FOR QUOTATIONS & DESIGNS
+// ==========================================
+document.addEventListener('click', async function(e) {
+    // Find if they clicked a button to edit a quotation
+    const editBtn = e.target.closest('button[data-a="eq"], button[data-a="qe"], button[data-a="editq"]');
+    
+    if (editBtn) {
+        e.preventDefault(); // Stop the app from opening it immediately
+        e.stopImmediatePropagation(); // Stop other clicks
+        
+        // Figure out which quotation ID they are trying to open
+        const quoteId = editBtn.dataset.i || editBtn.dataset.id || S.cur;
+        if (!quoteId) { alert("Could not find Quote ID."); return; }
+
+        const userName = 'User_' + Math.floor(Math.random() * 1000);
+        
+        // Show a quick loading message
+        flash('Checking if someone else is editing...');
+
+        try {
+            const lockRes = await fetch(GOOGLE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'lock_record', sheetName: 'quotes', recordId: quoteId, userName: userName })
+            });
+            const lockData = await lockRes.json();
+            
+            if (!lockData.success) {
+                alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this quotation. Please wait.`);
+                return; // Stop! Don't open the quote.
+            }
+            
+            // If lock is successful, proceed to open the quote normally
+            window.currentQuoteOpenedAt = S.q[quoteId] ? (S.q[quoteId].updated_at || Date.now()) : Date.now();
+            S.tab = 'e'; 
+            S.cur = quoteId; 
+            render(); // Open the Edit tab
+            
+        } catch(err) {
+            console.error("Lock check failed:", err);
+            // If the internet fails, just let them open it anyway
+            S.tab = 'e'; 
+            S.cur = quoteId; 
+            render();
+        }
+    }
+}, true); // The 'true' makes this run before your app's normal click listener
