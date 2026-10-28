@@ -785,7 +785,7 @@ document.addEventListener('change', e => {
         const saveBtn = document.getElementById('eq_save');
         if(saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Locking...'; }
         
-        const userName = 'User_' + Math.floor(Math.random() * 1000);
+        const userName = localStorage.getItem('msq_me') || 'Someone';
         fetch(GOOGLE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -833,7 +833,7 @@ document.addEventListener('change', e => {
 
       // --- CONFLICT CHECK & UNLOCK ---
       if (!isNew) {
-          const userName = 'User_' + Math.floor(Math.random() * 1000);
+          const userName = localStorage.getItem('msq_me') || 'Someone';
           try {
               const conflictRes = await fetch(GOOGLE_URL, {
                   method: 'POST',
@@ -2532,7 +2532,7 @@ document.addEventListener('click', async function(e) {
     saveBtn.innerHTML = 'Checking...';
     saveBtn.disabled = true;
 
-    const userName = 'User_' + Math.floor(Math.random() * 1000);
+    const userName = localStorage.getItem('msq_me') || 'Someone';
 
     try {
         // 1. Ask Google if anyone else saved it
@@ -2604,7 +2604,7 @@ document.addEventListener('click', async function(e) {
     }
 
     // 3. Ask Google for the lock
-    const userName = 'User_' + Math.floor(Math.random() * 1000);
+    const userName = localStorage.getItem('msq_me') || 'Someone';
     try {
         const lockRes = await fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
             method: 'POST',
