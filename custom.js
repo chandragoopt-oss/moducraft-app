@@ -2639,3 +2639,30 @@ document.addEventListener('click', async function(e) {
         }
     }
 }, true);
+
+// ==========================================
+// CLOUD SYNC FOR DELETING QUOTATIONS
+// ==========================================
+document.addEventListener('click', function(e) {
+    const delBtn = e.target.closest('button[data-a="dq"]');
+    if (!delBtn) return;
+    
+    const quoteId = delBtn.dataset.i;
+    if (!quoteId) return;
+
+    // We let the app delete it from your screen normally.
+    // In the background, we tell Google Sheets to delete it too.
+    fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ 
+            action: 'delete', 
+            collection: 'quotes', 
+            id: quoteId, 
+            apiKey: "ModuCraft@2026" 
+        })
+    })
+    .then(res => res.json())
+    .then(res => console.log("✅ CLOUD DELETE SUCCESS:", res))
+    .catch(err => console.error("❌ CLOUD DELETE FAILED:", err));
+}, true);
