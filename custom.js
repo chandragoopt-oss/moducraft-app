@@ -934,8 +934,8 @@ document.addEventListener('change', e => {
       </div>`;
 
       // Insert after the Welcome header
-      const chipEnd = html.indexOf('</div>', html.indexOf('<h2>'));
-      if (chipEnd !== -1) { html = html.substring(0, chipEnd + 6) + cfHtml + html.substring(chipEnd + 6); }
+                  // Safely prepend the Cash Flow card
+            html = cfHtml + html;
     }
 
     return html;
@@ -1137,6 +1137,7 @@ document.addEventListener('change', e => {
       return;
     }
   }, true);
+    })(); //
     // ==========================================
 // STEP 7: CARPENTER / LABOUR PIECE-RATE BILLING
 // ==========================================
@@ -1292,9 +1293,6 @@ document.addEventListener('change', e => {
   });
 
   console.log('[ModuCraft +] Carpenter Billing loaded');
-})();
-
-  console.log('[ModuCraft +] Daily Site Report loaded');
 })();
 // ==========================================
 // STEP 8 & 9: DEPARTMENT SEGREGATION & ADVANCED ACCESS CONTROL (FIXED)
@@ -1493,8 +1491,8 @@ document.addEventListener('change', e => {
         <div class="card" style="margin:0; border-top:4px solid #F59E0B;"><div class="mut" style="font-size:11px">POs Pending</div><div style="font-size:22px; font-weight:bold; color:#F59E0B;">${pendingVendors}</div></div>
       </div>`;
 
-    const chipEnd = html.indexOf('</div>', html.indexOf('<h2>'));
-    if (chipEnd !== -1) html = html.substring(0, chipEnd + 6) + metricsHtml + html.substring(chipEnd + 6);
+        // Safely prepend the Metrics card
+    html = metricsHtml + html;
     return html;
   };
 
