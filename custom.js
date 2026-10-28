@@ -107,13 +107,13 @@ todayCard = function() {
     });
     if (dueQ.length || dueP.length) {
         let r = '';
-        dueP.forEach(p => { r += `<tr><td><span class="mut">Project</span><br><b>${esc(p.name)}</b><td>${esc(p.client)}<td style="color:#b00020;font-weight:bold">${p.nfu ? dmy(p.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">ðŸ“ž Follow Up</button> <button class="g" data-complete="${p.id}" style="background:#dcfce7;color:#166534;border-color:#bbf7d0;padding:4px 10px;margin-left:4px">âœ… Complete</button></td></tr>`; });
-        dueQ.forEach(q => { r += `<tr><td><span class="mut">Quotation</span><br><b>${esc(q.name)}</b><td>${esc(qno(q))}<td style="color:#b00020;font-weight:bold">${q.nfu ? dmy(q.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">ðŸ“ž Follow Up</button> <button class="g" data-lost="${q.id}" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;padding:4px 10px;margin-left:4px">âŒ Lost</button></td></tr>`; });
+        dueP.forEach(p => { r += `<tr><td><span class="mut">Project</span><br><b>${esc(p.name)}</b><td>${esc(p.client)}<td style="color:#b00020;font-weight:bold">${p.nfu ? dmy(p.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-complete="${p.id}" style="background:#dcfce7;color:#166534;border-color:#bbf7d0;padding:4px 10px;margin-left:4px">✅ Complete</button></td></tr>`; });
+        dueQ.forEach(q => { r += `<tr><td><span class="mut">Quotation</span><br><b>${esc(q.name)}</b><td>${esc(qno(q))}<td style="color:#b00020;font-weight:bold">${q.nfu ? dmy(q.nfu) : 'Overdue'}<td style="white-space:nowrap"><button class="g" data-fup="${q.id}" data-fuptype="q" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">📞 Follow Up</button> <button class="g" data-lost="${q.id}" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5;padding:4px 10px;margin-left:4px">âŒ Lost</button></td></tr>`; });
         newHtml += `<div style="border:1px solid #f0b4b4;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fff5f5"><b style="color:#b00020">â° Overdue Follow Ups</b><div class="sc"><table class="g" style="min-width:600px"><tr><th>Details</th><th>Client/Quote</th><th>Due</th><th></th></tr>${r}</table></div></div>`;
     }
     const runP = Object.values(BZ.pj).filter(isProjectActive);
     if (runP.length) {
-        let r = runP.map(p => `<tr><td><b>${esc(p.name)}</b><td>${esc(p.client)}<td>${esc(p.stage)}<td>${p.nfu ? dmy(p.nfu) : 'â€”'}<td style="white-space:nowrap"><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">ðŸ“ž Follow Up</button> <button class="g" data-complete="${p.id}" style="background:#dcfce7;color:#166534;border-color:#bbf7d0;padding:4px 10px;margin-left:4px">âœ… Complete</button></td></tr>`).join('');
+        let r = runP.map(p => `<tr><td><b>${esc(p.name)}</b><td>${esc(p.client)}<td>${esc(p.stage)}<td>${p.nfu ? dmy(p.nfu) : 'â€”'}<td style="white-space:nowrap"><button class="g" data-fup="${p.id}" data-fuptype="p" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;padding:4px 10px">ðŸ“ž Follow Up</button> <button class="g" data-complete="${p.id}" style="background:#dcfce7;color:#166534;border-color:#bbf7d0;padding:4px 10px;margin-left:4px">✅ Complete</button></td></tr>`).join('');
         newHtml += `<div style="border:1px solid #e6dcc3;border-radius:10px;padding:8px 10px;margin:8px 0;background:#fffaf0"><b>ðŸ—ï¸ Running Projects</b><div class="sc"><table class="g" style="min-width:700px"><tr><th>Project</th><th>Client</th><th>Stage</th><th>Next Follow Up</th><th></th></tr>${r}</table></div></div>`;
     }
     const sharedQ = Object.values(S.q).filter(q=>q.st==='shared' && !q.unl && q.out!=='lost' && !linked.has(q.id));
@@ -454,7 +454,7 @@ poEdit = function(o) {
     });
     Object.keys(catPaid).forEach(c => { if(catPaid[c] > 0.01) summaryRows += `<tr><td>${c}</td><td class="ro">-</td><td class="ro" style="color:#15803d">${fmt(catPaid[c])}</td><td class="ro">-</td></tr>`; });
     const CATE_OPTS = ['General', 'Plywood', 'Laminate', 'Hardware', 'Electrical', 'Site Work', 'Stone', 'Other'];
-    const payHtml = `<div class="card"><h3>Payment Tracking (Internal)</h3><div class="dgrid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 15px; background: var(--in); padding: 10px; border-radius: 8px;"><div><span class="mut">Total PO Value</span><br><b>${fmt(t.tot)}</b></div><div><span class="mut">Total Paid</span><br><b style="color:#15803d">${fmt(paid)}</b></div><div><span class="mut">Remaining Balance</span><br><b style="color:#b00020">${fmt(bal)}</b></div></div><div class="sc"><table class="g" style="margin-bottom: 15px;"><tr><th>Category Breakdown</th><th class="ro">Total in PO</th><th class="ro">Paid</th><th class="ro">Balance</th></tr>${summaryRows || '<tr><td colspan="4" class="mut">No items in PO.</td></tr>'}</table></div><h4 style="margin-top: 15px;">Payment History</h4><div class="sc"><table class="g" style="min-width:600px"><tr><th>Date</th><th>Amount (â‚¹)</th><th>Category</th><th>Mode</th><th>Ref</th><th>Next Due</th><th></th></tr>${(o.pays||[]).map((p, i) => `<tr><td>${bdt('po', o.id, 'pays.'+i+'.date', p.date)}</td><td>${bn('po', o.id, 'pays.'+i+'.amt', p.amt, 'style="width:100px"')}</td><td>${bs('po', o.id, 'pays.'+i+'.cat', p.cat || 'General', CATE_OPTS)}</td><td>${bs('po', o.id, 'pays.'+i+'.mode', p.mode, ['UPI', 'Bank transfer', 'Cheque', 'Cash'])}</td><td>${bi('po', o.id, 'pays.'+i+'.ref', p.ref, 'style="width:80px"')}</td><td>${bdt('po', o.id, 'pays.'+i+'.next', p.next)}</td><td>${ba('paydelpo', 'âœ•', 'data-i="'+i+'"')}</td></tr>`).join('') || '<tr><td colspan="7" class="mut">No payments recorded yet.</td></tr>'}</table></div><div class="bar noprint">${ba('payaddpo', '+ Record Payment')}</div></div>`;
+    const payHtml = `<div class="card"><h3>Payment Tracking (Internal)</h3><div class="dgrid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 15px; background: var(--in); padding: 10px; border-radius: 8px;"><div><span class="mut">Total PO Value</span><br><b>${fmt(t.tot)}</b></div><div><span class="mut">Total Paid</span><br><b style="color:#15803d">${fmt(paid)}</b></div><div><span class="mut">Remaining Balance</span><br><b style="color:#b00020">${fmt(bal)}</b></div></div><div class="sc"><table class="g" style="margin-bottom: 15px;"><tr><th>Category Breakdown</th><th class="ro">Total in PO</th><th class="ro">Paid</th><th class="ro">Balance</th></tr>${summaryRows || '<tr><td colspan="4" class="mut">No items in PO.</td></tr>'}</table></div><h4 style="margin-top: 15px;">Payment History</h4><div class="sc"><table class="g" style="min-width:600px"><tr><th>Date</th><th>Amount (â‚¹)</th><th>Category</th><th>Mode</th><th>Ref</th><th>Next Due</th><th></th></tr>${(o.pays||[]).map((p, i) => `<tr><td>${bdt('po', o.id, 'pays.'+i+'.date', p.date)}</td><td>${bn('po', o.id, 'pays.'+i+'.amt', p.amt, 'style="width:100px"')}</td><td>${bs('po', o.id, 'pays.'+i+'.cat', p.cat || 'General', CATE_OPTS)}</td><td>${bs('po', o.id, 'pays.'+i+'.mode', p.mode, ['UPI', 'Bank transfer', 'Cheque', 'Cash'])}</td><td>${bi('po', o.id, 'pays.'+i+'.ref', p.ref, 'style="width:80px"')}</td><td>${bdt('po', o.id, 'pays.'+i+'.next', p.next)}</td><td>${ba('paydelpo', '❌•', 'data-i="'+i+'"')}</td></tr>`).join('') || '<tr><td colspan="7" class="mut">No payments recorded yet.</td></tr>'}</table></div><div class="bar noprint">${ba('payaddpo', '+ Record Payment')}</div></div>`;
     const anchor = '<div class="bar noprint"><button data-a="poprint"';
     if (html.includes(anchor)) html = html.replace(anchor, payHtml + anchor); else html += payHtml;
     return html;
@@ -517,12 +517,12 @@ document.addEventListener('change', e => {
     checks.push({ id: 'rooms', label: 'Room type rates', status: rmsPriced.length === 0 ? 'missing' : rmsPriced.length === rooms.length ? 'ok' : 'partial', detail: rmsPriced.length === 0 ? 'No room has a rate' : rmsPriced.length + ' of ' + rooms.length + ' room types priced', action: 'rooms' });
     return checks;
   }
-  const statusIcon = s => s === 'ok' ? 'âœ…' : s === 'partial' ? 'âš ï¸' : 'âŒ';
+  const statusIcon = s => s === 'ok' ? '✅' : s === 'partial' ? 'âš ï¸' : 'âŒ';
   const statusColor = s => s === 'ok' ? '#22C55E' : s === 'partial' ? '#F59E0B' : '#EF4444';
   function setupCard() {
     const checks = setupStatus(), ok = checks.filter(c => c.status === 'ok').length, partial = checks.filter(c => c.status === 'partial').length, missing = checks.filter(c => c.status === 'missing').length, total = checks.length, pct = Math.round(ok / total * 100), barColor = missing > 0 ? '#EF4444' : partial > 0 ? '#F59E0B' : '#22C55E';
-    let summary = (missing === 0 && partial === 0) ? '<span style="color:#22C55E;font-weight:600">âœ… All set</span>' : missing === 0 ? '<span style="color:#F59E0B;font-weight:600">âš ï¸ Nothing critical missing.</span>' : '<span style="color:#EF4444;font-weight:600">âŒ ' + missing + ' critical item(s) missing</span>';
-    return '<div class="card" id="setup-card"><h2>Setup checklist</h2><p class="mut" style="margin:4px 0">Before sending quotations, make sure your rates are set up.</p><div style="background:rgba(128,128,128,0.2);border-radius:8px;height:14px;margin:8px 0 4px;overflow:hidden"><div style="background:' + barColor + ';height:14px;width:' + pct + '%;transition:width .3s"></div></div><p style="font-size:13px;margin:0 0 4px"><b>' + ok + '/' + total + '</b> complete</p><p style="font-size:13px;margin:0 0 12px">' + summary + '</p><div class="sc"><table class="g" style="min-width:640px"><tr><th style="width:50px">Status</th><th>Item</th><th>Detail</th><th style="width:90px"></th></tr>' + checks.map(c => { const clr = statusColor(c.status); return '<tr><td style="text-align:center;font-size:18px">' + statusIcon(c.status) + '</td><td><b>' + esc(c.label) + '</b></td><td style="color:' + clr + ';font-weight:600;font-size:12px">' + esc(c.detail) + '</td><td>' + (c.status === 'ok' ? '<span style="color:#22C55E;font-size:18px">âœ“</span>' : '<button data-setup-go="' + c.action + '" style="background:' + clr + ';color:#fff;border:0;border-radius:6px;padding:5px 10px;font-weight:600;cursor:pointer">Fix â†’</button>') + '</td></tr>'; }).join('') + '</table></div></div>';
+    let summary = (missing === 0 && partial === 0) ? '<span style="color:#22C55E;font-weight:600">✅ All set</span>' : missing === 0 ? '<span style="color:#F59E0B;font-weight:600">âš ï¸ Nothing critical missing.</span>' : '<span style="color:#EF4444;font-weight:600">âŒ ' + missing + ' critical item(s) missing</span>';
+    return '<div class="card" id="setup-card"><h2>Setup checklist</h2><p class="mut" style="margin:4px 0">Before sending quotations, make sure your rates are set up.</p><div style="background:rgba(128,128,128,0.2);border-radius:8px;height:14px;margin:8px 0 4px;overflow:hidden"><div style="background:' + barColor + ';height:14px;width:' + pct + '%;transition:width .3s"></div></div><p style="font-size:13px;margin:0 0 4px"><b>' + ok + '/' + total + '</b> complete</p><p style="font-size:13px;margin:0 0 12px">' + summary + '</p><div class="sc"><table class="g" style="min-width:640px"><tr><th style="width:50px">Status</th><th>Item</th><th>Detail</th><th style="width:90px"></th></tr>' + checks.map(c => { const clr = statusColor(c.status); return '<tr><td style="text-align:center;font-size:18px">' + statusIcon(c.status) + '</td><td><b>' + esc(c.label) + '</b></td><td style="color:' + clr + ';font-weight:600;font-size:12px">' + esc(c.detail) + '</td><td>' + (c.status === 'ok' ? '<span style="color:#22C55E;font-size:18px">❌“</span>' : '<button data-setup-go="' + c.action + '" style="background:' + clr + ';color:#fff;border:0;border-radius:6px;padding:5px 10px;font-weight:600;cursor:pointer">Fix â†’</button>') + '</td></tr>'; }).join('') + '</table></div></div>';
   }
   if (typeof vSet === 'function') { const _vSet = vSet; window.vSet = vSet = function() { return setupCard() + _vSet(); }; }
   if (typeof todayCard === 'function') {
@@ -531,7 +531,7 @@ document.addEventListener('change', e => {
       const existing = _todayCard(), critical = setupStatus().filter(c => c.status === 'missing');
       if (critical.length === 0) return existing;
       const names = critical.map(c => c.label).join(', ');
-      return '<div class="card" style="border-left:6px solid #EF4444;background:rgba(239,68,68,0.12)"><b style="color:#EF4444">âš™ï¸ Setup not complete â€” ' + critical.length + ' critical item(s) need attention</b><p class="mut" style="margin:4px 0 8px;font-size:13px">Quotations may calculate incorrectly until setup is complete: ' + esc(names) + '.</p><button data-setup-tab style="background:#EF4444;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer">Open setup checklist â†’</button></div>' + existing;
+      return '<div class="card" style="border-left:6px solid #EF4444;background:rgba(239,68,68,0.12)"><b style="color:#EF4444">⚙️ Setup not complete â€” ' + critical.length + ' critical item(s) need attention</b><p class="mut" style="margin:4px 0 8px;font-size:13px">Quotations may calculate incorrectly until setup is complete: ' + esc(names) + '.</p><button data-setup-tab style="background:#EF4444;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer">Open setup checklist â†’</button></div>' + existing;
     };
   }
   document.addEventListener('click', function(e){
@@ -775,7 +775,7 @@ document.addEventListener('change', e => {
       window.ENQ[e.id] = e; window.saveEnq();
       if (isNew) {
         const wText = `New Enquiry Alert!\n\nClient: ${e.name}\nProject: ${e.project || 'Not specified'}\nPhone: ${e.phone || 'Not provided'}\nBudget: ${e.budget || 'Not specified'}\nNext Follow-up: ${e.nextFollowUp || 'None'}\n\nSent from ModuCraft.`, waOwner = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`, waPartner = `https://wa.me/919830864409?text=${encodeURIComponent(wText)}`;
-        o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto;text-align:center"><h3 style="margin-top:0;color:#22C55E">âœ… Enquiry Saved</h3><p class="mut" style="font-size:13px;margin-bottom:16px">Do you want to alert the team via WhatsApp?</p><div style="display:flex;flex-direction:column;gap:8px"><a href="${waOwner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">ðŸ“± Notify Owner (9830051060)</a><a href="${waPartner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">ðŸ“± Notify Partner (9830864409)</a></div><button class="g" id="eq_done" style="margin-top:16px;width:100%">Close</button></div>`;
+        o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.4);margin:auto;text-align:center"><h3 style="margin-top:0;color:#22C55E">✅ Enquiry Saved</h3><p class="mut" style="font-size:13px;margin-bottom:16px">Do you want to alert the team via WhatsApp?</p><div style="display:flex;flex-direction:column;gap:8px"><a href="${waOwner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">ðŸ“± Notify Owner (9830051060)</a><a href="${waPartner}" target="_blank" style="background:#25D366;color:#fff;text-decoration:none;padding:10px;border-radius:6px;font-weight:bold;display:block">ðŸ“± Notify Partner (9830864409)</a></div><button class="g" id="eq_done" style="margin-top:16px;width:100%">Close</button></div>`;
         document.getElementById('eq_done').onclick = () => { o.remove(); render(); flash('Enquiry saved'); };
       } else { o.remove(); render(); flash('Enquiry updated'); }
     };
@@ -827,7 +827,7 @@ document.addEventListener('change', e => {
         <td>${bi('pj', p.id, 'expenses.'+i+'.desc', x.desc, 'style="min-width:180px"')}</td>
         <td>${bn('pj', p.id, 'expenses.'+i+'.amt', x.amt, 'style="width:100px"')}</td>
         <td>${bi('pj', p.id, 'expenses.'+i+'.by', x.by, 'style="width:100px" placeholder="Paid by"')}</td>
-        <td>${can ? ba('exdel', 'âœ•', 'data-i="'+i+'"') : ''}</td>
+        <td>${can ? ba('exdel', '❌•', 'data-i="'+i+'"') : ''}</td>
       </tr>
     `).join('');
 
@@ -1176,7 +1176,7 @@ document.addEventListener('change', e => {
         <td>${bn('pj', p.id, 'carp.pays.'+i+'.amt', x.amt, 'style="width:100px"')}</td>
         <td>${bs('pj', p.id, 'carp.pays.'+i+'.mode', x.mode || 'Cash', ['Cash', 'UPI', 'Bank'])}</td>
         <td>${bi('pj', p.id, 'carp.pays.'+i+'.note', x.note, 'style="min-width:150px"')}</td>
-        <td>${can ? ba('cpdel', 'âœ•', 'data-i="'+i+'"', 'data-type="pay"') : ''}</td>
+        <td>${can ? ba('cpdel', '❌•', 'data-i="'+i+'"', 'data-type="pay"') : ''}</td>
       </tr>
     `).join('');
 
@@ -1184,7 +1184,7 @@ document.addEventListener('change', e => {
       <tr>
         <td>${bi('pj', p.id, 'carp.extras.'+i+'.desc', x.desc, 'style="min-width:200px"')}</td>
         <td>${bn('pj', p.id, 'carp.extras.'+i+'.amt', x.amt, 'style="width:100px"')}</td>
-        <td>${can ? ba('cpdel', 'âœ•', 'data-i="'+i+'"', 'data-type="extra"') : ''}</td>
+        <td>${can ? ba('cpdel', '❌•', 'data-i="'+i+'"', 'data-type="extra"') : ''}</td>
       </tr>
     `).join('');
 
@@ -1594,7 +1594,7 @@ document.addEventListener('change', e => {
       <button class="mob-btn" data-mob-tab="h"><i>ðŸ </i>Home</button>
       <button class="mob-btn" data-mob-tab="q"><i>ðŸ“„</i>Quotes</button>
       <button class="mob-btn" data-mob-tab="j"><i>ðŸ—ï¸</i>Projects</button>
-      <button class="mob-btn" data-mob-tab="s"><i>âš™ï¸</i>Menu</button>
+      <button class="mob-btn" data-mob-tab="s"><i>⚙️</i>Menu</button>
     `;
     document.body.appendChild(mobNav);
   }
@@ -1776,7 +1776,7 @@ document.addEventListener('change', e => {
     
     // We replicate the exact block from Image 2 using the app's native data binding (data-d="q")
     return `<details class="card" style="margin-bottom:12px; background:var(--in); border:1px solid var(--line);">
-      <summary style="font-weight:bold; color:#1F4E79; cursor:pointer; padding:4px;">âš™ï¸ Project Materials, Hardware & Pricing Settings</summary>
+      <summary style="font-weight:bold; color:#1F4E79; cursor:pointer; padding:4px;">⚙️ Project Materials, Hardware & Pricing Settings</summary>
       <div class="fg" style="margin-top:10px;">
         ${(q.pm=q.pm||{},'')}
         ${GR3.map((g,gi)=>`<div><label>Ply maker â€” ${g}</label><input list="dl_pm${gi}" data-d="q" data-p="pm|${g}" data-newmk="${g}" value="${esc(brandFor(q,g))}" placeholder="type any maker"><datalist id="dl_pm${gi}">${brandsFor(g).map(b=>`<option value="${esc(b)}">`).join('')}</datalist></div>`).join('')}
@@ -1871,13 +1871,13 @@ document.addEventListener('change', e => {
     j:   ['ðŸ—ï¸', 'Projects'],
     v:   ['ðŸ“¦', 'Vendors'],
     r:   ['ðŸ“Š', 'Reports'],
-    e:   ['âœï¸', 'Edit'],
+    e:   ['❌ï¸', 'Edit'],
     p:   ['ðŸ‘ï¸', 'Preview'],
     a:   ['ðŸ”§', 'Accessories'],
     m:   ['ðŸ“', 'Ply & Hardware'],
     d:   ['ðŸŽ¨', 'Design'],
     f:   ['ðŸ“', 'Floor Plan'],
-    s:   ['âš™ï¸', 'Settings'],
+    s:   ['⚙️', 'Settings'],
     x:   ['ðŸ”', 'Access & Sharing'],
     enq: ['ðŸ“‹', 'Enquiries']
   };
@@ -2222,7 +2222,7 @@ document.addEventListener('change', e => {
             <td>
               <b style="font-size: 15px;">${esc(e.name)}</b><br>
               <span class="mut" style="font-size:12px">ðŸ“ž ${esc(e.phone)}</span><br>
-              <span class="mut" style="font-size:11px">${e.email ? 'âœ‰ï¸ '+esc(e.email) : ''}</span>
+              <span class="mut" style="font-size:11px">${e.email ? '❌‰ï¸ '+esc(e.email) : ''}</span>
             </td>
             <td>
               <b>${esc(e.project || 'â€”')}</b><br>
