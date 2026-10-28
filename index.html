@@ -335,7 +335,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   }
 });
 </script>  
-<div class="top"><div class="lg"><img id="tl" alt="MODULE STUDIO"></div><div><b>ModuCraft ERP</b><small id="ci"></small><small style="display:block;color:#F59E0B;font-weight:bold">Design • BOQ • Execute • Deliver</small></div><nav id="nav"></nav><button id="logoutBtn" style="margin-left: 10px; background: #a33; border: none; color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer;">Log Out</button><span id="st" class="noprint" style="font-size:12px;width:100%;text-align:right"></span></div><div id="err" class="warn noprint" style="display:none;margin:8px 16px"></div>
+<div class="top"><div class="lg"><img id="tl" alt="MODULE STUDIO"></div><div><b>ModuCraft ERP</b><small id="ci"></small><small style="display:block;color:#F59E0B;font-weight:bold">Design • BOQ • Execute • Deliver</small></div><nav id="nav"></nav><button id="adminUsersBtn" style="display: none; margin-left: 10px; background: #1976d2; border: none; color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer;">Manage Users</button><button id="logoutBtn" style="margin-left: 10px; background: #a33; border: none; color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer;">Log Out</button><span id="st" class="noprint" style="font-size:12px;width:100%;text-align:right"></span></div><div id="err" class="warn noprint" style="display:none;margin:8px 16px"></div>
 <main id="app"></main><div id="fl"></div>
 <datalist id="il"></datalist><datalist id="ml"></datalist>
 <script>
@@ -2039,6 +2039,11 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
     localStorage.removeItem('mc_user_email');
     window.location.reload();
   });
+</script>
+  <script>
+  if (localStorage.getItem('mc_user_role') === 'admin') {
+    document.getElementById('adminUsersBtn').style.display = 'inline-block';
+  }
 </script>
 </body>
 </html>
