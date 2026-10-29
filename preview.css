@@ -2,31 +2,34 @@
    PREVIEW SANDBOX CSS (Dark Mode & Kanban)
    ========================================= */
 
-/* This makes the preview page dark and locks the scroll */
 body.preview-mode {
   background-color: #0f172a !important;
   color: #f8fafc;
   height: 100vh;
-  overflow: hidden; /* Stops the whole page from scrolling */
+  overflow: hidden; 
   display: flex;
   flex-direction: column;
   margin: 0;
   font-family: 'Segoe UI', Roboto, sans-serif;
 }
 
-/* --- LOGO STYLING --- */
+/* --- LOGO STYLING (Turns your logo pure white) --- */
 .white-logo {
   height: 40px;
   border-radius: 6px;
   object-fit: contain;
   background: transparent;
+  filter: brightness(0) invert(1); /* This makes the dark logo white */
 }
 
 /* HIDE OVERLAPPING ORIGINAL ELEMENTS */
-#gs-wrap { display: none !important; } /* Hides old search bar */
-#dept_sw { display: none !important; } /* Hides old department switcher */
-#hxw { display: none !important; }     /* Hides old undo/redo buttons */
-#st, #err { display: none !important; } /* Hides old status bars */
+#gs-wrap { display: none !important; } 
+#dept_sw { display: none !important; } 
+#hxw { display: none !important; }     
+#st, #err { display: none !important; } 
+#fl { display: none !important; } /* Hides old flash messages */
+#mob-nav { display: none !important; } /* Hides old mobile bottom nav */
+.cpy { display: none !important; } /* Hides old footer */
 
 /* TOP NAVIGATION BAR */
 .top-nav {
@@ -83,7 +86,7 @@ body.preview-mode {
 .kpi-title { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
 .kpi-value { font-size: 20px; font-weight: bold; margin-top: 4px; color: #fff; }
 
-/* KANBAN BOARD (4 Columns) */
+/* KANBAN BOARD */
 .app-container {
   flex: 1; overflow: hidden; padding: 15px 20px; display: flex; flex-direction: column;
 }
@@ -105,7 +108,7 @@ body.preview-mode {
 .kanban-col-body::-webkit-scrollbar { width: 6px; }
 .kanban-col-body::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
-/* INDIVIDUAL CARDS INSIDE COLUMNS */
+/* INDIVIDUAL CARDS */
 .k-card {
   background: #0f172a; border: 1px solid #334155;
   border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px; transition: 0.2s;
@@ -121,35 +124,12 @@ body.preview-mode {
 .k-icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; }
 .k-icon-btn:hover { background: #334155; color: #fff; }
 
-/* DARK MODE OVERRIDES FOR ORIGINAL APP TABLES (Quotations, etc) */
-body.preview-mode .card {
-  background: #1e293b !important;
-  border-color: #334155 !important;
-  color: #f8fafc;
-}
-body.preview-mode table.g th {
-  background: #0f172a !important;
-  color: #94a3b8 !important;
-  border-bottom: 1px solid #334155 !important;
-}
-body.preview-mode table.g td {
-  border-bottom: 1px solid #334155 !important;
-  color: #f8fafc !important;
-}
-body.preview-mode table.g tr.gh td {
-  background: #1e293b !important;
-  color: #f8fafc !important;
-}
-body.preview-mode input, body.preview-mode select {
-  background: #0f172a !important;
-  color: #fff !important;
-  border: 1px solid #334155 !important;
-}
-body.preview-mode .flt {
-  background: #0f172a !important;
-  color: #fff !important;
-  border: 1px solid #334155 !important;
-}
+/* DARK MODE OVERRIDES FOR TABLES */
+body.preview-mode .card { background: #1e293b !important; border-color: #334155 !important; color: #f8fafc; }
+body.preview-mode table.g th { background: #0f172a !important; color: #94a3b8 !important; border-bottom: 1px solid #334155 !important; }
+body.preview-mode table.g td { border-bottom: 1px solid #334155 !important; color: #f8fafc !important; }
+body.preview-mode table.g tr.gh td { background: #1e293b !important; color: #f8fafc !important; }
+body.preview-mode input, body.preview-mode select, body.preview-mode .flt { background: #0f172a !important; color: #fff !important; border: 1px solid #334155 !important; }
 
 /* MOBILE RESPONSIVENESS */
 .mobile-tabs { display: none; }
