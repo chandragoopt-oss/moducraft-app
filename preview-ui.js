@@ -207,7 +207,7 @@
     });
   }
 
-  const originalRender = window.render;
+    const originalRender = window.render;
   window.render = function() {
     if (S.tab === 'h') {
       buildNav();
@@ -216,10 +216,33 @@
       document.getElementById('kpi-strip').style.display = 'flex';
       return;
     }
+    
+    // 1. Let the original app draw the screen first
     originalRender.apply(this, arguments);
+    
     document.getElementById('kpi-strip').style.display = 'none';
-    document.getElementById('app').style.overflowY = 'auto';
+    const appDiv = document.getElementById('app');
+    if (appDiv) appDiv.style.overflowY = 'auto';
+    
     buildNav(); 
+
+    // 2. Inject the Toggle Switch if we are in either Design tab ('d' or 'f')
+    if (S.tab === 'd' || S.tab === 'f') {
+      if (appDiv) {
+        const toggleHtml = `
+          <div id="design-mode-toggle">
+            <button class="${S.tab === 'f' ? 'active' : ''}" onclick="S.tab='f'; window.render();">
+              📐 Plan View (Top)
+            </button>
+            <button class="${S.tab === 'd' ? 'active' : ''}" onclick="S.tab='d'; window.render();">
+              🧱 Wall Elevations & 3D
+            </button>
+          </div>
+        `;
+        // Insert the toggle at the very top of the canvas
+        appDiv.insertAdjacentHTML('afterbegin', toggleHtml);
+      }
+    }
   };
 
   window.addEventListener('load', () => {
