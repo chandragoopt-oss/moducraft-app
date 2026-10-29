@@ -616,64 +616,82 @@ body.preview-mode #app:has(#fpsv) {
   box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
 }
 /* =========================================
-   TRUE DESIGN STUDIO SPLIT LAYOUT
+   DESIGN STUDIO SPLIT LAYOUT (SCROLL FIXED)
    ========================================= */
 
-/* 1. Hide the old legacy sub-navigation tabs in the studio */
-body.design-studio-active #app > div > div:first-child:not(:has(#dsv)):not(:has(#fpsv)) {
-  display: none !important; 
-}
-
-/* 2. Turn the main app into a Split-Screen Grid */
+/* 1. Unlock the page and enable flex layout ONLY when studio is active */
 body.design-studio-active #app {
-  display: grid !important;
-  grid-template-columns: 1fr 380px !important; /* Canvas gets max space, Tools get 380px */
-  grid-template-rows: auto 1fr !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  height: auto !important;           /* Unlocks vertical scroll */
+  overflow-y: auto !important;       /* Enables scroll */
+  gap: 20px !important;
+  padding: 20px !important;
+}
+
+/* 2. Left Side: Make the canvas area take up all remaining space */
+body.design-studio-active #app > div:first-child {
+  flex: 1 !important;
+  min-width: 0 !important;           /* Prevents squishing */
+  display: flex !important;
+  flex-direction: column !important;
   gap: 15px !important;
-  height: calc(100vh - 120px) !important;
-  overflow: hidden !important;
-  padding: 10px !important;
 }
 
-/* 3. Keep the toggle switch locked at the top spanning both columns */
-body.design-studio-active #design-mode-toggle {
-  grid-column: 1 / -1 !important; /* Spans full width */
-  margin-bottom: 0 !important;
+/* 3. Right Side: Fixed 380px sidebar for all tools */
+body.design-studio-active #app > div:not(:first-child) {
+  width: 380px !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 15px !important;
+  max-height: calc(100vh - 150px) !important; /* Sidebar scrolls independently */
+  overflow-y: auto !important;
+  padding-right: 5px !important;
 }
 
-/* 4. Make the Canvas huge and scrollable */
+/* 4. Fix the Toggle Switch Buttons (Stop them from stretching) */
+#design-mode-toggle {
+  display: flex !important;
+  width: fit-content !important;
+  margin-bottom: 15px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+#design-mode-toggle button {
+  width: auto !important;            /* Forces the buttons to be normal size */
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-panel) !important;
+  color: var(--text-muted) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+#design-mode-toggle button.active {
+  background: var(--accent-blue) !important;
+  color: white !important;
+  border-color: var(--accent-blue) !important;
+}
+
+/* 5. Make the Canvas large and white */
 body.design-studio-active #dsv,
 body.design-studio-active #fpsv {
   width: 100% !important;
-  height: 100% !important;
-  min-height: 75vh !important;
-  overflow: auto !important;
-}
-
-/* 5. Move all the Tool Cards to the right sidebar */
-/* This targets all the cards and pushes them into a neat vertical column */
-body.design-studio-active #app .card,
-body.design-studio-active #app > div > div:nth-child(n+2) {
-  margin-bottom: 10px !important;
-}
-
-body.design-studio-active #app > div {
-  display: contents !important; /* Flattens the original layout so our grid can take over */
-}
-
-/* 6. Make tool cards stack neatly in the sidebar */
-body.design-studio-active #app > *:not(#design-mode-toggle):not(:has(#dsv)):not(:has(#fpsv)) {
-  grid-column: 2 !important; /* Force everything else to the right column */
-  background: var(--bg-panel) !important;
-  border: 1px solid var(--border-color) !important;
+  height: 65vh !important;           /* Fixed height for the drawing */
+  min-height: 500px !important;
+  background: #ffffff !important;
   border-radius: 8px !important;
-  padding: 15px !important;
-  overflow-y: auto !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
 }
 
-/* Fix 3D and Elevations inside the sidebar to stack vertically */
+/* 6. Force 2D and 3D views to sit side-by-side below the main canvas */
 body.design-studio-active .card:has(.elc) {
-  display: flex !important;
-  flex-direction: column !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
   gap: 15px !important;
 }
