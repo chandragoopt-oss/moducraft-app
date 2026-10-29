@@ -43,7 +43,7 @@ body.preview-mode {
 }
 
 /* Hide overlapping elements from original app */
-#gs-wrap, #dept_sw, #hxw, #st, #err, #fl, #mob-nav, .cpy { display: none !important; } 
+#adminUsersBtn, #gs-wrap, #dept_sw, #hxw, #st, #err, #fl, #mob-nav, .cpy { display: none !important; } 
 
 /* =========================================
    MODALS (Login & Manage Users)
