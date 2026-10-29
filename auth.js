@@ -34,6 +34,15 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       localStorage.setItem('mc_user_email', email);
       localStorage.setItem('mc_user_role', data.role);
       localStorage.setItem('mc_user_name', data.name || email.split('@')[0]);
+            // Sync role to the Department Lock used by custom.js
+      const userRole = String(data.role || '').toLowerCase();
+      if (userRole === 'admin') {
+        localStorage.setItem('msq_dept', 'admin');
+      } else if (['sales', 'design', 'purchase', 'accounts'].includes(userRole)) {
+        localStorage.setItem('msq_dept', userRole);
+      } else {
+        localStorage.removeItem('msq_dept'); // Let custom.js use its safe default (Sales)
+      }
       if (data.role === 'admin') {
         document.getElementById('adminUsersBtn').style.display = 'inline-block';
       }
@@ -107,9 +116,12 @@ async function loadAdminUsers() {
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <input id="newEmail" placeholder="Email address" style="flex:1; min-width:150px; padding:8px; border:1px solid #ccc; border-radius:4px; color:#333;">
             <input id="newPass" placeholder="Password" type="password" style="flex:1; min-width:150px; padding:8px; border:1px solid #ccc; border-radius:4px; color:#333;">
-            <select id="newRole" style="padding:8px; border:1px solid #ccc; border-radius:4px; color:#333;">
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+                       <select id="newRole" style="padding:8px; border:1px solid #ccc; border-radius:4px; color:#333;">
+              <option value="admin">👑 Admin View (Full)</option>
+              <option value="sales">💼 Sales & Quotes</option>
+              <option value="design">📐 Design & Site</option>
+              <option value="purchase">📦 Purchase & Factory</option>
+              <option value="accounts">💰 Accounts</option>
             </select>
             <button onclick="addAdminUser()" style="background:#1976d2; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Add</button>
           </div>
@@ -123,7 +135,15 @@ async function loadAdminUsers() {
             <th style="padding:8px; border-bottom:2px solid #ddd;">Action</th>
           </tr>`;
       
-      data.users.forEach(u => {
+           data.users.forEach(u => {
+        let roleLabel = u.role || 'user';
+        if (roleLabel === 'admin') roleLabel = '👑 Admin';
+        else if (roleLabel === 'sales') roleLabel = '💼 Sales';
+        else if (roleLabel === 'design') roleLabel = '📐 Design';
+        else if (roleLabel === 'purchase') roleLabel = '📦 Purchase';
+        else if (roleLabel === 'accounts') roleLabel = '💰 Accounts';
+        else roleLabel = '👤 User';
+
         const isActive = u.active === true || u.active === 'true';
         const statusColor = isActive ? '#2e7d32' : '#c62828';
         const statusText = isActive ? 'Active' : 'Restricted';
@@ -133,7 +153,7 @@ async function loadAdminUsers() {
         
         html += `<tr>
           <td style="padding:8px; border-bottom:1px solid #eee;">${u.email}</td>
-          <td style="padding:8px; border-bottom:1px solid #eee;">${u.role || 'user'}</td>
+                   <td style="padding:8px; border-bottom:1px solid #eee;">${roleLabel}</td>
           <td style="padding:8px; border-bottom:1px solid #eee; color:${statusColor}; font-weight:bold;">${statusText}</td>
           <td style="padding:8px; border-bottom:1px solid #eee;">
             ${actionBtn}
