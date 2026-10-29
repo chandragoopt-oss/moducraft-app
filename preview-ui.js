@@ -116,49 +116,72 @@
     const todayStr = new Date().toISOString().split('T')[0];
     let urgentCards = [], taskCards = [], quoteCards = [], projectCards = [];
 
+    // 1. Add Setup Incomplete Alert
+    urgentCards.push(`
+      <div class="k-card alert-card">
+        <div class="k-card-header">
+          <div class="k-card-title">⚠️ Setup Incomplete</div>
+        </div>
+        <div class="k-card-sub">1 critical item needs attention (Labour & fabrication).</div>
+        <button class="k-btn danger full">Open Setup Checklist</button>
+      </div>
+    `);
+
+    // 2. Build Quotes
     Object.values(S.q || {}).forEach(q => {
       if (q.st === 'shared' && q.out !== 'lost') {
         const qNum = typeof qno === 'function' ? qno(q) : '';
+        const date = typeof dmy === 'function' && q.due ? dmy(q.due) : (q.due || '');
+        
         quoteCards.push(`
           <div class="k-card quote">
-            <div class="k-card-title">${typeof esc === 'function' ? esc(q.name || 'No Name') : (q.name || 'No Name')}</div>
-            <div class="k-card-meta">Lead: ${typeof esc === 'function' ? esc(qNum) : qNum}</div>
-            <div class="k-card-actions">
-              <button class="k-icon-btn" data-a="pq" data-i="${q.id}" title="Preview">👁️</button>
-              <button class="k-icon-btn" data-a="oq" data-i="${q.id}" title="Edit">✏️</button>
+            <div class="k-card-header">
+              <div class="k-card-title">${typeof esc === 'function' ? esc(q.name || 'No Name') : (q.name || 'No Name')}</div>
+              <div class="k-card-date">${date}</div>
+            </div>
+            <div class="k-card-sub">Apartment - ${qNum}</div>
+            <div class="k-btn-group">
+              <button class="k-btn" data-a="pq" data-i="${q.id}">📞 Follow Up</button>
+              <button class="k-btn danger" onclick="alert('Mark as Lost')">✖ Lost</button>
             </div>
           </div>
         `);
       }
     });
 
+    // 3. Build Projects & Tasks
     Object.values(BZ?.pj || {}).forEach(p => {
       if (p.stage !== 'Closed') {
-        let qNum = '';
-        if (p.qid && S.q[p.qid]) {
-          qNum = typeof qno === 'function' ? qno(S.q[p.qid]) : '';
-        }
+        let qNum = (p.qid && S.q[p.qid]) ? (typeof qno === 'function' ? qno(S.q[p.qid]) : '') : '';
         
+        // Project Card
         projectCards.push(`
           <div class="k-card project">
-            <div class="k-card-title">${typeof esc === 'function' ? esc(p.client || p.name) : (p.client || p.name)}</div>
-            <div class="k-card-meta">${qNum ? 'Quote: ' + (typeof esc === 'function' ? esc(qNum) : qNum) : 'No Quote Linked'} • ${typeof esc === 'function' ? esc(p.stage) : p.stage}</div>
-            <div class="k-card-actions">
-              <button class="k-icon-btn" onclick="S.tab='j';S.pj='${p.id}';S.pt='ov';render();" title="Open Project">🏃</button>
+            <div class="k-card-header">
+              <div class="k-card-title">${typeof esc === 'function' ? esc(p.name || p.client) : (p.name || p.client)}</div>
             </div>
+            <div class="k-card-sub">Client: ${typeof esc === 'function' ? esc(p.client || 'N/A') : (p.client || 'N/A')}</div>
+            <div class="k-pill">Stage: ${typeof esc === 'function' ? esc(p.stage) : p.stage}</div>
           </div>
         `);
 
+        // Tasks
         if (p.tasks) {
           p.tasks.forEach((t, idx) => {
             if (t.st !== 'Done' && t.due) {
               const isUrgent = t.due < todayStr;
+              const date = typeof dmy === 'function' ? dmy(t.due) : t.due;
+              
               const card = `
                 <div class="k-card ${isUrgent ? 'urgent' : 'task'}">
-                  <div class="k-card-title">${typeof esc === 'function' ? esc(t.t) : t.t}</div>
-                  <div class="k-card-meta">${typeof esc === 'function' ? esc(p.client || p.name) : (p.client || p.name)} ${qNum ? ' • ' + (typeof esc === 'function' ? esc(qNum) : qNum) : ''} • Due: ${typeof dmy === 'function' ? dmy(t.due) : t.due}</div>
-                  <div class="k-card-actions">
-                    <button class="k-icon-btn" onclick="askDo('Mark complete?',()=>{p.tasks[${idx}].st='Done';p.tasks[${idx}].pct=100;bzSave('pj','${p.id}');render();})" title="Complete Task">✔️</button>
+                  <div class="k-card-header">
+                    <div class="k-card-title">${typeof esc === 'function' ? esc(t.t) : t.t}</div>
+                    <div class="k-card-date">${date}</div>
+                  </div>
+                  <div class="k-card-sub">${typeof esc === 'function' ? esc(p.name || p.client) : (p.name || p.client)} (Unassigned)</div>
+                  <div class="k-btn-group">
+                    <button class="k-btn" onclick="alert('Follow up')">📞 Follow Up</button>
+                    <button class="k-btn success" onclick="askDo('Mark complete?',()=>{p.tasks[${idx}].st='Done';p.tasks[${idx}].pct=100;bzSave('pj','${p.id}');render();})">✔ Complete</button>
                   </div>
                 </div>
               `;
@@ -179,24 +202,25 @@
       </div>
       <div class="kanban-board">
         <div class="kanban-col active-tab" id="col-urgent">
-          <div class="kanban-col-header"><span>🚨 Overdue & Urgent</span> <span>${urgentCards.length}</span></div>
-          <div class="kanban-col-body">${urgentCards.join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No urgent items</div>'}</div>
+          <div class="kanban-col-header"><span>🚨 Overdue & Urgent</span> <span class="badge">${urgentCards.length}</span></div>
+          <div class="kanban-col-body">${urgentCards.join('')}</div>
         </div>
         <div class="kanban-col" id="col-tasks">
-          <div class="kanban-col-header"><span>📌 Tasks Due</span> <span>${taskCards.length}</span></div>
+          <div class="kanban-col-header"><span>📌 Tasks Due</span> <span class="badge">${taskCards.length}</span></div>
           <div class="kanban-col-body">${taskCards.join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pending tasks</div>'}</div>
         </div>
         <div class="kanban-col" id="col-quotes">
-          <div class="kanban-col-header"><span>📄 Pending Quotes</span> <span>${quoteCards.length}</span></div>
+          <div class="kanban-col-header"><span>📄 Pending Quotes</span> <span class="badge">${quoteCards.length}</span></div>
           <div class="kanban-col-body">${quoteCards.join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pending quotes</div>'}</div>
         </div>
         <div class="kanban-col" id="col-projects">
-          <div class="kanban-col-header"><span>🏃 Running Projects</span> <span>${projectCards.length}</span></div>
+          <div class="kanban-col-header"><span>🏃 Running Projects</span> <span class="badge">${projectCards.length}</span></div>
           <div class="kanban-col-body">${projectCards.join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No active projects</div>'}</div>
         </div>
       </div>
     `;
 
+    // Mobile Tab Logic
     document.querySelectorAll('.mobile-tabs button').forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll('.mobile-tabs button').forEach(b => b.classList.remove('active'));
@@ -207,9 +231,8 @@
     });
   }
 
-    const originalRender = window.render;
+  const originalRender = window.render;
   window.render = function() {
-        
     if (S.tab === 'h') {
       buildNav();
       buildKPIs();
@@ -218,7 +241,6 @@
       return;
     }
     
-    // 1. Let the original app draw the screen first
     originalRender.apply(this, arguments);
     
     document.getElementById('kpi-strip').style.display = 'none';
@@ -227,35 +249,29 @@
     
     buildNav(); 
 
-    // 2. Inject the Toggle Switch if we are in either Design tab ('d' or 'f')
-     if (S.tab === 'd' || S.tab === 'f') {
-            if (appDiv) {
-      
-             // Inject Maximize Buttons into the viewports
+    if (S.tab === 'd' || S.tab === 'f') {
       setTimeout(() => {
         const views = document.querySelectorAll('.card:has(.elc), #dsv, #fpsv');
         
         views.forEach(view => {
-          // Find the parent container box
           const box = view.closest('.card') || view.parentElement;
-          if (!box || box.querySelector('.vp-max-btn')) return; // Skip if already has button
+          if (!box || box.querySelector('.vp-max-btn')) return; 
 
           box.classList.add('viewport-box');
           
           const btn = document.createElement('button');
           btn.className = 'vp-max-btn';
-          btn.innerHTML = '⛶'; // Maximize icon
+          btn.innerHTML = '⛶'; 
           btn.title = "Maximize / Restore Viewport";
           
           btn.onclick = () => {
             box.classList.toggle('vp-maximized');
-            // Dispatch resize event so the 3D canvas redraws to fit the new size
             window.dispatchEvent(new Event('resize'));
           };
           
           box.appendChild(btn);
         });
-      }, 200); // Small delay to let the DOM build first
+      }, 200); 
     }
   };
 
