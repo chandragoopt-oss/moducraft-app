@@ -617,10 +617,10 @@ body.preview-mode #app:has(#fpsv) {
 }
 
 /* =========================================
-   FINAL STRETCH FIX & UI CLEANUP
+   3DS MAX LAYOUT & MAXIMIZE TOGGLE
    ========================================= */
 
-/* 1. Restore the native app scrolling and layout */
+/* 1. Restore native app scrolling */
 body.preview-mode #app {
   display: block !important;
   width: 100% !important;
@@ -635,11 +635,11 @@ body.preview-mode #app {
   display: flex !important;
   gap: 10px !important;
   margin-bottom: 15px !important;
-  width: fit-content !important; /* Forces normal size */
+  width: fit-content !important; 
 }
 
 #design-mode-toggle button {
-  width: auto !important; /* Kills the 100% width */
+  width: auto !important; 
   padding: 8px 16px !important;
   border-radius: 6px !important;
   border: 1px solid var(--border-color) !important;
@@ -655,31 +655,85 @@ body.preview-mode #app {
   border-color: var(--accent-blue) !important;
 }
 
-/* 3. Lock the Main Plan Canvas */
-body.preview-mode #dsv,
-body.preview-mode #fpsv {
-  width: 100% !important;
-  height: 65vh !important; /* Fixed height for the drawing board */
-  background: #fff !important;
+/* 3. THE 3DS MAX GRID LAYOUT */
+body.preview-mode .card:has(.elc) {
+  display: grid !important;
+  grid-template-columns: 350px 1fr !important; 
+  grid-template-rows: 1fr 1fr !important; 
+  gap: 15px !important;
+  height: 65vh !important; /* Keeps 3D from stretching */
+  padding: 15px !important;
+  background: var(--bg-main) !important;
   border-radius: 8px !important;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-  overflow: hidden !important;
+  position: relative !important; 
 }
 
-/* 4. THE 3D STRETCH FIX */
-/* We cap the 3D canvas height and hide any overflow */
-body.preview-mode .elc,
-body.preview-mode canvas {
+/* Force 3D to take the big right side */
+body.preview-mode .elc, body.preview-mode .card:has(.elc) canvas {
+  grid-column: 2 !important;
+  grid-row: 1 / -1 !important;
   width: 100% !important;
-  height: 350px !important; /* Hard cap on 3D height */
-  max-height: 350px !important;
-  object-fit: contain !important; /* Keeps 3D model proportional */
+  height: 100% !important;
+  background: #fff !important;
+  border-radius: 6px !important;
+  object-fit: contain !important;
+}
+
+/* Force 2D Plan to top-left */
+body.preview-mode #dsv, body.preview-mode #fpsv {
+  grid-column: 1 !important;
+  grid-row: 1 / 2 !important;
+  width: 100% !important;
+  height: 100% !important;
   background: #fff !important;
   border-radius: 6px !important;
 }
 
-/* Prevent the 3D container from expanding past the canvas */
-body.preview-mode div:has(> canvas) {
-  max-height: 380px !important;
-  overflow: hidden !important;
+/* Force Elevations to bottom-left */
+body.preview-mode .card:has(.elc) > div:not(.elc):not(:has(#dsv)):not(:has(#fpsv)) {
+  grid-column: 1 !important;
+  grid-row: 2 / 3 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  background: #fff !important;
+  border-radius: 6px !important;
+}
+
+/* 4. THE MAXIMIZE EFFECT */
+.viewport-box {
+  position: relative !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.vp-max-btn {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  z-index: 100 !important;
+  font-size: 16px !important;
+}
+.vp-max-btn:hover { background: var(--accent-blue) !important; color: #fff !important; }
+
+.vp-maximized {
+  position: fixed !important;
+  top: 120px !important; 
+  left: 20px !important;
+  width: calc(100vw - 40px) !important;
+  height: calc(100vh - 140px) !important;
+  z-index: 9999 !important;
+  background: var(--bg-main) !important;
+  padding: 20px !important;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8) !important;
+}
+
+.vp-maximized canvas, .vp-maximized #dsv {
+  width: 100% !important;
+  height: 100% !important;
 }
