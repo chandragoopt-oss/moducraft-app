@@ -2604,7 +2604,7 @@ document.addEventListener('click', async function(e) {
     }
 
     // 3. Ask Google for the lock
-    const userName = localStorage.getItem('msq_me') || 'Someone';
+    const userName = localStorage.getItem('mc_user_name') || localStorage.getItem('msq_me') || 'Someone';
     try {
         const lockRes = await fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
             method: 'POST',
@@ -2613,13 +2613,16 @@ document.addEventListener('click', async function(e) {
         });
         const lockData = await lockRes.json();
         
-        if (!lockData.success) {
-            // KICK THEM OUT if someone else has it
-            alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this quotation.`);
-            S.tab = 'q'; // Go back to the quotations list
-            render();
-            return; 
-        }
+                                        // NEW: Safely handle old 'undefined' locks in the database
+                // This catches 'undefined', 'null', empty strings, and 'Someone'
+                const badLock = !lockData.lockedBy || String(lockData.lockedBy).includes('undefined') || String(lockData.lockedBy).includes('null') || lockData.lockedBy === 'Someone';
+
+                if (!lockData.success && !badLock) {
+                    alert(`🚨 ALERT: ${lockData.lockedBy} is currently editing this quotation.`);
+                    S.tab = 'q'; // Go back to the quotations list
+                    render();
+                    return; 
+                }
 
         // SUCCESS! Unlock the Save button
         window.currentQuoteOpenedAt = S.q[quoteId] ? (S.q[quoteId].updated_at || Date.now()) : Date.now();
