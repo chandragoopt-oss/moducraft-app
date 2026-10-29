@@ -616,53 +616,21 @@ body.preview-mode #app:has(#fpsv) {
   box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
 }
 /* =========================================
-   DESIGN STUDIO SPLIT LAYOUT (SCROLL FIXED)
+   SAFE DESIGN STUDIO UI
    ========================================= */
 
-/* 1. Unlock the page and enable flex layout ONLY when studio is active */
-body.design-studio-active #app {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: flex-start !important;
-  height: auto !important;           /* Unlocks vertical scroll */
-  overflow-y: auto !important;       /* Enables scroll */
-  gap: 20px !important;
-  padding: 20px !important;
-}
-
-/* 2. Left Side: Make the canvas area take up all remaining space */
-body.design-studio-active #app > div:first-child {
-  flex: 1 !important;
-  min-width: 0 !important;           /* Prevents squishing */
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 15px !important;
-}
-
-/* 3. Right Side: Fixed 380px sidebar for all tools */
-body.design-studio-active #app > div:not(:first-child) {
-  width: 380px !important;
-  flex-shrink: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 15px !important;
-  max-height: calc(100vh - 150px) !important; /* Sidebar scrolls independently */
-  overflow-y: auto !important;
-  padding-right: 5px !important;
-}
-
-/* 4. Fix the Toggle Switch Buttons (Stop them from stretching) */
+/* 1. Fix the Toggle Buttons (Force them to be normal inline buttons) */
 #design-mode-toggle {
   display: flex !important;
-  width: fit-content !important;
+  gap: 10px !important;
   margin-bottom: 15px !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  width: fit-content !important;
 }
 
 #design-mode-toggle button {
-  width: auto !important;            /* Forces the buttons to be normal size */
+  flex: none !important;           /* Prevents stretching */
+  width: auto !important;          /* Forces normal width */
+  min-width: 160px !important;
   padding: 10px 20px !important;
   border-radius: 8px !important;
   border: 1px solid var(--border-color) !important;
@@ -670,6 +638,7 @@ body.design-studio-active #app > div:not(:first-child) {
   color: var(--text-muted) !important;
   font-weight: 600 !important;
   font-size: 13px !important;
+  cursor: pointer !important;
 }
 
 #design-mode-toggle button.active {
@@ -678,20 +647,31 @@ body.design-studio-active #app > div:not(:first-child) {
   border-color: var(--accent-blue) !important;
 }
 
-/* 5. Make the Canvas large and white */
-body.design-studio-active #dsv,
-body.design-studio-active #fpsv {
+/* 2. Make ONLY the canvases huge (Leaves the rest of the app layout alone) */
+body.preview-mode #app:has(#dsv) #dsv,
+body.preview-mode #app:has(#fpsv) #fpsv {
+  min-height: 70vh !important;     /* Massive canvas */
   width: 100% !important;
-  height: 65vh !important;           /* Fixed height for the drawing */
-  min-height: 500px !important;
   background: #ffffff !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+  margin-bottom: 15px !important;
 }
 
-/* 6. Force 2D and 3D views to sit side-by-side below the main canvas */
-body.design-studio-active .card:has(.elc) {
+/* 3. Compact the top inputs (Layout, Width, Units) to save space */
+body.preview-mode #app:has(#dsv) select, 
+body.preview-mode #app:has(#fpsv) select,
+body.preview-mode #app:has(#dsv) input, 
+body.preview-mode #app:has(#fpsv) input {
+  height: 34px !important;
+  padding: 4px 8px !important;
+  font-size: 13px !important;
+}
+
+/* 4. Ensure 2D and 3D views sit side-by-side at the bottom */
+body.preview-mode .card:has(.elc) {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   gap: 15px !important;
+  align-items: start !important;
 }
