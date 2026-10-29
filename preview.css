@@ -615,75 +615,71 @@ body.preview-mode #app:has(#fpsv) {
   color: #ffffff;
   box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
 }
+
 /* =========================================
-   FINAL CAD-STYLE LAYOUT & STRETCH FIX
+   FINAL STRETCH FIX & UI CLEANUP
    ========================================= */
 
-/* 1. Fix the Toggle Switch (Keep it small and inline) */
+/* 1. Restore the native app scrolling and layout */
+body.preview-mode #app {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 15px !important;
+}
+
+/* 2. Fix the Toggle Buttons (Stop them from stretching) */
 #design-mode-toggle {
   display: flex !important;
   gap: 10px !important;
-  margin-bottom: 20px !important;
-  width: fit-content !important; /* Prevents stretching */
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  margin-bottom: 15px !important;
+  width: fit-content !important; /* Forces normal size */
 }
 
 #design-mode-toggle button {
-  width: auto !important;
-  padding: 10px 20px !important;
-  border-radius: 8px !important;
+  width: auto !important; /* Kills the 100% width */
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
   border: 1px solid var(--border-color) !important;
   background: var(--bg-panel) !important;
-  color: var(--text-muted) !important;
+  color: var(--text-main) !important;
   font-weight: 600 !important;
-  font-size: 13px !important;
+  cursor: pointer !important;
 }
 
 #design-mode-toggle button.active {
   background: var(--accent-blue) !important;
-  color: white !important;
+  color: #fff !important;
   border-color: var(--accent-blue) !important;
 }
 
-/* 2. Fix the Main Drawing Canvas (Plan View / Elevations) */
-/* We lock the height so it acts like a real drafting board */
+/* 3. Lock the Main Plan Canvas */
 body.preview-mode #dsv,
 body.preview-mode #fpsv {
   width: 100% !important;
-  height: 65vh !important; /* Fixed height stops the infinite stretching */
-  max-height: 800px !important;
-  background: #ffffff !important;
+  height: 65vh !important; /* Fixed height for the drawing board */
+  background: #fff !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-  margin-bottom: 20px !important;
-  display: block !important;
   overflow: hidden !important;
 }
 
-/* 3. Fix the 3D View Canvas (This stops the rotation stretch bug) */
+/* 4. THE 3D STRETCH FIX */
+/* We cap the 3D canvas height and hide any overflow */
 body.preview-mode .elc,
-body.preview-mode .card:has(.elc) canvas {
+body.preview-mode canvas {
   width: 100% !important;
-  height: 350px !important; /* Hard limit on 3D view height */
+  height: 350px !important; /* Hard cap on 3D height */
   max-height: 350px !important;
-  background: #ffffff !important;
-  border-radius: 8px !important;
-  object-fit: contain !important; /* Keeps the 3D model proportional */
+  object-fit: contain !important; /* Keeps 3D model proportional */
+  background: #fff !important;
+  border-radius: 6px !important;
+}
+
+/* Prevent the 3D container from expanding past the canvas */
+body.preview-mode div:has(> canvas) {
+  max-height: 380px !important;
   overflow: hidden !important;
-}
-
-/* 4. Put the 2D and 3D live views side-by-side */
-body.preview-mode .card:has(.elc) {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 15px !important;
-  align-items: start !important;
-}
-
-/* 5. Stop the whole page from scrolling horizontally */
-body.preview-mode #app {
-  overflow-x: hidden !important;
-  padding: 15px 20px !important;
 }
