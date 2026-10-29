@@ -617,43 +617,39 @@ body.preview-mode #app:has(#fpsv) {
 }
 
 /* =========================================
-   3DS MAX LAYOUT & MAXIMIZE FIXES
+   TRUE 3DS MAX LAYOUT (HARD LOCK)
    ========================================= */
 
-/* 1. Restore native app scrolling */
-body.preview-mode #app {
-  display: block !important;
-  width: 100% !important;
-  height: auto !important;
-  overflow-y: auto !important;
-  padding: 15px !important;
-}
-
-/* 2. The Main Grid Container (Locks the layout) */
+/* 1. Lock the layout into the 3ds Max grid */
 body.preview-mode .card:has(.elc) {
   display: grid !important;
-  grid-template-columns: 320px 1fr !important; /* Left side 320px, Right side takes the rest */
+  grid-template-columns: 340px 1fr !important; /* Left side 340px, Right takes the rest */
   grid-template-rows: 1fr 1fr !important; 
   gap: 15px !important;
-  height: 600px !important; /* Lock height so 3D doesn't stretch infinitely */
+  height: 70vh !important; /* Hard lock prevents infinite stretch */
+  max-height: 800px !important;
+  overflow: hidden !important; /* Kills the 3D stretch bug */
   padding: 15px !important;
   background: var(--bg-main) !important;
   border-radius: 8px !important;
   position: relative !important; 
 }
 
-/* 3. Force 3D to take the BIG right side */
-body.preview-mode .elc, body.preview-mode .card:has(.elc) canvas {
+/* 2. Force 3D to take the BIG right side */
+body.preview-mode .elc, 
+body.preview-mode .card:has(.elc) canvas {
   grid-column: 2 !important;
   grid-row: 1 / -1 !important; 
   width: 100% !important;
   height: 100% !important;
+  max-height: 100% !important; /* Stops the 3D engine from stretching */
+  object-fit: contain !important;
   background: #fff !important;
   border-radius: 6px !important;
-  object-fit: contain !important;
+  overflow: hidden !important;
 }
 
-/* 4. Force 2D Plan to top-left */
+/* 3. Force 2D Plan to top-left */
 body.preview-mode #dsv, body.preview-mode #fpsv {
   grid-column: 1 !important;
   grid-row: 1 / 2 !important;
@@ -664,7 +660,7 @@ body.preview-mode #dsv, body.preview-mode #fpsv {
   overflow: hidden !important;
 }
 
-/* 5. Force Elevations to bottom-left */
+/* 4. Force Elevations to bottom-left */
 body.preview-mode .card:has(.elc) > div:not(.elc):not(:has(#dsv)):not(:has(#fpsv)) {
   grid-column: 1 !important;
   grid-row: 2 / 3 !important;
@@ -675,13 +671,13 @@ body.preview-mode .card:has(.elc) > div:not(.elc):not(:has(#dsv)):not(:has(#fpsv
   border-radius: 6px !important;
 }
 
-/* 6. FIX THE MAXIMIZE BUTTON (Stop it from stretching) */
-.vp-max-btn {
+/* 5. FIX THE MAXIMIZE BUTTON (Stop it from becoming a blue bar) */
+body.preview-mode .vp-max-btn {
   position: absolute !important;
   top: 10px !important;
   right: 10px !important;
-  width: 32px !important;  /* Force it to be a small square */
-  height: 32px !important; /* Force it to be a small square */
+  width: 32px !important;  /* Force a small square */
+  height: 32px !important; 
   padding: 0 !important;
   display: flex !important;
   align-items: center !important;
@@ -694,19 +690,13 @@ body.preview-mode .card:has(.elc) > div:not(.elc):not(:has(#dsv)):not(:has(#fpsv
   z-index: 100 !important;
   font-size: 16px !important;
 }
-.vp-max-btn:hover {
+body.preview-mode .vp-max-btn:hover {
   background: var(--accent-blue) !important;
   color: #fff !important;
 }
 
-/* Ensure the parent container has position relative for the absolute button */
-.viewport-box {
-  position: relative !important;
-  border: 1px solid var(--border-color) !important;
-}
-
-/* 7. Maximized State */
-.vp-maximized {
+/* 6. Maximized State */
+body.preview-mode .vp-maximized {
   position: fixed !important;
   top: 120px !important; 
   left: 20px !important;
@@ -716,4 +706,11 @@ body.preview-mode .card:has(.elc) > div:not(.elc):not(:has(#dsv)):not(:has(#fpsv
   background: var(--bg-panel) !important;
   padding: 20px !important;
   box-shadow: 0 0 50px rgba(0,0,0,0.8) !important;
+}
+
+body.preview-mode .vp-maximized canvas, 
+body.preview-mode .vp-maximized #dsv {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
 }
