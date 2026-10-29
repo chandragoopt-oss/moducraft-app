@@ -280,3 +280,50 @@ body.preview-mode #dsv, body.preview-mode #fpsv, body.preview-mode #dlv_p, body.
     overflow-y: visible !important; /* Let the body scroll, not the box */
   }
 }
+/* =========================================
+   FINAL MOBILE FIX: SHOW NAVIGATION & FIX TABS
+   ========================================= */
+@media (max-width: 900px) {
+  
+  /* 1. Bring back the main top navigation links */
+  .main-links {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    width: 100% !important;
+    gap: 8px !important;
+    margin-top: 15px !important;
+  }
+  .main-links button {
+    font-size: 13px !important;
+    padding: 6px 12px !important;
+    background: var(--bg-main) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+  }
+
+  /* 2. Bring back the User Actions (Light Mode, Tools, Admin) */
+  .user-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    width: 100% !important;
+    gap: 10px !important;
+    margin-top: 10px !important;
+  }
+  /* Force the dropdowns to show (overrides the old display:none) */
+  .user-actions .dropdown {
+    display: inline-block !important;
+  }
+
+  /* 3. Fix the Kanban tabs so "Urgent" isn't cut off on the left */
+  .mobile-tabs {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    justify-content: flex-start !important;
+    scroll-behavior: smooth;
+  }
+  .mobile-tabs button {
+    flex-shrink: 0; /* Prevents the buttons from squishing each other */
+  }
+}
