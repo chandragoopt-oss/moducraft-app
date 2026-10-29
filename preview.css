@@ -466,3 +466,119 @@ body.preview-mode select,
 body.preview-mode input {
   margin-bottom: 10px !important;
 }
+/* =========================================
+   DESIGN STUDIO UI/UX IMPROVEMENTS
+   ========================================= */
+
+/* 1. Force the Design Layout into a fixed 2-column grid */
+/* Left side = Canvas, Right side = Tools */
+body.preview-mode #app {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  height: calc(100vh - 120px) !important; /* Fits under nav */
+  overflow: hidden !important; /* Stops the whole page from scrolling */
+  padding: 15px !important;
+  gap: 15px !important;
+}
+
+/* Make the Canvas take all available space */
+body.preview-mode #app > div:first-child {
+  flex: 1 !important; 
+  overflow-y: auto !important; /* Only the canvas scrolls if needed */
+  padding-right: 10px !important;
+}
+
+/* Make the Sidebar a fixed, scrollable column */
+body.preview-mode #app > div:last-child,
+body.preview-mode .sidebar, 
+body.preview-mode [class*="side-panel"] {
+  width: 380px !important; /* Fixed width for tools */
+  flex-shrink: 0 !important;
+  overflow-y: auto !important; /* Right panel scrolls independently */
+  padding-right: 10px !important;
+  border-left: 1px solid var(--border-color) !important;
+  padding-left: 15px !important;
+}
+
+/* 2. Compact the Top Configuration Bar */
+/* Put all the "Layout / Width / Live Views" dropdowns in a row */
+body.preview-mode .flex:has(select), 
+body.preview-mode .row:has(select) {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  align-items: flex-end !important;
+  margin-bottom: 15px !important;
+}
+body.preview-mode .flex:has(select) > div,
+body.preview-mode .row:has(select) > div {
+  flex: 1 1 150px !important;
+}
+body.preview-mode select {
+  padding: 8px 10px !important;
+  font-size: 13px !important;
+  margin-bottom: 0 !important;
+}
+
+/* 3. Clean up the Sidebar Cards */
+body.preview-mode .card {
+  padding: 15px !important;
+  margin-bottom: 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-panel) !important;
+}
+
+/* Make the card titles look clickable (Accordion style) */
+body.preview-mode .card b, 
+body.preview-mode .card h3 {
+  font-size: 14px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 10px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* 4. Make the primary action buttons pop out */
+body.preview-mode .card button:not(.dropdown-btn):not(.k-icon-btn) {
+  width: 100% !important;
+  padding: 10px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  margin-bottom: 8px !important;
+  background: var(--accent-blue) !important; 
+  color: white !important;
+}
+
+/* Make secondary buttons (like Delete) outline-style */
+body.preview-mode .card button:contains("Delete"), 
+body.preview-mode .card button:contains("Remove") {
+  background: transparent !important;
+  color: var(--accent-red) !important;
+  border: 1px solid var(--accent-red) !important;
+}
+
+/* 5. Fix the Canvas Background & Shadow */
+#dsv, #fpsv, canvas {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* 6. Fix the Mobile view for Design */
+@media (max-width: 900px) {
+  body.preview-mode #app {
+    flex-direction: column !important;
+    height: auto !important;
+    overflow-y: auto !important;
+  }
+  body.preview-mode #app > div:last-child {
+    width: 100% !important;
+    border-left: none !important;
+    padding-left: 0 !important;
+  }
+}
