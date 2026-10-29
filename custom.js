@@ -1414,12 +1414,20 @@ document.addEventListener('change', e => {
   if (window.__mcDeptAclLoaded_v2) return;
   window.__mcDeptAclLoaded_v2 = true;
 
-  window.MC_DEPTS = {
+   window.MC_DEPTS = {
     admin:    { name: '👑 Admin View', tabs: ['h', 'r', 'enq', 'q', 'e', 'p', 'j', 'd', 'f', 'a', 'm', 'v', 's', 'x'] },
-    sales:    { name: '💼 Sales & Quotes', tabs: ['enq', 'q', 'e', 'p'] },
-    design:   { name: '📐 Design & Site', tabs: ['j', 'd', 'f', 'a'] },
-    purchase: { name: '📦 Purchase & Factory', tabs: ['v', 'm', 's'] },
-    accounts: { name: '💰 Accounts', tabs: ['h', 'r', 'x'] }
+    
+    // No Access & Sharing (x), Settings (s), Accessories (a), Vendors (v)
+    sales:    { name: '💼 Sales & Quotes', tabs: ['h', 'enq', 'q', 'e', 'p', 'j'] },
+    
+    // ONLY Quotations (q,e,p), Enquiries (enq), Today (h), Projects (j), Design (d), Floor plan (f)
+    design:   { name: '📐 Design & Site', tabs: ['h', 'enq', 'q', 'e', 'p', 'j', 'd', 'f'] },
+    
+    // ONLY Projects (j), Today (h), Vendors (v), Ply & Hardware (m), Accessories (a)
+    purchase: { name: '📦 Purchase & Factory', tabs: ['h', 'j', 'v', 'm', 'a'] },
+    
+    // Everything EXCEPT Design (d), Floorplan (f), Access & Sharing (x)
+    accounts: { name: '💰 Accounts', tabs: ['h', 'r', 'enq', 'q', 'e', 'p', 'j', 'a', 'm', 'v', 's'] }
   };
 
   let curDept = localStorage.getItem('msq_dept') || 'admin';
