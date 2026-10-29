@@ -11,29 +11,28 @@
     const userActions = document.getElementById('user-actions');
     if (!nav || !userActions) return;
     
-    // Primary Links
+    // Using data-a="tab" and data-v="..." so your original app.js handles the clicks!
     nav.innerHTML = `
-      <button class="${S.tab === 'h' ? 'active' : ''}" onclick="S.tab='h';render();">Dashboard</button>
-      <button class="${S.tab === 'q' ? 'active' : ''}" onclick="S.tab='q';render();">Quotations</button>
-      <button class="${S.tab === 'enq' ? 'active' : ''}" onclick="S.tab='enq';render();">Enquiries</button>
-      <button class="${S.tab === 'j' ? 'active' : ''}" onclick="S.tab='j';render();">Projects</button>
-      <button class="${S.tab === 'v' ? 'active' : ''}" onclick="S.tab='v';render();">Vendors</button>
-      <button class="${S.tab === 'r' ? 'active' : ''}" onclick="S.tab='r';render();">Reports</button>
+      <button class="${S.tab === 'h' ? 'active' : ''}" data-a="tab" data-v="h">Dashboard</button>
+      <button class="${S.tab === 'q' ? 'active' : ''}" data-a="tab" data-v="q">Quotations</button>
+      <button class="${S.tab === 'enq' ? 'active' : ''}" data-a="tab" data-v="enq">Enquiries</button>
+      <button class="${S.tab === 'j' ? 'active' : ''}" data-a="tab" data-v="j">Projects</button>
+      <button class="${S.tab === 'v' ? 'active' : ''}" data-a="tab" data-v="v">Vendors</button>
+      <button class="${S.tab === 'r' ? 'active' : ''}" data-a="tab" data-v="r">Reports</button>
     `;
 
-    // Dropdowns
     userActions.innerHTML = `
       <div class="dropdown">
         <button class="dropdown-btn">Tools & Settings ▾</button>
         <div class="dropdown-content">
-          <button onclick="S.tab='e';render();">Edit</button>
-          <button onclick="S.tab='p';render();">Preview / Print</button>
-          <button onclick="S.tab='a';render();">Accessories</button>
-          <button onclick="S.tab='m';render();">Ply & Hardware</button>
-          <button onclick="S.tab='d';render();">Design (Walls A-D)</button>
-          <button onclick="S.tab='f';render();">Floor Plan</button>
-          <button onclick="S.tab='s';render();">Settings & Rates</button>
-          <button onclick="S.tab='x';render();">Access & Sharing</button>
+          <button data-a="tab" data-v="e">Edit</button>
+          <button data-a="tab" data-v="p">Preview / Print</button>
+          <button data-a="tab" data-v="a">Accessories</button>
+          <button data-a="tab" data-v="m">Ply & Hardware</button>
+          <button data-a="tab" data-v="d">Design (Walls A-D)</button>
+          <button data-a="tab" data-v="f">Floor Plan</button>
+          <button data-a="tab" data-v="s">Settings & Rates</button>
+          <button data-a="tab" data-v="x">Access & Sharing</button>
         </div>
       </div>
       <div class="dropdown">
@@ -47,7 +46,7 @@
     `;
   }
 
-  // 2. Build KPI Strip (Calculates live numbers)
+  // 2. Build KPI Strip
   function buildKPIs() {
     const strip = document.getElementById('kpi-strip');
     if (!strip) return;
@@ -95,7 +94,7 @@
     `;
   }
 
-  // 3. Build Kanban Board (Sorts your data into 4 columns)
+  // 3. Build Kanban Board
   function buildKanban() {
     const app = document.getElementById('app');
     if (!app) return;
@@ -111,8 +110,8 @@
             <div class="k-card-title">${typeof esc === 'function' ? esc(q.name || 'No Name') : (q.name || 'No Name')}</div>
             <div class="k-card-meta">${typeof esc === 'function' ? esc(q.project || 'No Project') : (q.project || 'No Project')}</div>
             <div class="k-card-actions">
-              <button class="k-icon-btn" onclick="S.cur='${q.id}';S.tab='p';render();" title="Preview">👁️</button>
-              <button class="k-icon-btn" onclick="S.cur='${q.id}';S.tab='e';render();" title="Edit">✏️</button>
+              <button class="k-icon-btn" data-a="pq" data-i="${q.id}" title="Preview">👁️</button>
+              <button class="k-icon-btn" data-a="oq" data-i="${q.id}" title="Edit">✏️</button>
             </div>
           </div>
         `);
@@ -196,38 +195,35 @@
   }
 
   // 4. Intercept Render
-  // We grab your original render function and save it safely
   const originalRender = window.render;
   
   window.render = function() {
-    // If we are on the Dashboard ('h'), show the Kanban!
     if (S.tab === 'h') {
       buildNav();
       buildKPIs();
       buildKanban();
       
-      // Make sure KPI strip is visible
       document.getElementById('kpi-strip').style.display = 'flex';
       return;
     }
     
-    // If we click anything else (Quotations, Projects, Settings), load the ORIGINAL app
+    // Load original app for tables/settings
     originalRender.apply(this, arguments);
     
-    // Hide KPI strip and make sure the page can scroll normally for tables
+    // Hide KPI strip and allow scrolling for tables
     document.getElementById('kpi-strip').style.display = 'none';
     document.getElementById('app').style.overflowY = 'auto';
-    buildNav(); // Keep the new nav bar visible on all pages
+    
+    // Ensure our new nav stays on top
+    buildNav(); 
   };
 
-  // Run once when the page loads
   window.addEventListener('load', () => {
     setTimeout(() => { 
       if (typeof S !== 'undefined' && S.tab === 'h') {
         window.render(); 
       }
-    }, 1000); // Wait 1 second for your database to load
+    }, 1000);
   });
 
-  console.log('[ModuCraft] Preview Logic Loaded.');
 })();
