@@ -5,13 +5,11 @@
   if (window.__previewUILoaded) return;
   window.__previewUILoaded = true;
 
-  // 1. Build Navigation & Dropdowns
   function buildNav() {
     const nav = document.getElementById('nav');
     const userActions = document.getElementById('user-actions');
     if (!nav || !userActions) return;
     
-    // Using data-a="tab" and data-v="..." so your original app.js handles the clicks!
     nav.innerHTML = `
       <button class="${S.tab === 'h' ? 'active' : ''}" data-a="tab" data-v="h">Dashboard</button>
       <button class="${S.tab === 'q' ? 'active' : ''}" data-a="tab" data-v="q">Quotations</button>
@@ -46,7 +44,6 @@
     `;
   }
 
-  // 2. Build KPI Strip
   function buildKPIs() {
     const strip = document.getElementById('kpi-strip');
     if (!strip) return;
@@ -94,7 +91,6 @@
     `;
   }
 
-  // 3. Build Kanban Board
   function buildKanban() {
     const app = document.getElementById('app');
     if (!app) return;
@@ -102,7 +98,6 @@
     const todayStr = new Date().toISOString().split('T')[0];
     let urgentCards = [], taskCards = [], quoteCards = [], projectCards = [];
 
-    // --- PENDING QUOTES ---
     Object.values(S.q || {}).forEach(q => {
       if (q.st === 'shared' && q.out !== 'lost') {
         quoteCards.push(`
@@ -118,11 +113,8 @@
       }
     });
 
-    // --- PROJECTS & TASKS ---
     Object.values(BZ?.pj || {}).forEach(p => {
       if (p.stage !== 'Closed') {
-        
-        // Project Card
         projectCards.push(`
           <div class="k-card project">
             <div class="k-card-title">${typeof esc === 'function' ? esc(p.name) : p.name}</div>
@@ -133,7 +125,6 @@
           </div>
         `);
 
-        // Task Cards
         if (p.tasks) {
           p.tasks.forEach((t, idx) => {
             if (t.st !== 'Done' && t.due) {
@@ -155,7 +146,6 @@
       }
     });
 
-    // Render the 4 Columns
     app.innerHTML = `
       <div class="mobile-tabs">
         <button class="active" data-target="col-urgent">🚨 Urgent</button>
@@ -183,7 +173,6 @@
       </div>
     `;
 
-    // Mobile Tab Clicking
     document.querySelectorAll('.mobile-tabs button').forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll('.mobile-tabs button').forEach(b => b.classList.remove('active'));
@@ -194,33 +183,25 @@
     });
   }
 
-  // 4. Intercept Render
   const originalRender = window.render;
-  
   window.render = function() {
     if (S.tab === 'h') {
       buildNav();
       buildKPIs();
       buildKanban();
-      
       document.getElementById('kpi-strip').style.display = 'flex';
       return;
     }
-    
-    // Load original app for tables/settings
     originalRender.apply(this, arguments);
-    
-    // Hide KPI strip and allow scrolling for tables
     document.getElementById('kpi-strip').style.display = 'none';
     document.getElementById('app').style.overflowY = 'auto';
-    
-    // Ensure our new nav stays on top
     buildNav(); 
   };
 
   window.addEventListener('load', () => {
     setTimeout(() => { 
-      if (typeof S !== 'undefined' && S.tab === 'h') {
+      if (typeof S !== 'undefined') {
+        S.tab = 'h'; // FORCE DASHBOARD TAB
         window.render(); 
       }
     }, 1000);
