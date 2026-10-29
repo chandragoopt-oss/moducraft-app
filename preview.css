@@ -1,157 +1,145 @@
 /* =========================================
-   PREVIEW SANDBOX CSS (Unified Dark Mode)
+   THEME VARIABLES
    ========================================= */
+:root {
+  --bg-main: #f5f1ea;
+  --bg-panel: #ffffff;
+  --bg-input: #faf8f4;
+  --text-main: #24313A;
+  --text-muted: #6b7280;
+  --border-color: #E2DACB;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-yellow: #f59e0b;
+  --kpi-bg: #fff;
+  --logo-filter: none;
+}
 
+[data-theme="dark"] {
+  --bg-main: #0f172a;
+  --bg-panel: #1e293b;
+  --bg-input: #0f172a;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: #334155;
+  --kpi-bg: #1e293b;
+  --logo-filter: brightness(0) invert(1); /* Makes logo white */
+}
+
+/* =========================================
+   GLOBAL STRUCTURE & THEME
+   ========================================= */
 body.preview-mode {
-  background-color: #0f172a !important;
-  color: #f8fafc;
+  background-color: var(--bg-main) !important;
+  color: var(--text-main);
   height: 100vh;
   overflow: hidden; 
   display: flex;
   flex-direction: column;
   margin: 0;
   font-family: 'Segoe UI', Roboto, sans-serif;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-/* --- LOGO STYLING --- */
-.white-logo {
-  height: 40px;
-  border-radius: 6px;
-  object-fit: contain;
-  background: transparent;
-  filter: brightness(0) invert(1);
-}
-
-/* HIDE OVERLAPPING ORIGINAL ELEMENTS */
+/* Hide overlapping elements from original app */
 #gs-wrap, #dept_sw, #hxw, #st, #err, #fl, #mob-nav, .cpy { display: none !important; } 
 
-/* TOP NAVIGATION BAR */
-.top-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #1e293b; padding: 10px 20px; border-bottom: 1px solid #334155; z-index: 100;
-}
-.logo-area { display: flex; align-items: center; gap: 15px; }
-.logo-area h1 { margin: 0; font-size: 18px; color: #fff; }
-
-.main-links { display: flex; gap: 10px; }
-.main-links button {
-  background: none; border: none; color: #94a3b8; font-size: 14px;
-  cursor: pointer; padding: 6px 12px; border-radius: 6px; transition: 0.2s;
-}
-.main-links button:hover, .main-links button.active {
-  background: #334155; color: #fff;
-}
-
-/* DROPDOWN MENUS */
-.user-actions { display: flex; gap: 10px; }
-.dropdown { position: relative; display: inline-block; }
-.dropdown-btn {
-  background: transparent; border: 1px solid #334155;
-  color: #f8fafc; padding: 6px 12px; border-radius: 6px; cursor: pointer;
-}
-.dropdown-content {
-  display: none; position: absolute; right: 0; top: 100%;
-  background: #1e293b; min-width: 200px; border: 1px solid #334155;
-  border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; padding: 8px 0;
-}
-.dropdown:hover .dropdown-content { display: block; }
-.dropdown-content button {
-  width: 100%; text-align: left; background: none; border: none;
-  color: #f8fafc; padding: 8px 16px; cursor: pointer; font-size: 13px;
-}
-.dropdown-content button:hover { background: #334155; }
-
-/* KPI CARDS */
-.kpi-strip {
-  display: flex; gap: 15px; padding: 15px 20px;
-  background: #0f172a; border-bottom: 1px solid #334155;
-}
-.kpi-card {
-  flex: 1; background: #1e293b; border: 1px solid #334155;
-  border-radius: 8px; padding: 12px 15px; display: flex; flex-direction: column;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-.kpi-title { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-.kpi-value { font-size: 20px; font-weight: bold; margin-top: 4px; color: #fff; }
-
-/* KANBAN BOARD */
-.app-container {
-  flex: 1; overflow: hidden; padding: 15px 20px; display: flex; flex-direction: column;
-}
-.kanban-board {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;
-  height: 100%; overflow: hidden;
-}
-.kanban-col {
-  background: #1e293b; border: 1px solid #334155; border-radius: 10px;
-  display: flex; flex-direction: column; height: 100%; overflow: hidden;
-}
-.kanban-col-header {
-  padding: 12px 15px; border-bottom: 1px solid #334155;
-  font-weight: bold; color: #fff; display: flex; justify-content: space-between;
-}
-.kanban-col-body {
-  flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px;
-}
-.kanban-col-body::-webkit-scrollbar { width: 6px; }
-.kanban-col-body::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-
-/* INDIVIDUAL CARDS */
-.k-card {
-  background: #0f172a; border: 1px solid #334155;
-  border-left: 4px solid #3b82f6; border-radius: 6px; padding: 12px; transition: 0.2s;
-}
-.k-card:hover { border-color: #3b82f6; }
-.k-card.urgent { border-left-color: #ef4444; }
-.k-card.task { border-left-color: #f59e0b; }
-.k-card.quote { border-left-color: #3b82f6; }
-.k-card.project { border-left-color: #10b981; }
-.k-card-title { font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 4px; }
-.k-card-meta { font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
-.k-card-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid #334155; padding-top: 8px; }
-.k-icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; }
-.k-icon-btn:hover { background: #334155; color: #fff; }
+/* =========================================
+   MODALS (Login & Manage Users)
+   ========================================= */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99999; display: flex; align-items: center; justify-content: center; }
+.modal-box { background: var(--bg-panel); padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid var(--border-color); }
+.modal-box h2 { margin-top: 0; color: var(--text-main); text-align: center; }
+.modal-text { text-align: center; color: var(--text-muted); margin-bottom: 20px; }
+.modal-input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; background: var(--bg-input); color: var(--text-main); font-size: 14px; }
+.modal-btn { width: 100%; padding: 12px; background: var(--accent-blue); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
+.modal-btn:hover { opacity: 0.9; }
+.modal-error { color: #d32f2f; background: rgba(211,47,47,0.1); padding: 10px; border-radius: 4px; margin-bottom: 15px; text-align: center; font-size: 14px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.modal-btn-close { background: var(--border-color); border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; color: var(--text-main); }
 
 /* =========================================
-   GLOBAL DARK MODE OVERRIDES
+   NAVIGATION & KPI
    ========================================= */
+.app-logo { height: 40px; border-radius: 6px; object-fit: contain; background: transparent; filter: var(--logo-filter); transition: filter 0.3s; }
 
-/* Cards & Panels */
-body.preview-mode .card { background: #1e293b !important; border-color: #334155 !important; color: #f8fafc; }
-body.preview-mode .acp, body.preview-mode .cxbar { background: #0f172a !important; border-color: #334155 !important; }
-body.preview-mode .mut { color: #94a3b8 !important; }
+.top-nav { display: flex; align-items: center; justify-content: space-between; background: var(--bg-panel); padding: 10px 20px; border-bottom: 1px solid var(--border-color); z-index: 100; transition: background 0.3s; }
+.logo-area { display: flex; align-items: center; gap: 15px; }
+.logo-area h1 { margin: 0; font-size: 18px; color: var(--text-main); }
 
-/* Tables */
-body.preview-mode table.g th { background: #0f172a !important; color: #94a3b8 !important; border-bottom: 1px solid #334155 !important; }
-body.preview-mode table.g td { border-bottom: 1px solid #334155 !important; color: #f8fafc !important; }
-body.preview-mode table.g tr.gh td { background: #1e293b !important; color: #f8fafc !important; }
-body.preview-mode table.g tr.tot td { background: #0f172a !important; }
+.main-links { display: flex; gap: 10px; }
+.main-links button { background: none; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; padding: 6px 12px; border-radius: 6px; transition: 0.2s; }
+.main-links button:hover, .main-links button.active { background: var(--border-color); color: var(--text-main); }
 
-/* Inputs, Selects, Textareas */
+.user-actions { display: flex; gap: 10px; align-items: center; }
+.dropdown { position: relative; display: inline-block; }
+.dropdown-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+.dropdown-content { display: none; position: absolute; right: 0; top: 100%; background: var(--bg-panel); min-width: 200px; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 1000; padding: 8px 0; }
+.dropdown:hover .dropdown-content { display: block; }
+.dropdown-content button { width: 100%; text-align: left; background: none; border: none; color: var(--text-main); padding: 8px 16px; cursor: pointer; font-size: 13px; }
+.dropdown-content button:hover { background: var(--border-color); }
+
+/* Theme Toggle Button */
+#theme-toggle { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+
+.kpi-strip { display: flex; gap: 15px; padding: 15px 20px; background: var(--bg-main); border-bottom: 1px solid var(--border-color); transition: background 0.3s; }
+.kpi-card { flex: 1; background: var(--kpi-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 15px; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.kpi-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-value { font-size: 20px; font-weight: bold; margin-top: 4px; color: var(--text-main); }
+
+/* =========================================
+   KANBAN BOARD
+   ========================================= */
+.app-container { flex: 1; overflow: hidden; padding: 15px 20px; display: flex; flex-direction: column; }
+.kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; height: 100%; overflow: hidden; }
+.kanban-col { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 10px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.kanban-col-header { padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-weight: bold; color: var(--text-main); display: flex; justify-content: space-between; }
+.kanban-col-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.kanban-col-body::-webkit-scrollbar { width: 6px; }
+.kanban-col-body::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+.k-card { background: var(--bg-main); border: 1px solid var(--border-color); border-left: 4px solid var(--accent-blue); border-radius: 6px; padding: 12px; transition: 0.2s; }
+.k-card:hover { border-color: var(--accent-blue); }
+.k-card.urgent { border-left-color: var(--accent-red); }
+.k-card.task { border-left-color: var(--accent-yellow); }
+.k-card.quote { border-left-color: var(--accent-blue); }
+.k-card.project { border-left-color: var(--accent-green); }
+.k-card-title { font-size: 14px; font-weight: bold; color: var(--text-main); margin-bottom: 4px; }
+.k-card-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+.k-card-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 8px; }
+.k-icon-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; }
+.k-icon-btn:hover { background: var(--border-color); color: var(--text-main); }
+
+/* =========================================
+   GLOBAL DARK/LIGHT OVERRIDES FOR ORIGINAL APP
+   ========================================= */
+body.preview-mode .card { background: var(--bg-panel) !important; border-color: var(--border-color) !important; color: var(--text-main); }
+body.preview-mode .acp, body.preview-mode .cxbar { background: var(--bg-main) !important; border-color: var(--border-color) !important; }
+body.preview-mode .mut { color: var(--text-muted) !important; }
+
+body.preview-mode table.g th { background: var(--bg-main) !important; color: var(--text-muted) !important; border-bottom: 1px solid var(--border-color) !important; }
+body.preview-mode table.g td { border-bottom: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+body.preview-mode table.g tr.gh td { background: var(--bg-panel) !important; color: var(--text-main) !important; }
+body.preview-mode table.g tr.tot td { background: var(--bg-main) !important; }
+
 body.preview-mode input, body.preview-mode select, body.preview-mode textarea, body.preview-mode .flt { 
-  background: #0f172a !important; color: #fff !important; border: 1px solid #334155 !important; 
+  background: var(--bg-input) !important; color: var(--text-main) !important; border: 1px solid var(--border-color) !important; 
 }
 
-/* Standard Buttons */
-body.preview-mode button:not(.k-icon-btn):not(.dropdown-btn):not(.mobile-tabs button):not(.main-links button) {
-  background: #3b82f6; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+body.preview-mode button:not(.k-icon-btn):not(.dropdown-btn):not(.mobile-tabs button):not(.main-links button):not(.modal-btn-close) {
+  background: var(--accent-blue); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;
 }
 body.preview-mode button.g:not(.k-icon-btn) {
-  background: transparent !important; border: 1px solid #334155 !important; color: #f8fafc !important;
+  background: transparent !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important;
 }
-body.preview-mode button.g:hover:not(.k-icon-btn) { background: #334155 !important; }
+body.preview-mode button.g:hover:not(.k-icon-btn) { background: var(--border-color) !important; }
 
-/* Modals & Overlays */
-body.preview-mode #loginOverlay, body.preview-mode #adminUsersModal { background: #0f172a !important; }
-body.preview-mode #loginOverlay > div, body.preview-mode #adminUsersModal > div { background: #1e293b !important; color: #fff !important; border: 1px solid #334155 !important; }
-body.preview-mode #loginOverlay h2, body.preview-mode #adminUsersModal h2 { color: #fff !important; }
-body.preview-mode #loginOverlay input, body.preview-mode #adminUsersModal input { background: #0f172a !important; color: #fff !important; border-color: #334155 !important; }
-body.preview-mode #adminUsersModal table th { background: #0f172a !important; color: #94a3b8 !important; }
-body.preview-mode #adminUsersModal table td { border-bottom: 1px solid #334155 !important; }
+body.preview-mode .warn { background: rgba(245, 158, 11, 0.1) !important; color: var(--accent-yellow) !important; border: 1px solid var(--accent-yellow) !important; }
 
-/* Warnings (like the red/yellow boxes) */
-body.preview-mode .warn { background: rgba(245, 158, 11, 0.1) !important; color: #f59e0b !important; border: 1px solid #f59e0b !important; }
+/* Keep Design & Floor Plan Canvas White */
+body.preview-mode #dsv, body.preview-mode #fpsv, body.preview-mode #dlv_p, body.preview-mode #dlv_w, body.preview-mode .elc { background: #ffffff !important; }
 
 /* MOBILE RESPONSIVENESS */
 .mobile-tabs { display: none; }
@@ -167,12 +155,12 @@ body.preview-mode .warn { background: rgba(245, 158, 11, 0.1) !important; color:
   .main-links, .user-actions .dropdown { display: none; }
   
   .mobile-tabs {
-    display: flex; overflow-x: auto; background: #1e293b; padding: 10px;
-    gap: 10px; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #334155;
+    display: flex; overflow-x: auto; background: var(--bg-panel); padding: 10px;
+    gap: 10px; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--border-color);
   }
   .mobile-tabs button {
-    background: #0f172a !important; border: 1px solid #334155 !important;
-    color: #94a3b8 !important; padding: 8px 15px; border-radius: 20px; white-space: nowrap;
+    background: var(--bg-main) !important; border: 1px solid var(--border-color) !important;
+    color: var(--text-muted) !important; padding: 8px 15px; border-radius: 20px; white-space: nowrap;
   }
-  .mobile-tabs button.active { background: #3b82f6 !important; color: #fff !important; border-color: #3b82f6 !important; }
+  .mobile-tabs button.active { background: var(--accent-blue) !important; color: #fff !important; border-color: var(--accent-blue) !important; }
 }
