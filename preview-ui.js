@@ -1,9 +1,26 @@
 // ==========================================
-// SANDBOX PREVIEW UI - KANBAN BOARD LOGIC
+// SANDBOX PREVIEW UI - KANBAN & THEME LOGIC
 // ==========================================
 (function() {
   if (window.__previewUILoaded) return;
   window.__previewUILoaded = true;
+
+  // Theme Toggle Logic
+  window.toggleTheme = function() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('mc_theme', next);
+    updateThemeButton();
+  };
+
+  function updateThemeButton() {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      btn.innerHTML = current === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    }
+  }
 
   function buildNav() {
     const nav = document.getElementById('nav');
@@ -20,6 +37,7 @@
     `;
 
     userActions.innerHTML = `
+      <button id="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
       <div class="dropdown">
         <button class="dropdown-btn">Tools & Settings ▾</button>
         <div class="dropdown-content">
@@ -42,6 +60,7 @@
         </div>
       </div>
     `;
+    updateThemeButton();
   }
 
   function buildKPIs() {
@@ -68,23 +87,23 @@
     const pendingPOs = Object.values(BZ?.po || {}).filter(p => ['Draft', 'Sent', 'Part received'].includes(p.st)).length;
 
     strip.innerHTML = `
-      <div class="kpi-card" style="border-bottom: 3px solid #3b82f6">
+      <div class="kpi-card" style="border-bottom: 3px solid var(--accent-blue)">
         <span class="kpi-title">Sales Pipeline</span>
         <span class="kpi-value">${typeof fmt === 'function' ? fmt(pipeline) : pipeline}</span>
       </div>
-      <div class="kpi-card" style="border-bottom: 3px solid #10b981">
+      <div class="kpi-card" style="border-bottom: 3px solid var(--accent-green)">
         <span class="kpi-title">Active Projects</span>
         <span class="kpi-value">${activeProjects}</span>
       </div>
-      <div class="kpi-card" style="border-bottom: 3px solid #ef4444">
+      <div class="kpi-card" style="border-bottom: 3px solid var(--accent-red)">
         <span class="kpi-title">Receivables</span>
         <span class="kpi-value">${typeof fmt === 'function' ? fmt(receivables) : receivables}</span>
       </div>
-      <div class="kpi-card" style="border-bottom: 3px solid #f59e0b">
+      <div class="kpi-card" style="border-bottom: 3px solid var(--accent-yellow)">
         <span class="kpi-title">POs Pending</span>
         <span class="kpi-value">${pendingPOs}</span>
       </div>
-      <div class="kpi-card" style="border-bottom: 3px solid #94a3b8">
+      <div class="kpi-card" style="border-bottom: 3px solid var(--text-muted)">
         <span class="kpi-title">Cash Flow</span>
         <span class="kpi-value">${typeof fmt === 'function' ? fmt(receivables) : receivables}</span>
       </div>
@@ -98,12 +117,9 @@
     const todayStr = new Date().toISOString().split('T')[0];
     let urgentCards = [], taskCards = [], quoteCards = [], projectCards = [];
 
-    // --- PENDING QUOTES ---
     Object.values(S.q || {}).forEach(q => {
       if (q.st === 'shared' && q.out !== 'lost') {
-        // Get Quote Number
         const qNum = typeof qno === 'function' ? qno(q) : '';
-        
         quoteCards.push(`
           <div class="k-card quote">
             <div class="k-card-title">${typeof esc === 'function' ? esc(q.name || 'No Name') : (q.name || 'No Name')}</div>
@@ -117,17 +133,13 @@
       }
     });
 
-    // --- PROJECTS & TASKS ---
     Object.values(BZ?.pj || {}).forEach(p => {
       if (p.stage !== 'Closed') {
-        
-        // Get Quote Number for the project
         let qNum = '';
         if (p.qid && S.q[p.qid]) {
           qNum = typeof qno === 'function' ? qno(S.q[p.qid]) : '';
         }
         
-        // Project Card (Replacing "Apartment" with Quote Number)
         projectCards.push(`
           <div class="k-card project">
             <div class="k-card-title">${typeof esc === 'function' ? esc(p.client || p.name) : (p.client || p.name)}</div>
@@ -138,7 +150,6 @@
           </div>
         `);
 
-        // Task Cards
         if (p.tasks) {
           p.tasks.forEach((t, idx) => {
             if (t.st !== 'Done' && t.due) {
@@ -170,19 +181,19 @@
       <div class="kanban-board">
         <div class="kanban-col active-tab" id="col-urgent">
           <div class="kanban-col-header"><span>🚨 Overdue & Urgent</span> <span>${urgentCards.length}</span></div>
-          <div class="kanban-col-body">${urgentCards.join('') || '<div style="padding:20px;text-align:center;color:#94a3b8">No urgent items</div>'}</div>
+          <div class="kanban-col-body">${urgentCards.join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No urgent items</div>'}</div>
         </div>
         <div class="kanban-col" id="col-tasks">
           <div class="kanban-col-header"><span>📌 Tasks Due</span> <span>${taskCards.length}</span></div>
-          <div class="kanban-col-body">${taskCards.join('') || '<div style="padding:20px;text-align:center;color:#94a3b8">No pending tasks</div>'}</div>
+          <div class="kanban-col-body">${taskCards.join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pending tasks</div>'}</div>
         </div>
         <div class="kanban-col" id="col-quotes">
           <div class="kanban-col-header"><span>📄 Pending Quotes</span> <span>${quoteCards.length}</span></div>
-          <div class="kanban-col-body">${quoteCards.join('') || '<div style="padding:20px;text-align:center;color:#94a3b8">No pending quotes</div>'}</div>
+          <div class="kanban-col-body">${quoteCards.join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No pending quotes</div>'}</div>
         </div>
         <div class="kanban-col" id="col-projects">
           <div class="kanban-col-header"><span>🏃 Running Projects</span> <span>${projectCards.length}</span></div>
-          <div class="kanban-col-body">${projectCards.join('') || '<div style="padding:20px;text-align:center;color:#94a3b8">No active projects</div>'}</div>
+          <div class="kanban-col-body">${projectCards.join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No active projects</div>'}</div>
         </div>
       </div>
     `;
