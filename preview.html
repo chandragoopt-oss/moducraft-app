@@ -90,13 +90,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ModuCraft - Preview</title>
 
-<!-- 1. Load your existing styles (so tables and modals work) -->
 <link rel="stylesheet" href="styles.css">
-<!-- 2. Load our NEW preview styles (we will create this file in the next step) -->
 <link rel="stylesheet" href="preview.css">
 </head>
 
 <body class="preview-mode">
+
+  <!-- HIDDEN DUMMY ELEMENT (Fixes the crash) -->
+  <div class="top" style="display:none;"><nav id="dummy-nav"></nav></div>
 
   <!-- YOUR EXISTING LOGIN OVERLAY -->
   <div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f4f7f6; z-index: 99999; display: flex; align-items: center; justify-content: center; font-family: sans-serif;">
@@ -121,7 +122,7 @@
     </div>
   </div>
 
-  <!-- NEW TOP NAVIGATION (We will build this) -->
+  <!-- NEW TOP NAVIGATION -->
   <header class="top-nav">
     <div class="logo-area">
       <img id="tl" src="logo.png" alt="ModuCraft">
@@ -130,11 +131,15 @@
         <small>Design • BOQ • Execute • Deliver</small>
       </div>
     </div>
+    
     <nav class="main-links" id="nav"></nav>
     <div class="user-actions" id="user-actions"></div>
+    
+    <span id="st" class="noprint" style="display:none;"></span>
+    <div id="err" class="warn noprint" style="display:none;"></div>
   </header>
 
-  <!-- NEW KPI STRIP (We will build this) -->
+  <!-- NEW KPI STRIP -->
   <div id="kpi-strip" class="kpi-strip"></div>
 
   <!-- MAIN APP CONTAINER -->
@@ -153,7 +158,7 @@
   <script src="custom.js"></script>
   <script src="auth.js" defer></script>
 
-  <!-- WE WILL CREATE THIS SCRIPT IN THE NEXT STEP -->
+  <!-- PREVIEW SCRIPT -->
   <script src="preview-ui.js"></script>
 
 </body>
