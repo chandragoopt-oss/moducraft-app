@@ -45,8 +45,7 @@
           <button data-a="tab" data-v="p">Preview / Print</button>
           <button data-a="tab" data-v="a">Accessories</button>
           <button data-a="tab" data-v="m">Ply & Hardware</button>
-          <button data-a="tab" data-v="d">Design (Walls A-D)</button>
-          <button data-a="tab" data-v="f">Floor Plan</button>
+          <button data-a="tab" data-v="d">Design Studio</button>
           <button data-a="tab" data-v="s">Settings & Rates</button>
           <button data-a="tab" data-v="x">Access & Sharing</button>
         </div>
