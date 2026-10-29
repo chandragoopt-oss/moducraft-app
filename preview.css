@@ -410,3 +410,59 @@ body.preview-mode button:not(.k-icon-btn):not(.dropdown-btn):not(.mobile-tabs bu
 body.preview-mode button:not(.k-icon-btn):not(.dropdown-btn):not(.mobile-tabs button):not(.main-links button):not(.modal-btn-close):active {
   transform: scale(0.97) !important;
 }
+/* =========================================
+   FIX DESIGN WORKSPACE & FLOOR PLAN LAYOUT
+   ========================================= */
+
+/* 1. Unlock the main app container from the narrow center column */
+body.preview-mode #app {
+  display: block !important; /* Stops the old CSS from centering everything */
+  width: 100% !important;
+  max-width: 100% !important;
+  height: calc(100vh - 120px) !important; /* Fits exactly under the top nav */
+  overflow-y: auto !important; /* Allows smooth scrolling for the whole page */
+  padding: 15px 25px !important;
+  box-sizing: border-box !important;
+}
+
+/* 2. Force all sections to stretch to full width */
+body.preview-mode #app > div,
+body.preview-mode .card {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 3. Fix the Canvas (Make it big and keep it white) */
+#dsv, #fpsv, #dlv_p, #dlv_w, .elc, canvas {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 550px !important;
+  background: #ffffff !important; 
+  border-radius: 8px !important;
+  margin-bottom: 20px !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
+}
+
+/* 4. Force the Canvas and Sidebar to sit side-by-side */
+/* This targets the old layout structure and forces a modern row-based design */
+body.preview-mode .flex, 
+body.preview-mode .row,
+body.preview-mode #app > div[style*="display: flex"] {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 20px !important;
+  align-items: flex-start !important;
+}
+
+/* 5. Ensure the sidebar controls are neat and not squished */
+body.preview-mode .card {
+  flex: 1 1 320px !important; /* Gives controls a nice minimum width */
+}
+
+/* 6. Clean up the top toolbar buttons (Units, Reset layout, etc.) */
+body.preview-mode select, 
+body.preview-mode input {
+  margin-bottom: 10px !important;
+}
