@@ -215,3 +215,55 @@ async function deleteUser(email) {
   if (data.ok) loadAdminUsers();
   else alert(data.message || 'Request failed');
 }
+
+// ==========================================
+// PASSWORD MANAGEMENT — BUTTONS & MODAL
+// ==========================================
+
+// Inject "Change Password" button next to Logout (visible to ALL users)
+(function injectChangePasswordButton() {
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (!logoutBtn) return;
+  if (document.getElementById('changePassBtn')) return; // already injected
+
+  const btn = document.createElement('button');
+  btn.id = 'changePassBtn';
+  btn.textContent = '🔒 Change Password';
+  if (logoutBtn.className) btn.className = logoutBtn.className;
+  btn.style.cssText = 'margin-right:6px; background:#1976d2; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;';
+  btn.addEventListener('click', openChangePassword);
+
+  logoutBtn.parentNode.insertBefore(btn, logoutBtn);
+})();
+
+function openChangePassword() {
+  const existing = document.getElementById('changePassModal');
+  if (existing) { existing.style.display = 'flex'; return; }
+
+  const wrap = document.createElement('div');
+  wrap.id = 'changePassModal';
+  wrap.style.cssText = 'display:flex; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;';
+  wrap.innerHTML = `
+    <div style="background:white; padding:24px; border-radius:8px; width:340px; color:#333;">
+      <h3 style="margin:0 0 16px; color:#333;">🔒 Change Password</h3>
+      <input id="cpOld" type="password" placeholder="Current password" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; color:#333;">
+      <input id="cpNew" type="password" placeholder="New password" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; color:#333;">
+      <input id="cpConfirm" type="password" placeholder="Confirm new password" style="width:100%; padding:8px; margin-bottom:12px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; color:#333;">
+      <div id="cpMsg" style="font-size:13px; margin-bottom:10px; min-height:16px;"></div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button id="cpCancel" style="padding:8px 14px; border:1px solid #ccc; background:white; border-radius:4px; cursor:pointer; color:#333;">Cancel</button>
+        <button id="cpSubmit" style="padding:8px 14px; border:none; background:#1976d2; color:white; border-radius:4px; cursor:pointer;">Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+
+  document.getElementById('cpCancel').addEventListener('click', () => { wrap.style.display = 'none'; });
+  document.getElementById('cpSubmit').addEventListener('click', submitChangePassword);
+}
+
+// Placeholder — will be wired to backend in Step 3
+async function submitChangePassword() {
+  const msg = document.getElementById('cpMsg');
+  msg.style.color = '#888';
+  msg.textContent = 'Wiring backend in next step…';
+}
