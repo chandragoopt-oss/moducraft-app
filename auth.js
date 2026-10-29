@@ -261,9 +261,71 @@ function openChangePassword() {
   document.getElementById('cpSubmit').addEventListener('click', submitChangePassword);
 }
 
-// Placeholder — will be wired to backend in Step 3
 async function submitChangePassword() {
+  const oldPass = document.getElementById('cpOld').value;
+  const newPass = document.getElementById('cpNew').value;
+  const confirmPass = document.getElementById('cpConfirm').value;
   const msg = document.getElementById('cpMsg');
-  msg.style.color = '#888';
-  msg.textContent = 'Wiring backend in next step…';
+  const btn = document.getElementById('cpSubmit');
+
+  // Basic frontend validation
+  if (!oldPass || !newPass || !confirmPass) {
+    msg.style.color = '#c62828';
+    msg.textContent = 'Please fill all fields.';
+    return;
+  }
+  if (newPass !== confirmPass) {
+    msg.style.color = '#c62828';
+    msg.textContent = 'New passwords do not match.';
+    return;
+  }
+  if (newPass.length < 6) {
+    msg.style.color = '#c62828';
+    msg.textContent = 'New password must be at least 6 characters.';
+    return;
+  }
+
+  // Disable button while checking
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  msg.style.color = '#1976d2';
+  msg.textContent = 'Updating password...';
+
+  try {
+    const res = await fetch(MC_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'changePassword',
+        token: localStorage.getItem('mc_token'),
+        oldPassword: oldPass,
+        newPassword: newPass
+      })
+    });
+    
+    const data = await res.json();
+
+    if (data.ok) {
+      msg.style.color = '#2e7d32';
+      msg.textContent = '✅ Password updated successfully!';
+      document.getElementById('cpOld').value = '';
+      document.getElementById('cpNew').value = '';
+      document.getElementById('cpConfirm').value = '';
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        document.getElementById('changePassModal').style.display = 'none';
+        msg.textContent = '';
+      }, 2000);
+    } else {
+      msg.style.color = '#c62828';
+      msg.textContent = data.message || 'Failed to update password.';
+    }
+  } catch (e) {
+    msg.style.color = '#c62828';
+    msg.textContent = 'Network error. Please try again.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
 }
