@@ -147,16 +147,19 @@ async function loadAdminUsers() {
         const isActive = u.active === true || u.active === 'true';
         const statusColor = isActive ? '#2e7d32' : '#c62828';
         const statusText = isActive ? 'Active' : 'Restricted';
-        const actionBtn = isActive 
+                const actionBtn = isActive 
           ? `<button onclick="toggleUserStatus('${u.email}', false)" style="background:#ef6c00; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-right:4px;">Restrict</button>`
           : `<button onclick="toggleUserStatus('${u.email}', true)" style="background:#2e7d32; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-right:4px;">Unrestrict</button>`;
+
+        const resetBtn = `<button onclick="adminResetPassword('${u.email}')" style="background:#1976d2; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-right:4px;">🔑 Reset Pass</button>`;
         
         html += `<tr>
           <td style="padding:8px; border-bottom:1px solid #eee;">${u.email}</td>
                    <td style="padding:8px; border-bottom:1px solid #eee;">${roleLabel}</td>
           <td style="padding:8px; border-bottom:1px solid #eee; color:${statusColor}; font-weight:bold;">${statusText}</td>
-          <td style="padding:8px; border-bottom:1px solid #eee;">
+                   <td style="padding:8px; border-bottom:1px solid #eee;">
             ${actionBtn}
+            ${resetBtn}
             <button onclick="deleteUser('${u.email}')" style="background:#c62828; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Delete</button>
           </td>
         </tr>`;
@@ -327,5 +330,37 @@ async function submitChangePassword() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Save';
+  }
+}
+
+async function adminResetPassword(email) {
+  const newPass = prompt(`Enter a new password for ${email}:\n(Must be at least 6 characters)`);
+  
+  if (newPass === null) return; // User clicked Cancel
+  if (newPass.length < 6) {
+    alert("Password must be at least 6 characters.");
+    return;
+  }
+
+  try {
+    const res = await fetch(MC_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ 
+        action: 'adminResetPassword', 
+        token: localStorage.getItem('mc_token'), 
+        email: email,
+        newPassword: newPass 
+      })
+    });
+    const data = await res.json();
+    
+    if (data.ok) {
+      alert(`✅ Password successfully reset for ${email}.`);
+    } else {
+      alert(`❌ Error: ${data.message || 'Could not reset password.'}`);
+    }
+  } catch (e) {
+    alert("❌ Network error. Please try again.");
   }
 }
