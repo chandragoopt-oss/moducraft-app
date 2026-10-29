@@ -616,10 +616,59 @@ body.preview-mode #app:has(#fpsv) {
   box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
 }
 /* =========================================
-   SAFE DESIGN STUDIO UI
+   1. FIX 3D STRETCH & CAD-STYLE SPLIT LAYOUT
    ========================================= */
 
-/* 1. Fix the Toggle Buttons (Force them to be normal inline buttons) */
+/* Create a 2/3 and 1/3 split layout for the Live Views */
+body.preview-mode .card:has(.elc) {
+  display: grid !important;
+  grid-template-columns: 2fr 1fr !important; /* Big view on left, side view on right */
+  gap: 15px !important;
+  align-items: start !important;
+  background: var(--bg-panel) !important;
+  border-radius: 8px !important;
+  padding: 15px !important;
+}
+
+/* Ensure the container boxes don't collapse or stretch */
+body.preview-mode .card:has(.elc) > div {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important; 
+  overflow: hidden !important;
+}
+
+/* LOCK THE HEIGHT of the 3D/2D canvases to stop the infinite stretch */
+body.preview-mode .card:has(.elc) canvas,
+body.preview-mode .card:has(.elc) .elc {
+  width: 100% !important;
+  height: 400px !important;         /* Fixed height prevents stretching */
+  max-height: 400px !important;
+  min-height: 400px !important;
+  object-fit: contain !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important;
+}
+
+/* =========================================
+   2. FIX MAIN DRAWING CANVAS (Plan View)
+   ========================================= */
+body.preview-mode #app:has(#dsv) #dsv,
+body.preview-mode #app:has(#fpsv) #fpsv {
+  width: 100% !important;
+  min-height: 65vh !important; /* Massive drawing area */
+  max-height: 75vh !important;
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+  overflow: hidden !important; /* Stops scrollbars from breaking the layout */
+}
+
+/* =========================================
+   3. FIX THE TOGGLE BUTTONS
+   ========================================= */
 #design-mode-toggle {
   display: flex !important;
   gap: 10px !important;
@@ -628,8 +677,8 @@ body.preview-mode #app:has(#fpsv) {
 }
 
 #design-mode-toggle button {
-  flex: none !important;           /* Prevents stretching */
-  width: auto !important;          /* Forces normal width */
+  flex: none !important;
+  width: auto !important;
   min-width: 160px !important;
   padding: 10px 20px !important;
   border-radius: 8px !important;
@@ -645,33 +694,4 @@ body.preview-mode #app:has(#fpsv) {
   background: var(--accent-blue) !important;
   color: white !important;
   border-color: var(--accent-blue) !important;
-}
-
-/* 2. Make ONLY the canvases huge (Leaves the rest of the app layout alone) */
-body.preview-mode #app:has(#dsv) #dsv,
-body.preview-mode #app:has(#fpsv) #fpsv {
-  min-height: 70vh !important;     /* Massive canvas */
-  width: 100% !important;
-  background: #ffffff !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-  margin-bottom: 15px !important;
-}
-
-/* 3. Compact the top inputs (Layout, Width, Units) to save space */
-body.preview-mode #app:has(#dsv) select, 
-body.preview-mode #app:has(#fpsv) select,
-body.preview-mode #app:has(#dsv) input, 
-body.preview-mode #app:has(#fpsv) input {
-  height: 34px !important;
-  padding: 4px 8px !important;
-  font-size: 13px !important;
-}
-
-/* 4. Ensure 2D and 3D views sit side-by-side at the bottom */
-body.preview-mode .card:has(.elc) {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 15px !important;
-  align-items: start !important;
 }
