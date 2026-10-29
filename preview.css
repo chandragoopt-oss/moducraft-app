@@ -615,3 +615,65 @@ body.preview-mode #app:has(#fpsv) {
   color: #ffffff;
   box-shadow: 0 2px 5px rgba(59, 130, 246, 0.3);
 }
+/* =========================================
+   TRUE DESIGN STUDIO SPLIT LAYOUT
+   ========================================= */
+
+/* 1. Hide the old legacy sub-navigation tabs in the studio */
+body.design-studio-active #app > div > div:first-child:not(:has(#dsv)):not(:has(#fpsv)) {
+  display: none !important; 
+}
+
+/* 2. Turn the main app into a Split-Screen Grid */
+body.design-studio-active #app {
+  display: grid !important;
+  grid-template-columns: 1fr 380px !important; /* Canvas gets max space, Tools get 380px */
+  grid-template-rows: auto 1fr !important;
+  gap: 15px !important;
+  height: calc(100vh - 120px) !important;
+  overflow: hidden !important;
+  padding: 10px !important;
+}
+
+/* 3. Keep the toggle switch locked at the top spanning both columns */
+body.design-studio-active #design-mode-toggle {
+  grid-column: 1 / -1 !important; /* Spans full width */
+  margin-bottom: 0 !important;
+}
+
+/* 4. Make the Canvas huge and scrollable */
+body.design-studio-active #dsv,
+body.design-studio-active #fpsv {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 75vh !important;
+  overflow: auto !important;
+}
+
+/* 5. Move all the Tool Cards to the right sidebar */
+/* This targets all the cards and pushes them into a neat vertical column */
+body.design-studio-active #app .card,
+body.design-studio-active #app > div > div:nth-child(n+2) {
+  margin-bottom: 10px !important;
+}
+
+body.design-studio-active #app > div {
+  display: contents !important; /* Flattens the original layout so our grid can take over */
+}
+
+/* 6. Make tool cards stack neatly in the sidebar */
+body.design-studio-active #app > *:not(#design-mode-toggle):not(:has(#dsv)):not(:has(#fpsv)) {
+  grid-column: 2 !important; /* Force everything else to the right column */
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  padding: 15px !important;
+  overflow-y: auto !important;
+}
+
+/* Fix 3D and Elevations inside the sidebar to stack vertically */
+body.design-studio-active .card:has(.elc) {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 15px !important;
+}
