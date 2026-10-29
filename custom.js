@@ -2735,3 +2735,10 @@ document.addEventListener('click', function(e) {
         new MutationObserver(enforceRoleUI).observe(navEl, { childList: true, subtree: true });
     }
 })();
+    // Hide the "Access: Editor" text for non-admins
+    if (localStorage.getItem('mc_user_role') !== 'admin') {
+        const accessSpan = document.querySelector('.top span.mut') || document.querySelector('span.mut.noprint');
+        if (accessSpan && accessSpan.textContent.includes('Access:')) {
+            accessSpan.style.display = 'none';
+        }
+    }
