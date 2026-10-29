@@ -467,9 +467,8 @@ body.preview-mode input {
   margin-bottom: 10px !important;
 }
 /* =========================================
-   FIX GLOBAL LAYOUT (Restore other tabs)
+   1. GLOBAL FIXES (Restore Dashboard & Tables)
    ========================================= */
-/* Restore normal flow for Dashboard, Quotations, Projects, etc. */
 body.preview-mode #app {
   display: block !important;
   width: 100% !important;
@@ -480,95 +479,41 @@ body.preview-mode #app {
   box-sizing: border-box !important;
 }
 
-/* Fix the giant blue buttons globally */
+/* Stop buttons from stretching to 100% width globally */
 body.preview-mode button:not(.modal-btn):not(.k-icon-btn):not(.dropdown-btn):not(.mobile-tabs button):not(.main-links button) {
   width: auto !important; 
 }
 
-/* Restore the standard table layouts (Quotations, Projects) */
-body.preview-mode table.g {
-  width: 100% !important;
-}
-
-
 /* =========================================
-   TARGETED FIX: DESIGN WORKSPACE ONLY
+   2. DESIGN WORKSPACE FIX (Canvas size only)
    ========================================= */
-/* We only target the app container IF the design canvas is present */
-body.preview-mode #app:has(#dsv), 
-body.preview-mode #app:has(#fpsv) {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: stretch !important;
-  height: calc(100vh - 120px) !important;
-  overflow: hidden !important;
-  gap: 20px !important;
-}
-
-/* Left side: Main Canvas */
-body.preview-mode #app:has(#dsv) > div:first-child,
-body.preview-mode #app:has(#fpsv) > div:first-child {
-  flex: 1 !important; 
-  overflow-y: auto !important; 
-  padding-right: 10px !important;
-}
-
-/* Right side: Sidebar Tools */
-body.preview-mode #app:has(#dsv) > div:last-child,
-body.preview-mode #app:has(#fpsv) > div:last-child {
-  width: 380px !important;
-  flex-shrink: 0 !important;
-  overflow-y: auto !important; 
-  padding-right: 10px !important;
-  border-left: 1px solid var(--border-color) !important;
-  padding-left: 15px !important;
-}
-
-/* Design Sidebar Buttons (Make them full width ONLY inside the sidebar) */
-body.preview-mode #app:has(#dsv) > div:last-child button,
-body.preview-mode #app:has(#fpsv) > div:last-child button {
+/* Make all drawing canvases large, white, and full-width */
+#dsv, #fpsv, #dlv_p, #dlv_w, .elc, canvas {
   width: 100% !important;
-  padding: 8px !important;
-  margin-bottom: 5px !important;
+  max-width: 100% !important;
+  min-height: 550px !important;
+  background: #ffffff !important; 
+  border-radius: 8px !important;
+  margin-bottom: 15px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
 }
 
 /* =========================================
-   IMPROVE BOTTOM CANVAS (Live Views)
+   3. FIX BOTTOM LIVE VIEWS (2D & 3D Side-by-Side)
    ========================================= */
-/* Make the 2D Plan and 3D View sit perfectly side-by-side */
+/* This targets ONLY the card that contains the 3D view to make them side-by-side */
 body.preview-mode .card:has(.elc) {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
-  gap: 20px !important;
+  gap: 15px !important;
   align-items: start !important;
-  padding: 20px !important;
+  padding: 15px !important;
+  background: var(--bg-panel) !important;
 }
 
-/* Make sure the canvases fill their new grid boxes */
-body.preview-mode .card:has(.elc) canvas,
-body.preview-mode .card:has(.elc) .elc {
-  width: 100% !important;
-  height: auto !important;
-  min-height: 400px !important;
-  background: #ffffff !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
-}
-
-/* Responsive: Stack them on mobile */
-@media (max-width: 1100px) {
+/* Responsive: stack them on smaller screens */
+@media (max-width: 1200px) {
   body.preview-mode .card:has(.elc) {
     grid-template-columns: 1fr !important;
-  }
-  body.preview-mode #app:has(#dsv), 
-  body.preview-mode #app:has(#fpsv) {
-    flex-direction: column !important;
-    height: auto !important;
-    overflow-y: auto !important;
-  }
-  body.preview-mode #app:has(#dsv) > div:last-child,
-  body.preview-mode #app:has(#fpsv) > div:last-child {
-    width: 100% !important;
-    border-left: none !important;
   }
 }
