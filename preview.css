@@ -1,5 +1,5 @@
 /* =========================================
-   PREVIEW SANDBOX CSS (Dark Mode & Kanban)
+   PREVIEW SANDBOX CSS (Unified Dark Mode)
    ========================================= */
 
 body.preview-mode {
@@ -13,33 +13,22 @@ body.preview-mode {
   font-family: 'Segoe UI', Roboto, sans-serif;
 }
 
-/* --- LOGO STYLING (Turns your logo pure white) --- */
+/* --- LOGO STYLING --- */
 .white-logo {
   height: 40px;
   border-radius: 6px;
   object-fit: contain;
   background: transparent;
-  filter: brightness(0) invert(1); /* This makes the dark logo white */
+  filter: brightness(0) invert(1);
 }
 
 /* HIDE OVERLAPPING ORIGINAL ELEMENTS */
-#gs-wrap { display: none !important; } 
-#dept_sw { display: none !important; } 
-#hxw { display: none !important; }     
-#st, #err { display: none !important; } 
-#fl { display: none !important; } /* Hides old flash messages */
-#mob-nav { display: none !important; } /* Hides old mobile bottom nav */
-.cpy { display: none !important; } /* Hides old footer */
+#gs-wrap, #dept_sw, #hxw, #st, #err, #fl, #mob-nav, .cpy { display: none !important; } 
 
 /* TOP NAVIGATION BAR */
 .top-nav {
-  display: flex; 
-  align-items: center; 
-  justify-content: space-between;
-  background: #1e293b; 
-  padding: 10px 20px; 
-  border-bottom: 1px solid #334155; 
-  z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  background: #1e293b; padding: 10px 20px; border-bottom: 1px solid #334155; z-index: 100;
 }
 .logo-area { display: flex; align-items: center; gap: 15px; }
 .logo-area h1 { margin: 0; font-size: 18px; color: #fff; }
@@ -124,12 +113,45 @@ body.preview-mode {
 .k-icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; }
 .k-icon-btn:hover { background: #334155; color: #fff; }
 
-/* DARK MODE OVERRIDES FOR TABLES */
+/* =========================================
+   GLOBAL DARK MODE OVERRIDES
+   ========================================= */
+
+/* Cards & Panels */
 body.preview-mode .card { background: #1e293b !important; border-color: #334155 !important; color: #f8fafc; }
+body.preview-mode .acp, body.preview-mode .cxbar { background: #0f172a !important; border-color: #334155 !important; }
+body.preview-mode .mut { color: #94a3b8 !important; }
+
+/* Tables */
 body.preview-mode table.g th { background: #0f172a !important; color: #94a3b8 !important; border-bottom: 1px solid #334155 !important; }
 body.preview-mode table.g td { border-bottom: 1px solid #334155 !important; color: #f8fafc !important; }
 body.preview-mode table.g tr.gh td { background: #1e293b !important; color: #f8fafc !important; }
-body.preview-mode input, body.preview-mode select, body.preview-mode .flt { background: #0f172a !important; color: #fff !important; border: 1px solid #334155 !important; }
+body.preview-mode table.g tr.tot td { background: #0f172a !important; }
+
+/* Inputs, Selects, Textareas */
+body.preview-mode input, body.preview-mode select, body.preview-mode textarea, body.preview-mode .flt { 
+  background: #0f172a !important; color: #fff !important; border: 1px solid #334155 !important; 
+}
+
+/* Standard Buttons */
+body.preview-mode button:not(.k-icon-btn):not(.dropdown-btn):not(.mobile-tabs button):not(.main-links button) {
+  background: #3b82f6; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+}
+body.preview-mode button.g:not(.k-icon-btn) {
+  background: transparent !important; border: 1px solid #334155 !important; color: #f8fafc !important;
+}
+body.preview-mode button.g:hover:not(.k-icon-btn) { background: #334155 !important; }
+
+/* Modals & Overlays */
+body.preview-mode #loginOverlay, body.preview-mode #adminUsersModal { background: #0f172a !important; }
+body.preview-mode #loginOverlay > div, body.preview-mode #adminUsersModal > div { background: #1e293b !important; color: #fff !important; border: 1px solid #334155 !important; }
+body.preview-mode #loginOverlay h2, body.preview-mode #adminUsersModal h2 { color: #fff !important; }
+body.preview-mode #loginOverlay input, body.preview-mode #adminUsersModal input { background: #0f172a !important; color: #fff !important; border-color: #334155 !important; }
+body.preview-mode #adminUsersModal table th { background: #0f172a !important; color: #94a3b8 !important; }
+body.preview-mode #adminUsersModal table td { border-bottom: 1px solid #334155 !important; }
+
+/* Warnings (like the red/yellow boxes) */
+body.preview-mode .warn { background: rgba(245, 158, 11, 0.1) !important; color: #f59e0b !important; border: 1px solid #f59e0b !important; }
 
 /* MOBILE RESPONSIVENESS */
 .mobile-tabs { display: none; }
@@ -149,8 +171,8 @@ body.preview-mode input, body.preview-mode select, body.preview-mode .flt { back
     gap: 10px; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #334155;
   }
   .mobile-tabs button {
-    background: #0f172a; border: 1px solid #334155;
-    color: #94a3b8; padding: 8px 15px; border-radius: 20px; white-space: nowrap;
+    background: #0f172a !important; border: 1px solid #334155 !important;
+    color: #94a3b8 !important; padding: 8px 15px; border-radius: 20px; white-space: nowrap;
   }
-  .mobile-tabs button.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+  .mobile-tabs button.active { background: #3b82f6 !important; color: #fff !important; border-color: #3b82f6 !important; }
 }
