@@ -2669,3 +2669,45 @@ document.addEventListener('click', function(e) {
     .then(res => console.log("✅ CLOUD DELETE SUCCESS:", res))
     .catch(err => console.error("❌ CLOUD DELETE FAILED:", err));
 }, true);
+
+// ==========================================
+// STEP 14: ROLE-BASED ACCESS CONTROL (UI)
+// ==========================================
+(function(){
+    if (window.__mcRBACLoaded) return;
+    window.__mcRBACLoaded = true;
+
+    // Define which tabs are ONLY for Admins
+    const ADMIN_ONLY_TABS = ['s', 'v', 'm', 'x']; 
+
+    const _render = window.render;
+    window.render = function() {
+        _render.apply(this, arguments); // Let the app render normally first
+        
+        // Check the role from localStorage (defaults to 'user' for safety)
+        const role = localStorage.getItem('mc_user_role') || 'user';
+        
+        if (role !== 'admin') {
+            // Hide admin-only tabs
+            document.querySelectorAll('#nav button[data-a="tab"]').forEach(btn => {
+                if (ADMIN_ONLY_TABS.includes(btn.dataset.v)) {
+                    btn.style.display = 'none';
+                }
+            });
+            
+            // Hide the Department Switcher dropdown
+            const deptSw = document.getElementById('dept_sw');
+            if (deptSw) deptSw.style.display = 'none';
+            
+        } else {
+            // Ensure the Admin sees everything
+            const deptSw = document.getElementById('dept_sw');
+            if (deptSw) deptSw.style.display = 'flex';
+        }
+    };
+    
+    // Apply it immediately on page load
+    setTimeout(() => { if(window.render) window.render(); }, 500);
+
+    console.log('[ModuCraft +] Role-Based UI Loaded');
+})();
