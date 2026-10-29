@@ -96,9 +96,6 @@
 
 <body class="preview-mode">
 
-  <!-- HIDDEN DUMMY ELEMENT (Fixes the crash) -->
-  <div class="top" style="display:none;"><nav id="dummy-nav"></nav></div>
-
   <!-- YOUR EXISTING LOGIN OVERLAY -->
   <div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f4f7f6; z-index: 99999; display: flex; align-items: center; justify-content: center; font-family: sans-serif;">
     <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
@@ -123,18 +120,20 @@
   </div>
 
   <!-- NEW TOP NAVIGATION -->
-  <header class="top-nav">
+  <header class="top top-nav">
     <div class="logo-area">
       <img id="tl" src="logo.png" alt="ModuCraft">
       <div>
         <h1>ModuCraft ERP</h1>
-        <small>Design • BOQ • Execute • Deliver</small>
+        <!-- app.js needs this #ci tag to inject the company address -->
+        <small id="ci">Design • BOQ • Execute • Deliver</small>
       </div>
     </div>
     
     <nav class="main-links" id="nav"></nav>
     <div class="user-actions" id="user-actions"></div>
     
+    <!-- Hidden elements that app.js needs to not crash -->
     <span id="st" class="noprint" style="display:none;"></span>
     <div id="err" class="warn noprint" style="display:none;"></div>
   </header>
