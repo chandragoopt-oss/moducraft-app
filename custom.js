@@ -2671,43 +2671,39 @@ document.addEventListener('click', function(e) {
 }, true);
 
 // ==========================================
-// STEP 14: ROLE-BASED ACCESS CONTROL (UI)
+// STEP 14: ROLE-BASED ACCESS CONTROL (UI) - BULLETPROOF
 // ==========================================
 (function(){
     if (window.__mcRBACLoaded) return;
     window.__mcRBACLoaded = true;
 
-    // Define which tabs are ONLY for Admins
-    const ADMIN_ONLY_TABS = ['s', 'v', 'm', 'x']; 
-
-    const _render = window.render;
-    window.render = function() {
-        _render.apply(this, arguments); // Let the app render normally first
-        
-        // Check the role from localStorage (defaults to 'user' for safety)
+    function enforceRoleUI() {
         const role = localStorage.getItem('mc_user_role') || 'user';
-        
+        const nav = document.getElementById('nav');
+        if (!nav) return;
+
         if (role !== 'admin') {
-            // Hide admin-only tabs
-            document.querySelectorAll('#nav button[data-a="tab"]').forEach(btn => {
-                if (ADMIN_ONLY_TABS.includes(btn.dataset.v)) {
-                    btn.style.display = 'none';
-                }
+            // Admin-only tabs: Settings (s), Vendors (v), Ply & Hardware (m), Access & Sharing (x)
+            const adminOnly = ['s', 'v', 'm', 'x']; 
+            
+            adminOnly.forEach(tabId => {
+                const btn = nav.querySelector(`button[data-v="${tabId}"]`);
+                // .remove() completely deletes it from the DOM so the other script can't bring it back
+                if (btn) btn.remove(); 
             });
             
-            // Hide the Department Switcher dropdown
+            // Also remove the Department switcher dropdown
             const deptSw = document.getElementById('dept_sw');
-            if (deptSw) deptSw.style.display = 'none';
-            
-        } else {
-            // Ensure the Admin sees everything
-            const deptSw = document.getElementById('dept_sw');
-            if (deptSw) deptSw.style.display = 'flex';
+            if (deptSw) deptSw.remove();
         }
-    };
-    
-    // Apply it immediately on page load
-    setTimeout(() => { if(window.render) window.render(); }, 500);
+    }
 
-    console.log('[ModuCraft +] Role-Based UI Loaded');
+    // Run immediately
+    enforceRoleUI();
+
+    // Keep watching the nav menu so if it tries to rebuild, we delete the buttons again
+    const navEl = document.getElementById('nav');
+    if (navEl) {
+        new MutationObserver(enforceRoleUI).observe(navEl, { childList: true, subtree: true });
+    }
 })();
