@@ -243,6 +243,31 @@
         // Insert the toggle at the very top of the canvas
         appDiv.insertAdjacentHTML('afterbegin', toggleHtml);
       }
+             // Inject Maximize Buttons into the viewports
+      setTimeout(() => {
+        const views = document.querySelectorAll('.card:has(.elc), #dsv, #fpsv');
+        
+        views.forEach(view => {
+          // Find the parent container box
+          const box = view.closest('.card') || view.parentElement;
+          if (!box || box.querySelector('.vp-max-btn')) return; // Skip if already has button
+
+          box.classList.add('viewport-box');
+          
+          const btn = document.createElement('button');
+          btn.className = 'vp-max-btn';
+          btn.innerHTML = '⛶'; // Maximize icon
+          btn.title = "Maximize / Restore Viewport";
+          
+          btn.onclick = () => {
+            box.classList.toggle('vp-maximized');
+            // Dispatch resize event so the 3D canvas redraws to fit the new size
+            window.dispatchEvent(new Event('resize'));
+          };
+          
+          box.appendChild(btn);
+        });
+      }, 200); // Small delay to let the DOM build first
     }
   };
 
