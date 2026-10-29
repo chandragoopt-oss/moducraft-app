@@ -98,12 +98,16 @@
     const todayStr = new Date().toISOString().split('T')[0];
     let urgentCards = [], taskCards = [], quoteCards = [], projectCards = [];
 
+    // --- PENDING QUOTES ---
     Object.values(S.q || {}).forEach(q => {
       if (q.st === 'shared' && q.out !== 'lost') {
+        // Get Quote Number
+        const qNum = typeof qno === 'function' ? qno(q) : '';
+        
         quoteCards.push(`
           <div class="k-card quote">
             <div class="k-card-title">${typeof esc === 'function' ? esc(q.name || 'No Name') : (q.name || 'No Name')}</div>
-            <div class="k-card-meta">${typeof esc === 'function' ? esc(q.project || 'No Project') : (q.project || 'No Project')}</div>
+            <div class="k-card-meta">Lead: ${typeof esc === 'function' ? esc(qNum) : qNum}</div>
             <div class="k-card-actions">
               <button class="k-icon-btn" data-a="pq" data-i="${q.id}" title="Preview">👁️</button>
               <button class="k-icon-btn" data-a="oq" data-i="${q.id}" title="Edit">✏️</button>
@@ -113,18 +117,28 @@
       }
     });
 
+    // --- PROJECTS & TASKS ---
     Object.values(BZ?.pj || {}).forEach(p => {
       if (p.stage !== 'Closed') {
+        
+        // Get Quote Number for the project
+        let qNum = '';
+        if (p.qid && S.q[p.qid]) {
+          qNum = typeof qno === 'function' ? qno(S.q[p.qid]) : '';
+        }
+        
+        // Project Card (Replacing "Apartment" with Quote Number)
         projectCards.push(`
           <div class="k-card project">
-            <div class="k-card-title">${typeof esc === 'function' ? esc(p.name) : p.name}</div>
-            <div class="k-card-meta">${typeof esc === 'function' ? esc(p.client) : p.client} • ${typeof esc === 'function' ? esc(p.stage) : p.stage}</div>
+            <div class="k-card-title">${typeof esc === 'function' ? esc(p.client || p.name) : (p.client || p.name)}</div>
+            <div class="k-card-meta">${qNum ? 'Quote: ' + (typeof esc === 'function' ? esc(qNum) : qNum) : 'No Quote Linked'} • ${typeof esc === 'function' ? esc(p.stage) : p.stage}</div>
             <div class="k-card-actions">
               <button class="k-icon-btn" onclick="S.tab='j';S.pj='${p.id}';S.pt='ov';render();" title="Open Project">🏃</button>
             </div>
           </div>
         `);
 
+        // Task Cards
         if (p.tasks) {
           p.tasks.forEach((t, idx) => {
             if (t.st !== 'Done' && t.due) {
@@ -132,7 +146,7 @@
               const card = `
                 <div class="k-card ${isUrgent ? 'urgent' : 'task'}">
                   <div class="k-card-title">${typeof esc === 'function' ? esc(t.t) : t.t}</div>
-                  <div class="k-card-meta">${typeof esc === 'function' ? esc(p.name) : p.name} • Due: ${typeof dmy === 'function' ? dmy(t.due) : t.due}</div>
+                  <div class="k-card-meta">${typeof esc === 'function' ? esc(p.client || p.name) : (p.client || p.name)} ${qNum ? ' • ' + (typeof esc === 'function' ? esc(qNum) : qNum) : ''} • Due: ${typeof dmy === 'function' ? dmy(t.due) : t.due}</div>
                   <div class="k-card-actions">
                     <button class="k-icon-btn" onclick="askDo('Mark complete?',()=>{p.tasks[${idx}].st='Done';p.tasks[${idx}].pct=100;bzSave('pj','${p.id}');render();})" title="Complete Task">✔️</button>
                   </div>
@@ -201,10 +215,9 @@
   window.addEventListener('load', () => {
     setTimeout(() => { 
       if (typeof S !== 'undefined') {
-        S.tab = 'h'; // FORCE DASHBOARD TAB
+        S.tab = 'h';
         window.render(); 
       }
     }, 1000);
   });
-
 })();
