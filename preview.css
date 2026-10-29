@@ -327,3 +327,86 @@ body.preview-mode #dsv, body.preview-mode #fpsv, body.preview-mode #dlv_p, body.
     flex-shrink: 0; /* Prevents the buttons from squishing each other */
   }
 }
+/* =========================================
+   DESIGN & SETTINGS TAB UI/UX POLISH
+   ========================================= */
+
+/* 1. Make the main section cards look more modern */
+body.preview-mode .card {
+  border-radius: 12px !important;
+  padding: 20px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  margin-bottom: 20px !important;
+}
+
+/* 2. Style the Headings inside the cards */
+body.preview-mode .card h3, 
+body.preview-mode .card b {
+  font-size: 16px !important;
+  color: var(--text-main) !important;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  display: block;
+}
+
+/* 3. Fix the Tables (give them breathing room) */
+body.preview-mode table.g {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+body.preview-mode table.g th {
+  padding: 12px 15px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  font-size: 11px !important;
+  letter-spacing: 0.5px;
+}
+
+body.preview-mode table.g td {
+  padding: 12px 15px !important;
+  font-size: 13px !important;
+  vertical-align: middle !important;
+}
+
+/* Add a hover effect to table rows */
+body.preview-mode table.g tr:hover td {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+[data-theme="light"] body.preview-mode table.g tr:hover td {
+  background: rgba(0, 0, 0, 0.02) !important;
+}
+
+/* 4. Modernize the Inputs and Selects */
+body.preview-mode input:not([type="checkbox"]), 
+body.preview-mode select, 
+body.preview-mode textarea {
+  padding: 10px 12px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+  outline: none !important;
+}
+
+/* Add a nice blue glow when clicking into an input */
+body.preview-mode input:focus, 
+body.preview-mode select:focus, 
+body.preview-mode textarea:focus {
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* 5. Style the "Add" buttons in the settings */
+body.preview-mode button:not(.k-icon-btn):not(.dropdown-btn):not(.mobile-tabs button):not(.main-links button):not(.modal-btn-close) {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: transform 0.1s, opacity 0.2s !important;
+}
+body.preview-mode button:not(.k-icon-btn):not(.dropdown-btn):not(.mobile-tabs button):not(.main-links button):not(.modal-btn-close):active {
+  transform: scale(0.97) !important;
+}
