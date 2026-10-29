@@ -230,19 +230,7 @@
     // 2. Inject the Toggle Switch if we are in either Design tab ('d' or 'f')
      if (S.tab === 'd' || S.tab === 'f') {
             if (appDiv) {
-        const toggleHtml = `
-          <div id="design-mode-toggle">
-            <button class="${S.tab === 'f' ? 'active' : ''}" onclick="S.tab='f'; window.render();">
-              📐 Plan View (Top)
-            </button>
-            <button class="${S.tab === 'd' ? 'active' : ''}" onclick="S.tab='d'; window.render();">
-              🧱 Wall Elevations & 3D
-            </button>
-          </div>
-        `;
-        // Insert the toggle at the very top of the canvas
-        appDiv.insertAdjacentHTML('afterbegin', toggleHtml);
-      }
+      
              // Inject Maximize Buttons into the viewports
       setTimeout(() => {
         const views = document.querySelectorAll('.card:has(.elc), #dsv, #fpsv');
