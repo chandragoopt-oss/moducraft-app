@@ -132,3 +132,32 @@ body.preview-mode {
   }
   .mobile-tabs button.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
 }
+/* ... (Keep all your existing CSS above this line) ... */
+
+/* HIDE ORIGINAL APP ELEMENTS THAT CRASH THE NEW LAYOUT */
+#hxw { display: none !important; } /* Hides the old Undo/Redo buttons */
+#st, #err { display: none !important; } /* Hides old status bars */
+
+/* MOBILE RESPONSIVENESS */
+.mobile-tabs { display: none; }
+@media (max-width: 900px) {
+  body.preview-mode { overflow: auto; }
+  .app-container { padding: 10px; }
+  .kpi-strip { flex-wrap: wrap; padding: 10px; }
+  .kpi-card { flex: 1 1 calc(50% - 10px); }
+  .kpi-card:last-child { flex: 1 1 100%; }
+  .kanban-board { display: block; height: auto; }
+  .kanban-col { display: none; height: auto; max-height: none; margin-bottom: 15px; }
+  .kanban-col.active-tab { display: flex; }
+  .main-links, .user-actions .dropdown { display: none; }
+  
+  .mobile-tabs {
+    display: flex; overflow-x: auto; background: #1e293b; padding: 10px;
+    gap: 10px; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #334155;
+  }
+  .mobile-tabs button {
+    background: #0f172a; border: 1px solid #334155;
+    color: #94a3b8; padding: 8px 15px; border-radius: 20px; white-space: nowrap;
+  }
+  .mobile-tabs button.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+}
