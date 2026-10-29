@@ -617,7 +617,7 @@ body.preview-mode #app:has(#fpsv) {
 }
 
 /* =========================================
-   3DS MAX LAYOUT & MAXIMIZE TOGGLE
+   3DS MAX LAYOUT & MAXIMIZE FIXES
    ========================================= */
 
 /* 1. Restore native app scrolling */
@@ -626,52 +626,26 @@ body.preview-mode #app {
   width: 100% !important;
   height: auto !important;
   overflow-y: auto !important;
-  overflow-x: hidden !important;
   padding: 15px !important;
 }
 
-/* 2. Fix the Toggle Buttons (Stop them from stretching) */
-#design-mode-toggle {
-  display: flex !important;
-  gap: 10px !important;
-  margin-bottom: 15px !important;
-  width: fit-content !important; 
-}
-
-#design-mode-toggle button {
-  width: auto !important; 
-  padding: 8px 16px !important;
-  border-radius: 6px !important;
-  border: 1px solid var(--border-color) !important;
-  background: var(--bg-panel) !important;
-  color: var(--text-main) !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-}
-
-#design-mode-toggle button.active {
-  background: var(--accent-blue) !important;
-  color: #fff !important;
-  border-color: var(--accent-blue) !important;
-}
-
-/* 3. THE 3DS MAX GRID LAYOUT */
+/* 2. The Main Grid Container (Locks the layout) */
 body.preview-mode .card:has(.elc) {
   display: grid !important;
-  grid-template-columns: 350px 1fr !important; 
+  grid-template-columns: 320px 1fr !important; /* Left side 320px, Right side takes the rest */
   grid-template-rows: 1fr 1fr !important; 
   gap: 15px !important;
-  height: 65vh !important; /* Keeps 3D from stretching */
+  height: 600px !important; /* Lock height so 3D doesn't stretch infinitely */
   padding: 15px !important;
   background: var(--bg-main) !important;
   border-radius: 8px !important;
   position: relative !important; 
 }
 
-/* Force 3D to take the big right side */
+/* 3. Force 3D to take the BIG right side */
 body.preview-mode .elc, body.preview-mode .card:has(.elc) canvas {
   grid-column: 2 !important;
-  grid-row: 1 / -1 !important;
+  grid-row: 1 / -1 !important; 
   width: 100% !important;
   height: 100% !important;
   background: #fff !important;
@@ -679,7 +653,7 @@ body.preview-mode .elc, body.preview-mode .card:has(.elc) canvas {
   object-fit: contain !important;
 }
 
-/* Force 2D Plan to top-left */
+/* 4. Force 2D Plan to top-left */
 body.preview-mode #dsv, body.preview-mode #fpsv {
   grid-column: 1 !important;
   grid-row: 1 / 2 !important;
@@ -687,9 +661,10 @@ body.preview-mode #dsv, body.preview-mode #fpsv {
   height: 100% !important;
   background: #fff !important;
   border-radius: 6px !important;
+  overflow: hidden !important;
 }
 
-/* Force Elevations to bottom-left */
+/* 5. Force Elevations to bottom-left */
 body.preview-mode .card:has(.elc) > div:not(.elc):not(:has(#dsv)):not(:has(#fpsv)) {
   grid-column: 1 !important;
   grid-row: 2 / 3 !important;
@@ -700,27 +675,37 @@ body.preview-mode .card:has(.elc) > div:not(.elc):not(:has(#dsv)):not(:has(#fpsv
   border-radius: 6px !important;
 }
 
-/* 4. THE MAXIMIZE EFFECT */
-.viewport-box {
-  position: relative !important;
-  border: 1px solid var(--border-color) !important;
-}
-
+/* 6. FIX THE MAXIMIZE BUTTON (Stop it from stretching) */
 .vp-max-btn {
   position: absolute !important;
   top: 10px !important;
   right: 10px !important;
+  width: 32px !important;  /* Force it to be a small square */
+  height: 32px !important; /* Force it to be a small square */
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   background: var(--bg-panel) !important;
   border: 1px solid var(--border-color) !important;
   color: var(--text-main) !important;
-  padding: 4px 8px !important;
   border-radius: 4px !important;
   cursor: pointer !important;
   z-index: 100 !important;
   font-size: 16px !important;
 }
-.vp-max-btn:hover { background: var(--accent-blue) !important; color: #fff !important; }
+.vp-max-btn:hover {
+  background: var(--accent-blue) !important;
+  color: #fff !important;
+}
 
+/* Ensure the parent container has position relative for the absolute button */
+.viewport-box {
+  position: relative !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* 7. Maximized State */
 .vp-maximized {
   position: fixed !important;
   top: 120px !important; 
@@ -728,12 +713,7 @@ body.preview-mode .card:has(.elc) > div:not(.elc):not(:has(#dsv)):not(:has(#fpsv
   width: calc(100vw - 40px) !important;
   height: calc(100vh - 140px) !important;
   z-index: 9999 !important;
-  background: var(--bg-main) !important;
+  background: var(--bg-panel) !important;
   padding: 20px !important;
   box-shadow: 0 0 50px rgba(0,0,0,0.8) !important;
-}
-
-.vp-maximized canvas, .vp-maximized #dsv {
-  width: 100% !important;
-  height: 100% !important;
 }
