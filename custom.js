@@ -2689,31 +2689,36 @@ document.addEventListener('click', function(e) {
     if (window.__mcRBACLoaded) return;
     window.__mcRBACLoaded = true;
 
-    function enforceRoleUI() {
-    const role = localStorage.getItem('mc_user_role') || 'user';
-    const dept = localStorage.getItem('msq_dept') || 'admin';
-    const nav = document.getElementById('nav');
-    if (!nav) return;
+       function enforceRoleUI() {
+        // 1. Check if the core app recognizes them as the Owner/Editor
+        const isOwner = S.role === 'Owner' || S.role === 'Editor' || !S.role;
+        
+        // 2. Fallback to 'admin' if they are the owner, so they don't lose their tabs
+        const role = localStorage.getItem('mc_user_role') || (isOwner ? 'admin' : 'user');
+        const dept = localStorage.getItem('msq_dept') || 'admin';
+        const nav = document.getElementById('nav');
+        if (!nav) return;
 
-    if (role !== 'admin') {
-        // What tabs does this person's department legitimately need?
-        const deptAllowed = (window.MC_DEPTS && MC_DEPTS[dept])
-            ? MC_DEPTS[dept].tabs
-            : ['enq', 'q', 'e', 'p'];   // safe fallback = Sales
+        // 3. Only strip tabs and the switcher if they are NOT the owner AND NOT an admin
+        if (role !== 'admin' && !isOwner) {
+            // What tabs does this person's department legitimately need?
+            const deptAllowed = (window.MC_DEPTS && MC_DEPTS[dept])
+                ? MC_DEPTS[dept].tabs
+                : ['enq', 'q', 'e', 'p'];   // safe fallback = Sales
 
-        // Admin-only tabs — but only strip if the dept doesn't allow them
-        const adminOnly = ['s', 'v', 'm', 'x'];
-        adminOnly.forEach(tabId => {
-            if (!deptAllowed.includes(tabId)) {
-                const btn = nav.querySelector(`button[data-v="${tabId}"]`);
-                if (btn) btn.remove();
-            }
-        });
+            // Admin-only tabs — but only strip if the dept doesn't allow them
+            const adminOnly = ['s', 'v', 'm', 'x'];
+            adminOnly.forEach(tabId => {
+                if (!deptAllowed.includes(tabId)) {
+                    const btn = nav.querySelector(`button[data-v="${tabId}"]`);
+                    if (btn) btn.remove();
+                }
+            });
 
-        const deptSw = document.getElementById('dept_sw');
-        if (deptSw) deptSw.remove();
+            const deptSw = document.getElementById('dept_sw');
+            if (deptSw) deptSw.remove();
+        }
     }
-}
 
     // Run immediately
     enforceRoleUI();
