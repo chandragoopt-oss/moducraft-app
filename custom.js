@@ -1442,11 +1442,17 @@ document.addEventListener('change', e => {
   };
 
   // FIX 2: Fix header layout so dropdown sits nicely next to the nav
-  window.MC_injectSwitcher = function() {
+    window.MC_injectSwitcher = function() {
     const top = document.querySelector('.top');
+    
+    // Check the true login role from the server
+    const authRole = localStorage.getItem('mc_user_role') || 'user';
     const isOwner = S.role === 'Owner' || S.role === 'Editor' || !S.role;
     
-    if (!isOwner) {
+    // Only allow the dropdown if they are a verified Admin
+    const isAdmin = (authRole === 'admin') && isOwner;
+
+    if (!isAdmin) {
       const el = document.getElementById('dept_sw');
       if (el) el.remove();
       return;
