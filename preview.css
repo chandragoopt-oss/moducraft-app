@@ -467,53 +467,111 @@ body.preview-mode input {
   margin-bottom: 10px !important;
 }
 /* =========================================
-   1. GLOBAL FIXES (Restore Dashboard & Tables)
+   DESIGN (WALLS A-D) & FLOOR PLAN UI/UX OPTIMIZATION
+   (Only applies to the Design tabs - won't break others)
    ========================================= */
-body.preview-mode #app {
-  display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  overflow-y: auto !important;
-  padding: 15px 20px !important;
-  box-sizing: border-box !important;
-}
 
-/* Stop buttons from stretching to 100% width globally */
-body.preview-mode button:not(.modal-btn):not(.k-icon-btn):not(.dropdown-btn):not(.mobile-tabs button):not(.main-links button) {
-  width: auto !important; 
-}
+body.preview-mode #app:has(#dsv),
+body.preview-mode #app:has(#fpsv) {
 
-/* =========================================
-   2. DESIGN WORKSPACE FIX (Canvas size only)
-   ========================================= */
-/* Make all drawing canvases large, white, and full-width */
-#dsv, #fpsv, #dlv_p, #dlv_w, .elc, canvas {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-height: 550px !important;
-  background: #ffffff !important; 
-  border-radius: 8px !important;
-  margin-bottom: 15px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-}
+  /* 1. COMPACT THE TOP DROPDOWNS (Layout, Width, Units, etc.) */
+  /* Force them into a tight horizontal row to save vertical space */
+  .flex:has(select),
+  .row:has(select) {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    margin-bottom: 10px !important;
+    align-items: flex-end !important;
+  }
 
-/* =========================================
-   3. FIX BOTTOM LIVE VIEWS (2D & 3D Side-by-Side)
-   ========================================= */
-/* This targets ONLY the card that contains the 3D view to make them side-by-side */
-body.preview-mode .card:has(.elc) {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 15px !important;
-  align-items: start !important;
-  padding: 15px !important;
-  background: var(--bg-panel) !important;
-}
+  .flex:has(select) > div,
+  .row:has(select) > div {
+    flex: 1 1 120px !important; 
+  }
 
-/* Responsive: stack them on smaller screens */
-@media (max-width: 1200px) {
-  body.preview-mode .card:has(.elc) {
-    grid-template-columns: 1fr !important;
+  /* Make the labels and select boxes smaller and cleaner */
+  label {
+    font-size: 11px !important;
+    margin-bottom: 4px !important;
+    display: block !important;
+    color: var(--text-muted) !important;
+  }
+
+  select, input[type="text"], input[type="number"] {
+    height: 32px !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    width: 100% !important;
+  }
+
+  /* 2. MAXIMIZE THE MAIN CANVAS */
+  /* Give the drawing area a huge minimum height and a nice shadow */
+  #dsv, #fpsv {
+    width: 100% !important;
+    min-height: 65vh !important; /* Takes up 65% of the screen height */
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    margin-top: 10px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+  }
+
+  /* 3. CLEAN UP THE SIDEBAR CARDS (Floor plan, 3D, Site structure) */
+  .card {
+    background: var(--bg-panel) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* Make the card titles look like clickable accordions */
+  .card b, .card h3 {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 13px !important;
+    color: var(--text-main) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* 4. COMPACT THE TOOL BUTTONS */
+  .card button, .flex button, .row button {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    width: auto !important;
+  }
+
+  /* Make primary buttons (like 'Set room size') full width in the sidebar */
+  .card > button, .card > div > button:not([data-a]) {
+    width: 100% !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* 5. SIDE-BY-SIDE 2D & 3D LIVE VIEWS */
+  .card:has(.elc) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 15px !important;
+    align-items: start !important;
+  }
+  
+  .card:has(.elc) canvas, .card:has(.elc) .elc {
+    width: 100% !important;
+    min-height: 350px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+  }
+
+  /* 6. TIGHTEN THE TOOLBARS (Top, Pan, Zoom, Undo) */
+  .flex:has(button[data-a]),
+  .row:has(button[data-a]) {
+    gap: 6px !important;
+    margin-bottom: 10px !important;
   }
 }
