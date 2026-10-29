@@ -187,3 +187,63 @@ body.preview-mode #dsv, body.preview-mode #fpsv, body.preview-mode #dlv_p, body.
   }
   .mobile-tabs button.active { background: var(--accent-blue) !important; color: #fff !important; border-color: var(--accent-blue) !important; }
 }
+/* =========================================
+   FIX MOBILE LAYOUT (Squished to left, cut off tabs)
+   ========================================= */
+@media (max-width: 900px) {
+  /* 1. Force everything to fit the screen width perfectly */
+  html, body {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  .top-nav, .kpi-strip, .app-container, #app {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+
+  /* 2. Center the Header and stack it nicely */
+  .top-nav {
+    flex-direction: column !important;
+    padding: 15px 10px !important;
+    gap: 10px !important;
+  }
+  .logo-area {
+    flex-direction: column !important;
+    text-align: center;
+    width: 100%;
+  }
+  .logo-area img {
+    margin: 0 auto; /* Brings the logo back to center */
+  }
+  .logo-area small {
+    display: block;
+    line-height: 1.4;
+    margin-top: 5px;
+  }
+  .user-actions {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* 3. Fix KPI Cards so they stay in a perfect 2x3 grid */
+  .kpi-strip {
+    gap: 10px !important;
+    padding: 10px !important;
+  }
+  .kpi-card {
+    flex: 1 1 calc(50% - 5px) !important; 
+    min-width: 0 !important; /* Stops long numbers from breaking the box */
+  }
+
+  /* 4. Fix Kanban Tabs so "Quotes" isn't cut off */
+  .mobile-tabs {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .kanban-board {
+    width: 100% !important;
+  }
+}
