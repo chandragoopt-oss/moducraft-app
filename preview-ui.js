@@ -209,6 +209,8 @@
 
     const originalRender = window.render;
   window.render = function() {
+    document.body.classList.remove('design-studio-active');
+    
     if (S.tab === 'h') {
       buildNav();
       buildKPIs();
@@ -227,7 +229,8 @@
     buildNav(); 
 
     // 2. Inject the Toggle Switch if we are in either Design tab ('d' or 'f')
-    if (S.tab === 'd' || S.tab === 'f') {
+     if (S.tab === 'd' || S.tab === 'f') {
+      document.body.classList.add('design-studio-active'); // <-- ADD THIS
       if (appDiv) {
         const toggleHtml = `
           <div id="design-mode-toggle">
