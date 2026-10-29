@@ -1487,10 +1487,14 @@ document.addEventListener('change', e => {
           localStorage.setItem('msq_dept', curDept);
           if (!MC_DEPTS[curDept].tabs.includes(S.tab)) S.tab = 'h';
         }
-      } else {
-        if (curDept !== 'sales') {
+            } else {
+        // Respect the department set by auth.js. Only default to sales if none exists.
+        const savedDept = localStorage.getItem('msq_dept');
+        if (!savedDept || !MC_DEPTS[savedDept]) {
           curDept = 'sales';
           localStorage.setItem('msq_dept', curDept);
+        } else {
+          curDept = savedDept;
         }
       }
     } else {
