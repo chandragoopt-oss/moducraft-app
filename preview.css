@@ -714,3 +714,78 @@ body.preview-mode .vp-maximized #dsv {
   height: 100% !important;
   max-height: 100% !important;
 }
+/* =========================================
+   TOP TOOLBAR & LEGACY NAV CLEANUP
+   ========================================= */
+
+/* 1. Style the top action buttons (Save quotation, Preview, etc.) */
+body.preview-mode .card > div:first-child:has(button) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  align-items: center !important;
+  padding-bottom: 15px !important;
+  margin-bottom: 15px !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* Make the buttons look like a clean toolbar */
+body.preview-mode .card > div:first-child > button {
+  margin: 0 !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-input) !important;
+  color: var(--text-main) !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+body.preview-mode .card > div:first-child > button:hover {
+  background: var(--border-color) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Make the Primary button (Save quotation) pop out */
+body.preview-mode .card > div:first-child > button:first-child,
+body.preview-mode .card > div:first-child > button[style*="accent-blue"] {
+  background: var(--accent-blue) !important;
+  color: white !important;
+  border-color: var(--accent-blue) !important;
+}
+
+body.preview-mode .card > div:first-child > button:first-child:hover {
+  background: #2563eb !important;
+}
+
+/* 2. Fix the Warning Box (27 client-specific rates...) */
+body.preview-mode .warn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  padding: 12px 15px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  margin-bottom: 20px !important;
+}
+
+body.preview-mode .warn button {
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  border-radius: 4px !important;
+  margin: 0 !important;
+}
+
+/* 3. Hide old legacy navigation buttons (since we use the new dropdown) */
+body.preview-mode nav button[data-v="d"], 
+body.preview-mode nav button[data-v="f"],
+body.preview-mode nav button[data-v="e"] {
+  /* This targets the old injected buttons if they try to show up */
+  display: none !important;
+}
