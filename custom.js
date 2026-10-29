@@ -2678,25 +2678,30 @@ document.addEventListener('click', function(e) {
     window.__mcRBACLoaded = true;
 
     function enforceRoleUI() {
-        const role = localStorage.getItem('mc_user_role') || 'user';
-        const nav = document.getElementById('nav');
-        if (!nav) return;
+    const role = localStorage.getItem('mc_user_role') || 'user';
+    const dept = localStorage.getItem('msq_dept') || 'admin';
+    const nav = document.getElementById('nav');
+    if (!nav) return;
 
-        if (role !== 'admin') {
-            // Admin-only tabs: Settings (s), Vendors (v), Ply & Hardware (m), Access & Sharing (x)
-            const adminOnly = ['s', 'v', 'm', 'x']; 
-            
-            adminOnly.forEach(tabId => {
+    if (role !== 'admin') {
+        // What tabs does this person's department legitimately need?
+        const deptAllowed = (window.MC_DEPTS && MC_DEPTS[dept])
+            ? MC_DEPTS[dept].tabs
+            : ['enq', 'q', 'e', 'p'];   // safe fallback = Sales
+
+        // Admin-only tabs — but only strip if the dept doesn't allow them
+        const adminOnly = ['s', 'v', 'm', 'x'];
+        adminOnly.forEach(tabId => {
+            if (!deptAllowed.includes(tabId)) {
                 const btn = nav.querySelector(`button[data-v="${tabId}"]`);
-                // .remove() completely deletes it from the DOM so the other script can't bring it back
-                if (btn) btn.remove(); 
-            });
-            
-            // Also remove the Department switcher dropdown
-            const deptSw = document.getElementById('dept_sw');
-            if (deptSw) deptSw.remove();
-        }
+                if (btn) btn.remove();
+            }
+        });
+
+        const deptSw = document.getElementById('dept_sw');
+        if (deptSw) deptSw.remove();
     }
+}
 
     // Run immediately
     enforceRoleUI();
