@@ -789,3 +789,87 @@ body.preview-mode nav button[data-v="e"] {
   /* This targets the old injected buttons if they try to show up */
   display: none !important;
 }
+/* =========================================
+   RICH KANBAN CARDS (Matching original vision)
+   ========================================= */
+
+/* The Warning/Urgent Card (Setup Incomplete) */
+.k-card.alert-card {
+  background: rgba(239, 68, 68, 0.05) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  border-left: 4px solid var(--accent-red) !important;
+}
+.k-card.alert-card .k-card-title {
+  color: var(--accent-red) !important;
+}
+
+/* Card Header with Date */
+.k-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+.k-card-date {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+/* Secondary Text (e.g., Apartment - Mr. S Joy) */
+.k-card-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+/* Stage Pills (e.g., Stage: Advance Payment) */
+.k-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.1);
+  margin-top: 5px;
+}
+
+/* Button Groups inside Cards */
+.k-btn-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.k-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  transition: 0.2s;
+}
+
+.k-btn:hover {
+  background: var(--border-color);
+}
+
+.k-btn.primary { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+.k-btn.success { background: var(--accent-green); color: #fff; border-color: var(--accent-green); }
+.k-btn.danger { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
+
+/* Full width button for alerts */
+.k-btn.full { width: 100%; justify-content: center; }
+
+/* Red amount text */
+.k-amount { color: var(--accent-red); font-weight: bold; font-size: 13px; }
