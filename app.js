@@ -122,7 +122,21 @@ function refreshIl(){const KN={all:'',kitchen:'KITCHEN',dining:'DINNING',bath:'T
 function refreshLists(){const t=S.set;$('#il').innerHTML=srt(t.items,i=>i.n).map(i=>`<option value="${esc(i.n)}">`).join('');$('#ml').innerHTML=srt(t.mats.filter(Boolean)).map(i=>`<option value="${esc(i)}">`).join('')}
 const STN={col:'COLUMN',beam:'BEAM',slab:'CONCRETE SLAB'},LN={full:'Admin / Editor — full access',staff:'Quotation & Design (no rates, costs or settings)',view:'Viewer (read-only, no rates)',site:'Site Supervisor (site work only: tasks, materials, checklists, photos)'},RK={view:0,site:1,staff:2,full:3},canRate=()=>!S.lvl||S.lvl=='full',navOK=k=>canRate()?true:S.lvl=='staff'?(k!='s'&&k!='h'&&k!='v'&&k!='r'):S.lvl=='site'?['j','x'].includes(k):['q','p','a','d','f','x','j'].includes(k);
 function applyLvl(){const base=(S.role=='Owner'||S.role=='Editor'||!S.role)?'full':S.w0===false?'view':'full',o=(S.acl.find(x=>(x.id&&x.id==S.uid)||(x.em&&S.myEmail&&x.em==S.myEmail.toLowerCase()))||{}).lvl;S.lvl=(S.role=='Owner'||!o)?base:(RK[o]<RK[base]?o:base);S.w=S.lock?false:(S.lvl=='view'?false:S.w0!==false)}
-function saveAcl(){applyLvl();if(S.db)S.db.doc('access/main').set({list:cl(S.acl)}).then(()=>flash('Access saved')).catch(e=>flash('Not saved: '+(e.message||e.code)));else flash('Cloud not connected — access list not saved')}
+function saveAcl(){
+    applyLvl();
+    if(S.db){
+        S.db.doc('access/main').set({list:cl(S.acl)})
+        .then(res=>{
+            if(res && res.ok === false) throw new Error(res.error || res.message || 'Server rejected the save');
+            flash('Access saved');
+        })
+        .catch(e=>{
+            flash('Not saved: '+(e.message||e.code));
+        });
+    } else {
+        flash('Cloud not connected — access list not saved');
+    }
+}
 function nameFill(){const els=[...document.querySelectorAll('[data-pn]')];if(!els.length||!S.U)return;S.U.profiles([...new Set(els.map(x=>x.dataset.pn))]).then(ps=>els.forEach(x=>{const p=ps[x.dataset.pn];x.textContent=(p&&p.name)||'Someone (name not visible)'}))}
 const sqft=r=>((+r.l||0)*(+r.w||0)+(((MOD[r.mk]||{}).dp==2)?(+r.d||MOD[r.mk].d)*(+r.w||0):0))*(FU[r.u]||FU.mm)**2*(r.q===''?1:+r.q||0);
 const itemOf=n=>{n=(n||'').trim().toLowerCase();return S.set.items.find(i=>(i.n||'').trim().toLowerCase()==n)||{}};
@@ -139,10 +153,28 @@ let tm={};const pend={},fly={},K=(k,id)=>k=='s'?'s':k+id;let saveErr='';const ag
 function setSt(){const el=$('#st'),er=$('#err');if(!el)return;const busy=Object.keys(pend).length||Object.values(fly).some(v=>v>0);
 el.textContent=(S.role?'Access: '+S.role+(S.lvl&&S.lvl!='full'?' — '+LN[S.lvl]:'')+'   ':'')+(!S.db?'● Saved in this browser only (cloud not connected)':!S.w?'● View-only — changes not saved':saveErr?'● NOT SAVED':busy?'● Saving…':'● All changes saved to cloud');
 el.style.color=(saveErr||!S.db||!S.w)?'#ffb4b4':'#b9e6b0';er.style.display=saveErr?'block':'none';er.innerHTML=saveErr?`<b>Changes are NOT saved to the cloud:</b> ${esc(saveErr)} <button data-a="sv">Retry save</button>`:''}
-function doSave(k,id){const key=K(k,id);delete pend[key];if(!S.db||!S.w)return setSt();if(k=='q'&&!S.q[id])return;
-if(fly[key]>0){again[key]=1;return}fly[key]=1;setSt();const r=k=='s'?S.db.doc('settings/main'):S.db.collection('quotes').doc(id);
-Promise.resolve(r.set(cl(k=='s'?S.set:S.q[id]))).then(()=>{fly[key]=0;if(again[key]){delete again[key];doSave(k,id);return}if(!Object.values(fly).some(v=>v>0)&&!Object.keys(pend).length)saveErr='';setSt()}).catch(e=>{fly[key]=0;delete again[key];saveErr=(e&&(e.message||e.code))||'unknown error';setSt()})}
-function save(k,id){if(k=='q'){const z=S.q[id];if(z&&z.rooms&&!(z.st=='shared'&&!z.unl))z.rooms.forEach(syncAuto)}persist();if(!S.db)return setSt();const key=K(k,id);clearTimeout(tm[key]);pend[key]=[k,id];tm[key]=setTimeout(()=>doSave(k,id),500);setSt()}
+function doSave(k,id){
+    const key=K(k,id);delete pend[key];
+    if(!S.db||!S.w)return setSt();
+    if(k=='q'&&!S.q[id])return;
+    if(fly[key]>0){again[key]=1;return}
+    fly[key]=1;setSt();
+    const r=k=='s'?S.db.doc('settings/main'):S.db.collection('quotes').doc(id);
+    Promise.resolve(r.set(cl(k=='s'?S.set:S.q[id])))
+        .then(res=>{
+            if(res && res.ok === false) throw new Error(res.error || res.message || 'Server rejected the save');
+            fly[key]=0;
+            if(again[key]){delete again[key];doSave(k,id);return}
+            if(!Object.values(fly).some(v=>v>0)&&!Object.keys(pend).length)saveErr='';
+            setSt();
+        })
+        .catch(e=>{
+            fly[key]=0;
+            delete again[key];
+            saveErr=(e&&(e.message||e.code))||'unknown error';
+            setSt();
+        });
+}
 function flushAll(){Object.entries(pend).forEach(([key,v])=>{clearTimeout(tm[key]);doSave(v[0],v[1])})}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flushAll()});addEventListener('pagehide',flushAll);
 function setp(o,p,v){const k=p.split('|');let c=o;for(let i=0;i<k.length-1;i++)c=c[k[i]]??(c[k[i]]={});c[k[k.length-1]]=v}
@@ -1100,7 +1132,25 @@ const hxK=(k,id)=>k=='s'?'s':(k=='q'?'q':k+':')+id;
 try{const x=JSON.parse(localStorage.getItem(LKB)||'null');if(x)Object.keys(BZC).forEach(k=>BZ[k]=x[k]||{})}catch(e){}
 const bzPersist=()=>{try{localStorage.setItem(LKB,JSON.stringify(BZ))}catch(e){}},bzId=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const dstr=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),today=()=>dstr(new Date()),addDays=(d,n)=>{const t=new Date((d||today())+'T00:00:00');t.setDate(t.getDate()+n);return dstr(t)},dmy=d=>d?String(d).split('-').reverse().join('/'):'',ddiff=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);
-function bzSave(k,id){if(!HX.ap)hxRec(k,id);bzPersist();if(!S.db||!S.w)return;clearTimeout(bzTm[k+id]);bzTm[k+id]=setTimeout(()=>{const d=BZ[k][id];if(!d)return;Promise.resolve(S.db.collection(BZC[k]).doc(id).set(cl(d))).then(()=>{if(!saveErr)setSt()}).catch(e=>{saveErr=(e&&(e.message||e.code))||'unknown error';setSt()})},500)}
+function bzSave(k,id){
+    if(!HX.ap)hxRec(k,id);
+    bzPersist();
+    if(!S.db||!S.w)return;
+    clearTimeout(bzTm[k+id]);
+    bzTm[k+id]=setTimeout(()=>{
+        const d=BZ[k][id];
+        if(!d)return;
+        Promise.resolve(S.db.collection(BZC[k]).doc(id).set(cl(d)))
+            .then(res=>{
+                if(res && res.ok === false) throw new Error(res.error || res.message || 'Server rejected the save');
+                if(!saveErr)setSt();
+            })
+            .catch(e=>{
+                saveErr=(e&&(e.message||e.code))||'unknown error';
+                setSt();
+            });
+    },500);
+}
 function bzDel(k,id){const dk=hxK(k,id);if(!HX.ap){const pv=HX.sh[dk]!==undefined?HX.sh[dk]:JSON.stringify(BZ[k][id]);delete HX.sh[dk];hxPush(k,id,pv,undefined)}delete BZ[k][id];bzPersist();if(S.db&&S.w)Promise.resolve(S.db.collection(BZC[k]).doc(id).delete()).catch(()=>0)}
 function bzInit(db){Object.keys(BZC).forEach(k=>db.collection(BZC[k]).onSnapshot(sn=>{sn.docChanges().forEach(c=>{if(c.doc.metadata.hasPendingWrites||bzTm[k+c.doc.id])return;if(c.type=='removed')delete BZ[k][c.doc.id];else BZ[k][c.doc.id]=cl(c.doc.data())});bzPersist();if(!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName)&&['h','j','v'].includes(S.tab))render()},()=>0))}
 const PST0=()=>S.set.pst&&S.set.pst.length?S.set.pst:['Enquiry','Quotation sent','Approved','Design','Material order','Production','Installation','Finishing','Handover','Closed'],
