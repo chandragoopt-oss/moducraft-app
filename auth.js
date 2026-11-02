@@ -74,7 +74,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('mc_user_email');
   localStorage.removeItem('mc_user_role');
   
-  const KEEP = new Set(['msq_dev','msq_lic','msq_lic_seq','msq_lic_floor','msq_lic_name','msq_seen','msq_owner_key']);
+  const KEEP = new Set(['msq_dev','msq_lic','msq_lic_seq','msq_lic_floor','msq_lic_name','msq_seen','msq_owner_key', 'msq_v2', 'msq_biz', 'msq_erp', 'msq_enq_data']);
   Object.keys(localStorage)
     .filter(k => k.startsWith('msq_') && !KEEP.has(k))
     .forEach(k => localStorage.removeItem(k));
