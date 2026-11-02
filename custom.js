@@ -146,12 +146,6 @@ vList = function() {
     });
     return html;
 };
-    });
-    return html;
-};
-    });
-    return html;
-};
 
 // ==========================================
 // PATCH: Append Warranty to Quotation PDF
@@ -916,7 +910,14 @@ document.addEventListener('change', e => {
       const e = window.ENQ[id]; if (!e) return;
       if (confirm(`Create a new quotation for ${e.name}?`)) {
         window.newQ(); const q = window.T();
-        if (q) {      q.name = e.name;      q.contact = e.phone;      q.project = e.project || q.project;      q.by = window.lastBy();      q.enqId = e.id; // <--- THIS IS THE FIX: Links the quote to this enquiry     window.save('q', q.id);  }
+               if (q) { 
+            q.name = e.name; 
+            q.contact = e.phone; 
+            q.project = e.project || q.project; 
+            q.by = window.lastBy(); 
+            q.enqId = e.id; 
+            window.save('q', q.id); 
+        }
         e.status = 'Quoted'; window.saveEnq(); S.tab = 'e'; render(); flash('Converted to new quotation');
       }
     }
