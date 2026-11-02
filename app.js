@@ -175,6 +175,19 @@ function doSave(k,id){
             setSt();
         });
 }
+function save(k,id){
+    if(k=='q'){
+        const z=S.q[id];
+        if(z&&z.rooms&&!(z.st=='shared'&&!z.unl))z.rooms.forEach(syncAuto)
+    }
+    persist();
+    if(!S.db)return setSt();
+    const key=K(k,id);
+    clearTimeout(tm[key]);
+    pend[key]=[k,id];
+    tm[key]=setTimeout(()=>doSave(k,id),500);
+    setSt();
+}
 function flushAll(){Object.entries(pend).forEach(([key,v])=>{clearTimeout(tm[key]);doSave(v[0],v[1])})}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flushAll()});addEventListener('pagehide',flushAll);
 function setp(o,p,v){const k=p.split('|');let c=o;for(let i=0;i<k.length-1;i++)c=c[k[i]]??(c[k[i]]={});c[k[k.length-1]]=v}
