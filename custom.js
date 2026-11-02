@@ -132,19 +132,20 @@ vList = function() {
         const target = `<button class="g" data-a="pq" data-i="${q.id}">Preview</button>`;
         
         if (q.st === 'shared' && q.out !== 'lost') {
-            // If already shared, show Follow Up and Lost buttons
             const nextTxt = q.nfu ? 'Next follow up: ' + dmy(q.nfu) : 'No follow up scheduled';
             const replacement = target + ` <button class="g" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" data-fup="${q.id}" data-fuptype="q" title="${nextTxt}">📞 Follow Up</button> <button class="g" style="background:#fee2e2;color:#b91c1c;border-color:#fca5a5" data-lost="${q.id}" title="Mark as Lost Lead">❌ Lost</button>`;
             if (html.includes(target) && !html.includes(`data-fup="${q.id}"`)) { 
                 html = html.replace(target, replacement); 
             }
         } else if (q.st !== 'shared') {
-            // If NOT shared yet, show the Mark Shared button
-            const shareBtn = target + ` <button class="g" style="background:#dcfce7;color:#166534;border-color:#bbf7d0" onclick="S.cur='${q.id}'; const b=document.createElement('button'); b.dataset.a='ms'; document.body.appendChild(b); b.click(); b.remove(); render();" title="Mark this quotation as shared">✔ Mark Shared</button>`;
-            if (html.includes(target) && !html.includes(`onclick="S.cur='${q.id}'`)) { 
+            const shareBtn = target + ` <button class="g" data-mshare="${q.id}" style="background:#dcfce7;color:#166534;border-color:#bbf7d0" onclick="S.cur='${q.id}'; const b=document.createElement('button'); b.dataset.a='ms'; document.body.appendChild(b); b.click(); b.remove(); render();" title="Mark this quotation as shared">✔ Mark Shared</button>`;
+            if (html.includes(target) && !html.includes(`data-mshare="${q.id}"`)) { 
                 html = html.replace(target, shareBtn); 
             }
         }
+    });
+    return html;
+};
     });
     return html;
 };
