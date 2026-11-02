@@ -2195,99 +2195,32 @@ document.addEventListener('change', e => {
 
   // Override the Enquiries View to show Platform, Date & Time
   const _vEnq = window.vEnq;
-  window.vEnq = function() {
-    let html = _vEnq();
-    html = html.replace('<th>Next Follow Up</th>', '<th>Source & Date</th><th>Next Follow Up</th>');
+    window.vEnq = function() {
+    // 1. Get all manual enquiries
+    const enqList = Object.values(window.ENQ || {}).map(e => ({...e, isEnq: true}));
     
-    Object.values(window.ENQ).forEach(e => {
-      const rowTarget = `<tr><td><b>${esc(e.name)}</b><br><span class="mut">${esc(e.phone)}</span></td><td>${esc(e.project)}</td><td>${esc(e.budget || '—')}</td>`;
-      const sourceInfo = `<td><b style="color:#B08D57">${esc(e.platform || 'Manual')}</b><br><span class="mut" style="font-size:11px">${dmy(e.date)} ${e.time || ''}</span></td>`;
-      
-      if (html.includes(rowTarget)) {
-        html = html.replace(rowTarget, rowTarget + sourceInfo);
-      }
-    });
-    
-    return html;
-  };
+    // 2. Get all quotations that DO NOT have an enqId (these are the ones missing from the tab)
+    const qList = Object.values(S.q || {})
+        .filter(q => !q.enqId) 
+        .map(q => ({
+            id: q.id,
+            name: q.name || 'Unnamed Client',
+            phone: q.contact || '—',
+            project: q.project || 'Quotation',
+            budget: qno(q), // Show quotation number
+            status: q.st === 'shared' ? 'Quoted' : 'Enquiry',
+            date: q.date || today(),
+            platform: 'Quotation',
+            time: '',
+            notes: '',
+            isQuotation: true
+        }));
 
-  setTimeout(fetchEnquiries, 1500);
-  setInterval(fetchEnquiries, 15000);
-
-  document.addEventListener('click', e => {
-    if (e.target.closest && e.target.closest('[data-enq-act="refresh"]')) {
-      e.preventDefault();
-      fetchEnquiries();
-      alert("Checking for new enquiries...");
-    }
-  });
-
-  const _render = window.render;
-  window.render = function() {
-    _render.apply(this, arguments);
-    if (S.tab === 'enq') {
-      setTimeout(() => {
-        const bar = document.querySelector('.card .bar.noprint');
-        if (bar && !bar.querySelector('[data-enq-act="refresh"]')) {
-          bar.innerHTML += `<button class="g" data-enq-act="refresh" style="margin-left:10px">↻ Sync</button>`;
-        }
-      }, 100);
-    }
-  };
-})();
-
-// ==========================================
-// ENHANCED ENQUIRIES: Filtering, Grouping, Deleting
-// ==========================================
-(function() {
-  if (window.__mcEnqManagerLoaded) return;
-  window.__mcEnqManagerLoaded = true;
-
-  const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
-  const API_KEY = "ModuCraft@2026";
-
-  // 1. Handle Deleting
-  window.mcDeleteEnq = async function(id) {
-    if(!confirm("Are you sure you want to permanently delete this enquiry? This will also remove it from Google Sheets.")) return;
-    
-    // Remove from local memory and save
-    delete window.ENQ[id];
-    window.saveEnq();
-    
-    // Remove from Google Sheets
-    try {
-      await fetch(GOOGLE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete', collection: 'enquiries', id: id, apiKey: API_KEY })
-      });
-    } catch(e) { console.log("Failed to delete from cloud", e); }
-    
-    render(); // Refresh screen
-  };
-
-  // 2. Handle Status Changes
-  window.mcUpdateEnqStatus = function(id, newStatus) {
-    if(window.ENQ[id]) {
-      window.ENQ[id].status = newStatus;
-      window.saveEnq();
-      render(); // Refresh to move it to the right tab
-    }
-  };
-
-  // 3. The New Enquiries View
-  const _vEnq = window.vEnq;
-  window.vEnq = function() {
-    // Get all enquiries and sort by date (newest first)
-    const allEnqs = Object.values(window.ENQ || {}).sort((a,b) => {
-      const d1 = new Date(a.date + ' ' + (a.time || '00:00')).getTime();
-      const d2 = new Date(b.date + ' ' + (b.time || '00:00')).getTime();
-      return d2 - d1;
-    });
+    // 3. Merge and sort by date
+    const allEnqs = enqList.concat(qList).sort((a,b) => (b.date || '').localeCompare(a.date || ''));
 
     if (!S.enqFilter) S.enqFilter = 'all';
     
-    // Tabs definition
     const tabs = [
       ['all', 'All Leads'],
       ['new', 'New'],
@@ -2297,7 +2230,6 @@ document.addEventListener('change', e => {
       ['lost', 'Lost ❌']
     ];
 
-    // Filter logic
     const filtered = allEnqs.filter(e => {
       if (S.enqFilter === 'all') return true;
       const st = (e.status || 'Enquiry').toLowerCase();
@@ -2309,22 +2241,17 @@ document.addEventListener('change', e => {
       return true;
     });
 
-    // Group by Date
     const grouped = {};
     filtered.forEach(e => {
       let dateStr = e.date || new Date().toISOString().split('T')[0];
-      // Format the date nicely
       const dObj = new Date(dateStr);
       const isToday = dateStr === today();
       const isYesterday = dateStr === addDays(today(), -1);
-      
       const displayDate = isToday ? "TODAY" : isYesterday ? "YESTERDAY" : dObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-      
       if (!grouped[displayDate]) grouped[displayDate] = [];
       grouped[displayDate].push(e);
     });
 
-    // Build UI
     let html = `<div class="card" style="border-top: 4px solid #1F4E79;">
       <div class="bar noprint">
         <h2>Enquiries & Leads</h2>
@@ -2341,7 +2268,6 @@ document.addEventListener('change', e => {
             if(key === 'followup') return e.nfu && e.nfu <= today();
             return st === key;
           }).length;
-          
           return `<button class="${active ? '' : 'g'}" style="padding:5px 15px; border-radius:20px; ${active ? 'background:#B08D57;border-color:#B08D57;color:#fff;' : ''}" data-enq-filter="${key}">${label} (${count})</button>`;
         }).join('')}
       </div>`;
@@ -2363,6 +2289,37 @@ document.addEventListener('change', e => {
         grouped[dateLabel].forEach(e => {
           const stColor = e.status === 'Won' ? '#15803d' : e.status === 'Lost' ? '#b00020' : '#1F4E79';
           
+          let actionButtons = '';
+          if (e.isQuotation) {
+              actionButtons = `<button class="g" data-a="oq" data-i="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit Quote</button>
+                               <button class="g" data-a="pq" data-i="${e.id}" style="padding: 4px 8px; font-size: 12px; margin-left:4px;">Preview</button>`;
+          } else {
+              actionButtons = `<button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+              ${(() => {
+                  const linkedQ = Object.values(S.q || {}).find(q => q.enqId === e.id);
+                  if (!linkedQ) {
+                      return e.status !== 'Won' ? `<button data-enq-act="convert" data-id="${e.id}" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px">Create Quote</button>` : '';
+                  } else if (linkedQ.st === 'shared') {
+                      return `<span style="color:#22C55E;font-weight:bold;font-size:12px;margin-left:8px">✔ Shared</span>`;
+                  } else {
+                      return `<button onclick="S.cur='${linkedQ.id}'; const b=document.createElement('button'); b.dataset.a='ms'; document.body.appendChild(b); b.click(); b.remove(); render();" style="background:#B08D57;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px">Mark Shared</button>`;
+                  }
+              })()}
+              <button onclick="mcDeleteEnq('${e.id}')" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px;font-weight:bold;">🗑️</button>`;
+          }
+          
+          let statusHtml = '';
+          if (e.isQuotation) {
+              statusHtml = `<b style="color:${stColor}">${esc(e.status)}</b>`;
+          } else {
+              statusHtml = `<select onchange="mcUpdateEnqStatus('${e.id}', this.value)" style="font-weight: bold; color: ${stColor}; border-color: ${stColor}; padding: 4px; border-radius: 4px;">
+                  <option value="Enquiry" ${e.status === 'Enquiry' ? 'selected' : ''}>New</option>
+                  <option value="Quoted" ${e.status === 'Quoted' ? 'selected' : ''}>Quoted</option>
+                  <option value="Won" ${e.status === 'Won' ? 'selected' : ''}>Won</option>
+                  <option value="Lost" ${e.status === 'Lost' ? 'selected' : ''}>Lost</option>
+              </select>`;
+          }
+
           html += `<tr>
             <td>
               <b style="font-size: 15px;">${esc(e.name)}</b><br>
@@ -2378,28 +2335,8 @@ document.addEventListener('change', e => {
               <span class="mut" style="font-size:11px">${esc(e.platform || 'Website')} • ${e.time || ''}</span>
               ${e.notes ? `<br><button class="g" onclick="alert('REQUIREMENTS:\\n\\n' + \`${esc(e.notes).replace(/`/g, "'")}\`)" style="padding:2px 6px;font-size:10px;margin-top:4px">View Details</button>` : ''}
             </td>
-            <td>
-              <select onchange="mcUpdateEnqStatus('${e.id}', this.value)" style="font-weight: bold; color: ${stColor}; border-color: ${stColor}; padding: 4px; border-radius: 4px;">
-                <option value="Enquiry" ${e.status === 'Enquiry' ? 'selected' : ''}>New</option>
-                <option value="Quoted" ${e.status === 'Quoted' ? 'selected' : ''}>Quoted</option>
-                <option value="Won" ${e.status === 'Won' ? 'selected' : ''}>Won</option>
-                <option value="Lost" ${e.status === 'Lost' ? 'selected' : ''}>Lost</option>
-              </select>
-            </td>
-            <td style="text-align: right; white-space: nowrap;">
-                           <button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>
-              ${(() => {
-                  const linkedQ = Object.values(S.q || {}).find(q => q.enqId === e.id);
-                  if (!linkedQ) {
-                      return e.status !== 'Won' ? `<button data-enq-act="convert" data-id="${e.id}" style="background:#1F4E79;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px">Create Quote</button>` : '';
-                  } else if (linkedQ.st === 'shared') {
-                      return `<span style="color:#22C55E;font-weight:bold;font-size:12px;margin-left:8px">✔ Shared</span>`;
-                  } else {
-                      return `<button onclick="S.cur='${linkedQ.id}'; const b=document.createElement('button'); b.dataset.a='ms'; document.body.appendChild(b); b.click(); b.remove(); render();" style="background:#B08D57;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px">Mark Shared</button>`;
-                  }
-              })()}
-              <button onclick="mcDeleteEnq('${e.id}')" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px;font-weight:bold;">🗑️</button>
-            </td>
+            <td>${statusHtml}</td>
+            <td style="text-align: right; white-space: nowrap;">${actionButtons}</td>
           </tr>`;
         });
         html += `</table></div>`;
