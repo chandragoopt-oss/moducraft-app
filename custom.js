@@ -3085,3 +3085,171 @@ window.vSet = function() {
 
     return html + brochureCard;
 };
+
+// ==========================================
+// WHATSAPP GROUP & WELCOME MESSAGE GENERATOR
+// ==========================================
+window.mcGenerateWAMsg = function(enqId) {
+    const e = window.ENQ[enqId];
+    if (!e) return alert("Enquiry not found.");
+
+    // Extract first name
+    const firstName = e.name.trim().split(' ')[0];
+    
+    // Try to grab your actual logo from the app header, or default to the GitHub link
+    let logoUrl = "https://chandragupt-oss.github.io/modu-craft-app/logo.png";
+    const headerLogo = document.getElementById('tl');
+    if (headerLogo && headerLogo.src) logoUrl = headerLogo.src;
+
+    // Create the Modal HTML
+    const o = document.createElement('div');
+    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
+    
+    o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:auto;">
+        <h3 style="margin-top:0;color:#1F4E79;">💬 WhatsApp Group Setup</h3>
+        <p class="mut" style="font-size:13px;margin-bottom:15px;">Fill in the meeting details to auto-generate the group name and welcome message.</p>
+        
+        <div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="grid-column:1/-1;">
+                <label>Project Type</label>
+                <select id="wa_ptype" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;">
+                    <option value="House">House</option>
+                    <option value="Office">Office</option>
+                    <option value="Shop">Shop</option>
+                    <option value="Cafe">Cafe</option>
+                    <option value="Commercial">Commercial</option>
+                </select>
+            </div>
+            <div>
+                <label>Meeting Date</label>
+                <input type="date" id="wa_date" value="${today()}" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;">
+            </div>
+            <div>
+                <label>Meeting Time</label>
+                <input type="time" id="wa_time" value="14:00" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;">
+            </div>
+            <div style="grid-column:1/-1;">
+                <label>Meeting Venue / Address</label>
+                <input type="text" id="wa_venue" placeholder="e.g. Site Address or Module Studio Office" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;">
+            </div>
+        </div>
+
+        <div class="bar" style="margin-top:20px;justify-content:flex-end;">
+            <button class="g" id="wa_cancel" style="margin-right:auto;">Cancel</button>
+            <button id="wa_generate" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:10px 20px;font-weight:bold;cursor:pointer;">Generate & Copy</button>
+        </div>
+        
+        <div id="wa_result" style="display:none; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
+            <h4 style="margin-top:0; color:#15803d;">✅ Copied to Clipboard!</h4>
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; margin-bottom:15px;">
+                <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold;">Follow these 3 steps on WhatsApp:</p>
+                <ol style="font-size:12px; margin:0; padding-left:20px;">
+                    <li>Create a New Group and <b>Paste the Name</b>.</li>
+                    <li>Add the client: <b>${esc(e.phone)}</b>.</li>
+                    <li><b>Set Group Icon:</b> <a href="${logoUrl}" download="ModuleStudio_Logo.png" style="color:#1F4E79; font-weight:bold; text-decoration:underline;">Download Logo Here</a> (Long press to save on mobile).</li>
+                    <li>Send the <b>Welcome Message</b> below.</li>
+                </ol>
+            </div>
+            
+            <div style="margin-top:10px;">
+                <label style="font-size:11px;font-weight:bold;color:#555;">GROUP NAME:</label>
+                <input type="text" id="wa_group_name" readonly style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;font-weight:bold;">
+            </div>
+            <div style="margin-top:10px;">
+                <label style="font-size:11px;font-weight:bold;color:#555;">MESSAGE:</label>
+                <textarea id="wa_msg_text" readonly rows="6" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;font-size:12px;font-family:monospace;"></textarea>
+            </div>
+            <button class="g" onclick="window.open('https://wa.me/${e.phone.replace(/[^0-9]/g,'')}', '_blank')" style="width:100%;margin-top:10px;background:#25D366;color:#fff;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;">Open WhatsApp Chat</button>
+        </div>
+    </div>`;
+
+    document.body.appendChild(o);
+
+    document.getElementById('wa_cancel').onclick = () => o.remove();
+    
+    document.getElementById('wa_generate').onclick = () => {
+        const pType = document.getElementById('wa_ptype').value;
+        const mDate = document.getElementById('wa_date').value;
+        const mTime = document.getElementById('wa_time').value;
+        const mVenue = document.getElementById('wa_venue').value || "To be confirmed";
+
+        // Format Date to DD/MM/YYYY
+        const dObj = new Date(mDate);
+        const fDate = `${String(dObj.getDate()).padStart(2, '0')}/${String(dObj.getMonth()+1).padStart(2, '0')}/${dObj.getFullYear()}`;
+        
+        // Format Time to 12-hour format
+        let [hours, minutes] = mTime.split(':');
+        hours = parseInt(hours);
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; 
+        const fTime = `${hours}:${minutes} ${ampm}`;
+
+        // Generate Group Name
+        const groupName = `${firstName} ${pType} Interior / ModuleStudio`;
+
+        // Generate Message
+        const msg = `Hello *${firstName}*! 👋
+
+Warm greetings from *MODULE STUDIO!*
+
+Thank you for connecting with us and considering us for your interior design requirements.
+
+We are delighted to be a part of your journey towards creating a beautiful, comfortable and functional space.
+
+At Module Studio, we specialise in interior design and fabrication for residential, commercial and office spaces, combining creative design, quality craftsmanship and personalised solutions.
+
+We would love to understand your ideas, requirements and preferences and help transform your vision into reality.
+
+📅 *MEETING DETAILS*
+
+*Date:* ${fDate}
+*Time:* ${fTime}
+*Venue:* ${mVenue}
+
+Kindly reply *"CONFIRMED"* if the above schedule is convenient for you. If you would prefer a different date, time or meeting location, please let us know so that we can coordinate accordingly.
+
+In the meantime, feel free to explore our work and services:
+
+🌐 *Our Website:*
+https://www.modulestudio.in
+
+📖 *Our Previous Projects & Online Brochure:*
+https://moducraft-app.pages.dev/brochure.html
+
+We look forward to meeting you, ${firstName}, understanding your vision and creating something wonderful together!
+
+*Warm Regards,*
+Team MODULE STUDIO
+
+_Designing Spaces. Defining Lifestyles._`;
+
+        // Copy to Clipboard
+        const fullTextToCopy = `Group Name: ${groupName}\n\nMessage:\n${msg}`;
+        navigator.clipboard.writeText(fullTextToCopy).then(() => {
+            document.getElementById('wa_group_name').value = groupName;
+            document.getElementById('wa_msg_text').value = msg;
+            document.getElementById('wa_result').style.display = 'block';
+            document.getElementById('wa_generate').style.display = 'none';
+        });
+    };
+};
+
+// ==========================================
+// INJECT "WA GROUP" BUTTON INTO ENQUIRIES TAB
+// ==========================================
+const origVEnq_WA = window.vEnq;
+window.vEnq = function() {
+    let html = origVEnq_WA.apply(this, arguments);
+    
+    // Find the Edit button for manual enquiries and inject our button before it
+    Object.values(window.ENQ).forEach(e => {
+        const target = `<button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>`;
+        const waBtn = `<button onclick="mcGenerateWAMsg('${e.id}')" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-right:4px;font-weight:bold;">💬 WA Group</button>`;
+        
+        if (html.includes(target) && !html.includes(`mcGenerateWAMsg('${e.id}')`)) {
+            html = html.replace(target, waBtn + target);
+        }
+    });
+    return html;
+};
