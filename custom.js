@@ -3152,17 +3152,17 @@ window.mcGenerateWAMsg = function(enqId) {
                 </ol>
             </div>
             
-            <div style="margin-top:10px;">
+                        <div style="margin-top:10px;">
                 <label style="font-size:11px;font-weight:bold;color:#555;">GROUP NAME:</label>
                 <div style="display:flex; gap:5px; margin-top:4px;">
-                    <input type="text" id="wa_group_name" readonly style="flex:1; padding:8px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;font-weight:bold;">
+                    <input type="text" id="wa_group_name" readonly style="flex:1; padding:8px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-weight:bold;">
                     <button onclick="navigator.clipboard.writeText(document.getElementById('wa_group_name').value); alert('Group Name Copied!');" style="background:#1F4E79;color:#fff;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">Copy</button>
                 </div>
             </div>
             
             <div style="margin-top:15px;">
                 <label style="font-size:11px;font-weight:bold;color:#555;">INVITATION / WELCOME MESSAGE:</label>
-                <textarea id="wa_msg_text" readonly rows="8" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;font-size:12px;font-family:monospace;"></textarea>
+                <textarea id="wa_msg_text" readonly rows="8" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
                 <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_text').value); alert('Message Copied!');" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:10px;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Message</button>
             </div>
             
