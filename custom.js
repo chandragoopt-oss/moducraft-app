@@ -163,11 +163,9 @@ function injectWarranty() {
                 <!-- QUICK SUMMARY BOX -->
                 <div style="border: 2px solid #B08D57; border-radius: 8px; padding: 12px; margin-bottom: 20px; background-color: #fffaf0;">
                     <h3 style="color: #B08D57; margin-top: 0; margin-bottom: 8px; font-size: 14px;">📋 Quick Summary</h3>
-                    <ul style="margin: 0; padding-left: 20px;">
-                        <li style="margin-bottom: 4px;"><b>10-Year Warranty</b> on all structural materials (carcass) and shutters manufactured by us.</li>
-                        <li style="margin-bottom: 4px;"><b>OEM Warranty</b> applies to hardware, appliances, electricals, and mirrors.</li>
-                        <li><b>Not Covered:</b> Water damage/seepage, natural wear & tear, pests, or misuse.</li>
-                    </ul>
+                    <p style="margin: 0 0 4px 0;">• <b>10-Year Warranty</b> on all structural materials (carcass) and shutters manufactured by us.</p>
+                    <p style="margin: 0 0 4px 0;">• <b>OEM Warranty</b> applies to hardware, appliances, electricals, and mirrors.</p>
+                    <p style="margin: 0;">• <b>Not Covered:</b> Water damage/seepage, natural wear & tear, pests, or misuse.</p>
                 </div>
 
                 <p class="nt" style="margin-bottom: 15px;">This document constitutes the formal warranty and service terms for the interior solutions provided by Module Studio. By accepting the quotation and engaging our services, the Customer agrees to the following terms:</p>
@@ -178,44 +176,34 @@ function injectWarranty() {
 
                 <div class="sh" style="font-size: 12px; margin-top: 10px;">2. THIRD-PARTY COMPONENTS (OEM WARRANTIES)</div>
                 <p class="nt" style="margin-bottom: 6px;">Certain components are procured from Original Equipment Manufacturers (OEMs) and are governed by their respective warranty terms:</p>
-                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
-                    <li><b>Hardware & Accessories:</b> Hinges, channels, handles, and moving parts carry the OEM’s standard warranty.</li>
-                    <li><b>Appliances & Sanitary Fixtures:</b> Chimneys, hobs, sinks, taps, etc., carry the OEM’s warranty. Labor/cleaning charges for servicing will be borne by the Customer.</li>
-                    <li><b>Electricals & Lighting:</b> Switches, lights, and wiring carry the OEM’s warranty. Module Studio is not liable for wiring defects post-handover.</li>
-                    <li><b>Mirrors:</b> A 1-year warranty applies strictly to the electrical/LED components only. No warranty on the mirror glass itself.</li>
-                </ul>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Hardware & Accessories:</b> Hinges, channels, handles, and moving parts carry the OEM’s standard warranty.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Appliances & Sanitary Fixtures:</b> Chimneys, hobs, sinks, taps, etc., carry the OEM’s warranty. Labor/cleaning charges for servicing will be borne by the Customer.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Electricals & Lighting:</b> Switches, lights, and wiring carry the OEM’s warranty. Module Studio is not liable for wiring defects post-handover.</p>
+                <p class="nt" style="margin-bottom: 12px;">• <b>Mirrors:</b> A 1-year warranty applies strictly to the electrical/LED components only. No warranty on the mirror glass itself.</p>
 
                 <div class="sh" style="font-size: 12px; margin-top: 10px;">3. ITEMS EXPRESSLY EXCLUDED (NO WARRANTY)</div>
-                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
-                    <li>Countertops (Material), Civil work, Tiling, and Gas Piping.</li>
-                    <li>Fragile items (Mirror glass, loose glass, etc.).</li>
-                    <li>Wallpapers (including base preparation and seepage-related peeling).</li>
-                    <li>Home Automation systems (Smart locks, Wi-Fi cameras, etc.).</li>
-                </ul>
+                <p class="nt" style="margin-bottom: 4px;">• Countertops (Material), Civil work, Tiling, and Gas Piping.</p>
+                <p class="nt" style="margin-bottom: 4px;">• Fragile items (Mirror glass, loose glass, etc.).</p>
+                <p class="nt" style="margin-bottom: 4px;">• Wallpapers (including base preparation and seepage-related peeling).</p>
+                <p class="nt" style="margin-bottom: 12px;">• Home Automation systems (Smart locks, Wi-Fi cameras, etc.).</p>
 
                 <div class="sh" style="font-size: 12px; margin-top: 10px;">4. LIMITATIONS OF LIABILITY & WARRANTY VOIDANCE</div>
-                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
-                    <li><b>Water Damage & Seepage:</b> Damage resulting from continuous dampness or leakage exceeding material tolerance (e.g., continuous exposure beyond 72 hours for BWP, 48 hours for BWR, and 24 hours for HDHMR).</li>
-                    <li><b>Normal Wear & Tear:</b> Scratches, dents, chipping, or discoloration from daily use.</li>
-                    <li><b>Environmental Factors:</b> Fading or degradation due to excessive direct sunlight, heat, or moisture.</li>
-                    <li><b>Misuse & Negligence:</b> Accidents, improper handling, overloading (e.g., tandem units), or exposure to harsh chemicals (e.g., turpentine).</li>
-                    <li><b>Pests & Rusting:</b> Damage caused by termites, rodents, or household chemicals causing rust.</li>
-                    <li><b>Force Majeure:</b> Acts of God (floods, earthquakes, fire, pandemics).</li>
-                    <li><b>Unauthorized Modifications or Transfer of Ownership:</b> Alterations by third parties, or if the property is sold.</li>
-                </ul>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Water Damage & Seepage:</b> Damage resulting from continuous dampness or leakage exceeding material tolerance (e.g., continuous exposure beyond 72 hours for BWP, 48 hours for BWR, and 24 hours for HDHMR).</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Normal Wear & Tear:</b> Scratches, dents, chipping, or discoloration from daily use.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Environmental Factors:</b> Fading or degradation due to excessive direct sunlight, heat, or moisture.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Misuse & Negligence:</b> Accidents, improper handling, overloading (e.g., tandem units), or exposure to harsh chemicals (e.g., turpentine).</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Pests & Rusting:</b> Damage caused by termites, rodents, or household chemicals causing rust.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Force Majeure:</b> Acts of God (floods, earthquakes, fire, pandemics).</p>
+                <p class="nt" style="margin-bottom: 12px;">• <b>Unauthorized Modifications or Transfer of Ownership:</b> Alterations by third parties, or if the property is sold.</p>
 
                 <div class="sh" style="font-size: 12px; margin-top: 10px;">5. CLAIMS PROCEDURE</div>
-                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
-                    <li><b>How to reach us:</b> Visit www.modulestudio.in, or call/WhatsApp us at 9830864409.</li>
-                    <li><b>Inspection:</b> An authorized representative will inspect the site to validate the claim.</li>
-                    <li><b>Resolution:</b> If approved, Module Studio will repair or replace the defective product at its discretion. Replaced products carry the original warranty period only; no new warranty applies.</li>
-                </ul>
+                <p class="nt" style="margin-bottom: 4px;">• <b>How to reach us:</b> Visit www.modulestudio.in, or call/WhatsApp us at 9830864409.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Inspection:</b> An authorized representative will inspect the site to validate the claim.</p>
+                <p class="nt" style="margin-bottom: 12px;">• <b>Resolution:</b> If approved, Module Studio will repair or replace the defective product at its discretion. Replaced products carry the original warranty period only; no new warranty applies.</p>
 
                 <div class="sh" style="font-size: 12px; margin-top: 10px;">6. SERVICE & MAINTENANCE POLICY</div>
-                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
-                    <li><b>Complimentary Service:</b> One (1) free service visit within 6 months of project handover.</li>
-                    <li><b>Chargeable Service:</b> Post the 6-month period, any alignment or maintenance requests will be chargeable.</li>
-                </ul>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Complimentary Service:</b> One (1) free service visit within 6 months of project handover.</p>
+                <p class="nt" style="margin-bottom: 12px;">• <b>Chargeable Service:</b> Post the 6-month period, any alignment or maintenance requests will be chargeable.</p>
 
                 <div class="sh" style="font-size: 12px; margin-top: 10px;">7. GOVERNING LAW & JURISDICTION</div>
                 <p class="nt" style="margin-bottom: 15px;">This warranty policy is governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts located in the city/state where the Customer's project site is situated.</p>
@@ -229,7 +217,6 @@ function injectWarranty() {
     return false;
 }
 function removeWarranty() { const wp = document.getElementById('warranty-page'); if (wp) wp.remove(); }
-
 // ==========================================
 // PATCH: Advanced Pricing Bases & Material Summary & Discounts
 // ==========================================
