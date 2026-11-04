@@ -3086,170 +3086,163 @@ window.vSet = function() {
     return html + brochureCard;
 };
 
+/// ==========================================
+// WHATSAPP GROUP SETUP (SAFE WRAPPED VERSION)
 // ==========================================
-// WHATSAPP GROUP & WELCOME MESSAGE GENERATOR (NO SAVE CONTACT)
-// ==========================================
-window.mcGenerateWAMsg = function(enqId) {
-    const e = window.ENQ[enqId];
-    if (!e) return alert("Enquiry not found.");
+(function() {
+    window.mcGenerateWAMsg = function(enqId) {
+        const e = window.ENQ[enqId];
+        if (!e) return alert("Enquiry not found.");
 
-    const firstName = e.name.trim().split(' ')[0];
-    let logoUrl = "https://chandragupt-oss.github.io/modu-craft-app/logo.png";
-    const headerLogo = document.getElementById('tl');
-    if (headerLogo && headerLogo.src) logoUrl = headerLogo.src;
+        const firstName = e.name.trim().split(' ')[0];
+        let logoUrl = "https://chandragupt-oss.github.io/modu-craft-app/logo.png";
+        const headerLogo = document.getElementById('tl');
+        if (headerLogo && headerLogo.src) logoUrl = headerLogo.src;
 
-    // Clean phone number for WhatsApp link
-    let cleanPhone = e.phone.replace(/[^0-9]/g, '');
-    if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
+        let cleanPhone = e.phone.replace(/[^0-9]/g, '');
+        if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
 
-    const o = document.createElement('div');
-    o.id = 'wa-modal-wrapper'; 
-    o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
-    
-    o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:550px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:auto;">
-        <h3 style="margin-top:0;color:#1F4E79;">💬 WhatsApp Group Setup</h3>
-        <p class="mut" style="font-size:13px;margin-bottom:15px;">Fill in the meeting details to auto-generate the group name and messages.</p>
+        const o = document.createElement('div');
+        o.id = 'wa-modal-wrapper'; 
+        o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
         
-        <div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px;">
-            <div style="grid-column:1/-1;">
-                <label>Project Type</label>
-                <select id="wa_ptype" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
-                    <option value="House">House</option>
-                    <option value="Office">Office</option>
-                    <option value="Shop">Shop</option>
-                    <option value="Cafe">Cafe</option>
-                    <option value="Commercial">Commercial</option>
-                </select>
-            </div>
-            <div>
-                <label>Meeting Date</label>
-                <input type="date" id="wa_date" value="${today()}" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
-            </div>
-            <div>
-                <label>Meeting Time</label>
-                <input type="time" id="wa_time" value="14:00" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
-            </div>
-            <div style="grid-column:1/-1;">
-                <label>Meeting Venue / Address</label>
-                <input type="text" id="wa_venue" placeholder="e.g. Site Address or Module Studio Office" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
-            </div>
-        </div>
-
-        <div class="bar" style="margin-top:20px;justify-content:flex-end;">
-            <button class="g" id="wa_cancel" style="margin-right:auto;">Cancel</button>
-            <button id="wa_generate" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:10px 20px;font-weight:bold;cursor:pointer;">Generate Details</button>
-        </div>
-        
-        <div id="wa_result" style="display:none; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
-            <h4 style="margin-top:0; color:#15803d;">✅ Ready to Create Group!</h4>
+        o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:550px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:auto;">
+            <h3 style="margin-top:0;color:#1F4E79;">💬 WhatsApp Group Setup</h3>
+            <p class="mut" style="font-size:13px;margin-bottom:15px;">Fill in the meeting details to auto-generate the group name and messages.</p>
             
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; margin-bottom:15px; color:#333;">
-                <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold; color:#333;">How to add client without saving number:</p>
-                <ol style="font-size:12px; margin:0; padding-left:20px; color:#333;">
-                    <li>Open WhatsApp -> Create a New Group (just add yourself).</li>
-                    <li><b>Paste the Group Name</b> and tap Create.</li>
-                    <li>Tap <b>Invite via Link</b> and copy the link.</li>
-                    <li>Open the DM with client (button below).</li>
-                    <li>Paste the link + <b>Welcome Message</b> and send!</li>
-                </ol>
-            </div>
-
-            <!-- PRIMARY ACTIONS (AUTO-COPIED) -->
-            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
-                <div style="display:flex; gap:5px;">
-                    <input type="text" id="wa_group_name" readonly style="flex:1; padding:8px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-weight:bold;">
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_group_name').value); alert('Group Name Copied!');" style="background:#1F4E79;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:bold;width:120px;">Copy Name</button>
+            <div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="grid-column:1/-1;">
+                    <label>Project Type</label>
+                    <select id="wa_ptype" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
+                        <option value="House">House</option>
+                        <option value="Office">Office</option>
+                        <option value="Shop">Shop</option>
+                        <option value="Cafe">Cafe</option>
+                        <option value="Commercial">Commercial</option>
+                    </select>
                 </div>
                 <div>
-                    <textarea id="wa_msg_welcome" readonly rows="6" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_welcome').value); alert('Welcome Message Copied!');" style="width:100%;background:#25D366;color:#fff;border:none;padding:12px;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Welcome Message</button>
+                    <label>Meeting Date</label>
+                    <input type="date" id="wa_date" value="${today()}" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
+                </div>
+                <div>
+                    <label>Meeting Time</label>
+                    <input type="time" id="wa_time" value="14:00" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
+                </div>
+                <div style="grid-column:1/-1;">
+                    <label>Meeting Venue / Address</label>
+                    <input type="text" id="wa_venue" placeholder="e.g. Site Address or Module Studio Office" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
                 </div>
             </div>
 
-            <!-- SECONDARY ACTION: INVITATION (Optional) -->
-            <details style="margin-bottom:15px; border-top:1px dashed #ccc; padding-top:10px;">
-                <summary style="font-size:12px; font-weight:bold; color:#1F4E79; cursor:pointer;">Need consent first? (Optional Invitation Message)</summary>
-                <div style="margin-top:10px;">
-                    <textarea id="wa_msg_invite" readonly rows="4" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_invite').value); alert('Invitation Copied!');" style="width:100%;background:#6B7280;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Invitation Message</button>
+            <div class="bar" style="margin-top:20px;justify-content:flex-end;">
+                <button class="g" id="wa_cancel" style="margin-right:auto;">Cancel</button>
+                <button id="wa_generate" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:10px 20px;font-weight:bold;cursor:pointer;">Generate Details</button>
+            </div>
+            
+            <div id="wa_result" style="display:none; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
+                <h4 style="margin-top:0; color:#15803d;">✅ Ready to Create Group!</h4>
+                
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; margin-bottom:15px; color:#333;">
+                    <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold; color:#333;">How to add client without saving number:</p>
+                    <ol style="font-size:12px; margin:0; padding-left:20px; color:#333;">
+                        <li>Open WhatsApp -> Create a New Group (just add yourself).</li>
+                        <li><b>Paste the Group Name</b> and tap Create.</li>
+                        <li>Tap <b>Invite via Link</b> and copy the link.</li>
+                        <li>Open the DM with client (button below).</li>
+                        <li>Paste the link + <b>Welcome Message</b> and send!</li>
+                    </ol>
                 </div>
-            </details>
+
+                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="wa_group_name" readonly style="flex:1; padding:8px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-weight:bold;">
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('wa_group_name').value); alert('Group Name Copied!');" style="background:#1F4E79;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:bold;width:120px;">Copy Name</button>
+                    </div>
+                    <div>
+                        <textarea id="wa_msg_welcome" readonly rows="6" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_welcome').value); alert('Welcome Message Copied!');" style="width:100%;background:#25D366;color:#fff;border:none;padding:12px;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Welcome Message</button>
+                    </div>
+                </div>
+
+                <details style="margin-bottom:15px; border-top:1px dashed #ccc; padding-top:10px;">
+                    <summary style="font-size:12px; font-weight:bold; color:#1F4E79; cursor:pointer;">Need consent first? (Optional Invitation Message)</summary>
+                    <div style="margin-top:10px;">
+                        <textarea id="wa_msg_invite" readonly rows="4" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_invite').value); alert('Invitation Copied!');" style="width:100%;background:#6B7280;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Invitation Message</button>
+                    </div>
+                </details>
+                
+                <button class="g" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;">Open DM with Client</button>
+                
+                <button class="g" onclick="document.getElementById('wa-modal-wrapper').remove();" style="width:100%;margin-top:10px;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;">Close</button>
+            </div>
+        </div>`;
+
+        document.body.appendChild(o);
+
+        document.getElementById('wa_cancel').onclick = () => o.remove();
+        
+        document.getElementById('wa_generate').onclick = () => {
+            const pType = document.getElementById('wa_ptype').value;
+            const mDate = document.getElementById('wa_date').value;
+            const mTime = document.getElementById('wa_time').value;
+            const mVenue = document.getElementById('wa_venue').value || "To be confirmed";
+
+            const dObj = new Date(mDate);
+            const fDate = `${String(dObj.getDate()).padStart(2, '0')}/${String(dObj.getMonth()+1).padStart(2, '0')}/${dObj.getFullYear()}`;
             
-            <button class="g" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;">Open DM with Client</button>
+            let [hours, minutes] = mTime.split(':');
+            hours = parseInt(hours);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            const fTime = `${hours}:${minutes} ${ampm}`;
+
+            const groupName = `${firstName} ${pType} Interior / ModuleStudio`;
+
+            const msgWelcome = `Hello *${firstName}*! 👋\n\nWarm greetings from *MODULE STUDIO!*\n\nThank you for connecting with us and considering us for your interior design requirements.\n\nI'm *Nirmalya, Interior Designer at MODULE STUDIO.* I'll be coordinating with you regarding your interior design requirements and helping you throughout your design journey.\n\nWe are delighted to be a part of your journey towards creating a beautiful, comfortable and functional space.\n\nAt Module Studio, we specialise in interior design and fabrication for residential, commercial and office spaces, combining creative design, quality craftsmanship and personalised solutions.\n\nWe would love to understand your ideas, requirements and preferences and help transform your vision into reality.\n\n📅 *MEETING DETAILS*\n\n*Date:* ${fDate}\n*Time:* ${fTime}\n*Venue:* ${mVenue}\n\nKindly reply *"CONFIRMED"* if the above schedule is convenient for you. If you would prefer a different date, time or meeting location, please let me know so that I can coordinate accordingly.\n\nIn the meantime, feel free to explore our work and services:\n\n🌐 *Our Website:*\nhttps://www.modulestudio.in\n\n📖 *Our Previous Projects & Online Brochure:*\nhttps://moducraft-app.pages.dev/brochure.html\n\nLooking forward to meeting you, understanding your vision and helping you create a space that truly reflects your lifestyle!\n\n*Warm Regards,*\n*Nirmalya*\nInterior Designer | MODULE STUDIO\n\n_Designing Spaces. Defining Lifestyles._`;
+
+            const meetingNote = `\n\n[Meeting Scheduled via WA]\nProject: ${pType}\nDate: ${fDate}\nTime: ${fTime}\nVenue: ${mVenue}`;
+            if (!e.notes || !e.notes.includes('[Meeting Scheduled via WA]')) {
+                e.notes = (e.notes || '').trim() + meetingNote;
+            }
+            window.ENQ[enqId] = e;
+            window.saveEnq();
             
-            <button class="g" onclick="document.getElementById('wa-modal-wrapper').remove();" style="width:100%;margin-top:10px;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;">Close</button>
-        </div>
-    </div>`;
+            try {
+                fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
+                    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'save', collection: 'enquiries', id: e.id, data: e, apiKey: "ModuCraft@2026" })
+                });
+            } catch(err) {}
+            
+            if (typeof render === 'function') render();
 
-    document.body.appendChild(o);
+            document.getElementById('wa_group_name').value = groupName;
+            document.getElementById('wa_msg_welcome').value = msgWelcome;
+            
+            navigator.clipboard.writeText(groupName);
 
-    document.getElementById('wa_cancel').onclick = () => o.remove();
-    
-    document.getElementById('wa_generate').onclick = () => {
-        const pType = document.getElementById('wa_ptype').value;
-        const mDate = document.getElementById('wa_date').value;
-        const mTime = document.getElementById('wa_time').value;
-        const mVenue = document.getElementById('wa_venue').value || "To be confirmed";
-
-        const dObj = new Date(mDate);
-        const fDate = `${String(dObj.getDate()).padStart(2, '0')}/${String(dObj.getMonth()+1).padStart(2, '0')}/${dObj.getFullYear()}`;
-        
-        let [hours, minutes] = mTime.split(':');
-        hours = parseInt(hours);
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12; 
-        const fTime = `${hours}:${minutes} ${ampm}`;
-
-        const groupName = `${firstName} ${pType} Interior / ModuleStudio`;
-
-        const msgWelcome = `Hello *${firstName}*! 👋\n\nWarm greetings from *MODULE STUDIO!*\n\nThank you for connecting with us and considering us for your interior design requirements.\n\nI'm *Nirmalya, Interior Designer at MODULE STUDIO.* I'll be coordinating with you regarding your interior design requirements and helping you throughout your design journey.\n\nWe are delighted to be a part of your journey towards creating a beautiful, comfortable and functional space.\n\nAt Module Studio, we specialise in interior design and fabrication for residential, commercial and office spaces, combining creative design, quality craftsmanship and personalised solutions.\n\nWe would love to understand your ideas, requirements and preferences and help transform your vision into reality.\n\n📅 *MEETING DETAILS*\n\n*Date:* ${fDate}\n*Time:* ${fTime}\n*Venue:* ${mVenue}\n\nKindly reply *"CONFIRMED"* if the above schedule is convenient for you. If you would prefer a different date, time or meeting location, please let me know so that I can coordinate accordingly.\n\nIn the meantime, feel free to explore our work and services:\n\n🌐 *Our Website:*\nhttps://www.modulestudio.in\n\n📖 *Our Previous Projects & Online Brochure:*\nhttps://moducraft-app.pages.dev/brochure.html\n\nLooking forward to meeting you, understanding your vision and helping you create a space that truly reflects your lifestyle!\n\n*Warm Regards,*\n*Nirmalya*\nInterior Designer | MODULE STUDIO\n\n_Designing Spaces. Defining Lifestyles._`;
-
-        // Save meeting note to Enquiry
-        const meetingNote = `\n\n[Meeting Scheduled via WA]\nProject: ${pType}\nDate: ${fDate}\nTime: ${fTime}\nVenue: ${mVenue}`;
-        if (!e.notes || !e.notes.includes('[Meeting Scheduled via WA]')) {
-            e.notes = (e.notes || '').trim() + meetingNote;
-        }
-        window.ENQ[enqId] = e;
-        window.saveEnq();
-        
-        try {
-            fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
-                method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'save', collection: 'enquiries', id: e.id, data: e, apiKey: "ModuCraft@2026" })
-            });
-        } catch(err) {}
-        
-        if (typeof render === 'function') render();
-
-        document.getElementById('wa_group_name').value = groupName;
-        document.getElementById('wa_msg_welcome').value = msgWelcome;
-        
-        // Auto-copy group name to clipboard for quick pasting
-        navigator.clipboard.writeText(groupName);
-
-        document.getElementById('wa_result').style.display = 'block';
-        document.getElementById('wa_generate').style.display = 'none';
+            document.getElementById('wa_result').style.display = 'block';
+            document.getElementById('wa_generate').style.display = 'none';
+        };
     };
-};
 
-// ==========================================
-// INJECT "WA GROUP" BUTTON INTO ENQUIRIES TAB
-// ==========================================
-const origVEnq_WA = window.vEnq;
-window.vEnq = function() {
-    let html = origVEnq_WA.apply(this, arguments);
-    
-    // Find the Edit button for manual enquiries and inject our button before it
-    Object.values(window.ENQ).forEach(e => {
-        const target = `<button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>`;
-        const waBtn = `<button onclick="mcGenerateWAMsg('${e.id}')" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-right:4px;font-weight:bold;">💬 WA Group</button>`;
+    const origVEnq_WA = window.vEnq;
+    window.vEnq = function() {
+        let html = origVEnq_WA.apply(this, arguments);
         
-        if (html.includes(target) && !html.includes(`mcGenerateWAMsg('${e.id}')`)) {
-            html = html.replace(target, waBtn + target);
-        }
-    });
-    return html;
-};
+        Object.values(window.ENQ).forEach(e => {
+            const target = `<button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>`;
+            const waBtn = `<button onclick="mcGenerateWAMsg('${e.id}')" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-right:4px;font-weight:bold;">💬 WA Group</button>`;
+            
+            if (html.includes(target) && !html.includes(`mcGenerateWAMsg('${e.id}')`)) {
+                html = html.replace(target, waBtn + target);
+            }
+        });
+        return html;
+    };
+})();
     return html;
 };
