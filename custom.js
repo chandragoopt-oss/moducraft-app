@@ -2825,25 +2825,51 @@ setTimeout(() => {
     }
 }, 500);
 
-// 5. BULLETPROOF BOQ FIX (Header & Empty Columns)
-(function() {
-    const origVPrev_BOQ = window.vPrev;
-    window.vPrev = function() {
-        let html = origVPrev_BOQ.apply(this, arguments);
-        const q = window.T ? window.T() : null;
-        if (!q || typeof DOMParser === 'undefined') return html;
+// ==========================================
+// BULLETPROOF BOQ DOM FIX (WATCHES SCREEN)
+// ==========================================
+setInterval(() => {
+    const paper = document.querySelector('.paper');
+    if (!paper) return;
 
-        try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
+    const ths = Array.from(paper.querySelectorAll('th'));
+    if (!ths.length) return;
 
-            // Fix Header
-            const ths = Array.from(doc.querySelectorAll('th'));
-            ths.forEach(th => {
-                if (th.textContent.includes('Dimension (mm')) {
-                    th.textContent = 'Dimensions (ft)';
-                }
-            });
+    // 1. Fix the Dimension Header
+    const dimTh = ths.find(th => th.textContent.includes('Dimension (mm'));
+    if (dimTh) {
+        dimTh.textContent = 'Dimensions (ft)';
+    }
+
+    // 2. Find the Material and Finish columns
+    const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
+    const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
+
+    if (matIdx === -1 && finIdx === -1) return;
+
+    const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
+    if (!q) return;
+
+    // 3. Fill the empty cells in the rows
+    paper.querySelectorAll('tbody tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        
+        if (matIdx !== -1 && tds[matIdx]) {
+            const txt = tds[matIdx].textContent.trim();
+            // If it's empty or just a dash, fill it
+            if (!txt || txt === '—' || txt === '-' || txt === '') {
+                tds[matIdx].textContent = q.cf || 'BSL MR';
+            }
+        }
+        
+        if (finIdx !== -1 && tds[finIdx]) {
+            const txt = tds[finIdx].textContent.trim();
+            if (!txt || txt === '—' || txt === '-' || txt === '') {
+                tds[finIdx].textContent = q.fo || '0.8mm Laminate';
+            }
+        }
+    });
+}, 500);
 
             // Find columns
             const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
