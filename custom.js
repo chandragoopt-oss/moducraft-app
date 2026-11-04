@@ -720,8 +720,14 @@ document.addEventListener('change', e => {
     let q = T();
     if (!q) { const id = 'q' + Date.now().toString(36); S.q[id] = { id, ts: Date.now(), name: '', by: lastBy(), project: '', address: '', contact: '', date: new Date().toISOString().slice(0, 10), rooms: [], ir: {}, grp: id, rev: 0, seq: 1, st: 'draft', pay: cl(S.set.pay), notes: S.set.notes }; S.cur = id; S.tab = 'e'; q = S.q[id]; }
     pkg.rooms.forEach(pkgRoom => {
-      const newRoom = { id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), t: pkgRoom.t, name: pkgRoom.name, w: 0, rate: '', rows: [] };
-      pkgRoom.items.forEach(item => { const m = MOD[item.mk]; if (!m) return; const r = modRow(newRoom, m, m.sw[Math.floor(m.sw.length/2)] || m.w0, m.h, q); r.q = item.q || 1; newRoom.rows.push(r); });
+      const newRoom = { id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), t: pkgRoom.t, name:       pkgRoom.items.forEach(item => { 
+          const m = MOD[item.mk]; 
+          if (!m) return; 
+          const w = m.sw ? (m.sw[Math.floor(m.sw.length/2)] || m.w0) : m.w0;
+          const r = modRow(newRoom, m, w, m.h, q); 
+          r.q = item.q || 1; 
+          newRoom.rows.push(r); 
+      });
       if (typeof syncAuto === 'function') syncAuto(newRoom);
       q.rooms.push(newRoom);
     });
@@ -1917,7 +1923,8 @@ document.addEventListener('change', e => {
   // 3. Extract the Settings HTML so it can be used in Design and Floor Plan
   function getDesignSettingsHTML(q) {
     const s = S.set;
-    const IO = srt(s.items,i=>i.n).map(i=>`<option>${esc(i.n)}</option>`).join('');
+    const items = s.items || [];
+const IO = srt(items,i=>i.n).map(i=>`<option>${esc(i.n)}</option>`).join('');
     
     // We replicate the exact block from Image 2 using the app's native data binding (data-d="q")
     return `<details class="card" style="margin-bottom:12px; background:var(--in); border:1px solid var(--line);">
@@ -2698,3 +2705,67 @@ document.addEventListener('click', function(e) {
             accessSpan.style.display = 'none';
         }
     }
+// ==========================================
+// FIX: Missing Enquiry Functions & Module Crash Protection
+// ==========================================
+
+// 1. Provide the missing functions for the Enquiries tab
+window.mcUpdateEnqStatus = function(id, newStatus, isQuotation) {
+    if (isQuotation) {
+        const q = S.q[id];
+        if (!q) return;
+        if (newStatus === 'Lost') {
+            q.out = 'lost';
+        } else if (newStatus === 'Won') {
+            q.out = 'won';
+            q.st = 'shared'; // Won implies it was shared
+        } else if (newStatus === 'Quoted') {
+            q.st = 'shared';
+            q.out = '';
+        } else {
+            q.st = 'draft';
+            q.out = '';
+        }
+        if (typeof save === 'function') save('q', id);
+    } else {
+        const e = window.ENQ[id];
+        if (!e) return;
+        e.status = newStatus;
+        if (window.saveEnq) window.saveEnq();
+    }
+    if (typeof render === 'function') render();
+    if (typeof flash === 'function') flash('Status updated to ' + newStatus);
+};
+
+window.mcDeleteEnq = function(id) {
+    if (confirm('Are you sure you want to delete this enquiry?')) {
+        delete window.ENQ[id];
+        if (window.saveEnq) window.saveEnq();
+        if (typeof render === 'function') render();
+        if (typeof flash === 'function') flash('Enquiry deleted');
+    }
+};
+
+// 2. Patch the Module database (MOD) to prevent 'M_ID' crashes
+// This creates a dummy fallback for custom items so the core app doesn't crash.
+setTimeout(() => {
+    if (typeof window.MOD !== 'undefined' && !window.__mcModPatched) {
+        window.__mcModPatched = true;
+        const origMOD = window.MOD;
+        window.MOD = new Proxy(origMOD, {
+            get: function(target, prop) {
+                if (prop === 'undefined' || prop === 'null' || !target[prop]) {
+                    return { 
+                        M_ID: 'CUSTOM', 
+                        name: 'Custom Item', 
+                        au: false, 
+                        w0: 0, 
+                        h: 0, 
+                        sw: [0] 
+                    };
+                }
+                return target[prop];
+            }
+        });
+    }
+}, 1000);
