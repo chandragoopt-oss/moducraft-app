@@ -2308,17 +2308,12 @@ document.addEventListener('change', e => {
               <button onclick="mcDeleteEnq('${e.id}')" style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-left:4px;font-weight:bold;">🗑️</button>`;
           }
           
-          let statusHtml = '';
-          if (e.isQuotation) {
-              statusHtml = `<b style="color:${stColor}">${esc(e.status)}</b>`;
-          } else {
-              statusHtml = `<select onchange="mcUpdateEnqStatus('${e.id}', this.value)" style="font-weight: bold; color: ${stColor}; border-color: ${stColor}; padding: 4px; border-radius: 4px;">
-                  <option value="Enquiry" ${e.status === 'Enquiry' ? 'selected' : ''}>New</option>
-                  <option value="Quoted" ${e.status === 'Quoted' ? 'selected' : ''}>Quoted</option>
-                  <option value="Won" ${e.status === 'Won' ? 'selected' : ''}>Won</option>
-                  <option value="Lost" ${e.status === 'Lost' ? 'selected' : ''}>Lost</option>
-              </select>`;
-          }
+                    let statusHtml = `<select onchange="mcUpdateEnqStatus('${e.id}', this.value, ${e.isQuotation ? 'true' : 'false'})" style="font-weight: bold; color: ${stColor}; border-color: ${stColor}; padding: 4px; border-radius: 4px;">
+              <option value="Enquiry" ${e.status === 'Enquiry' ? 'selected' : ''}>New</option>
+              <option value="Quoted" ${e.status === 'Quoted' ? 'selected' : ''}>Quoted</option>
+              <option value="Won" ${e.status === 'Won' ? 'selected' : ''}>Won</option>
+              <option value="Lost" ${e.status === 'Lost' ? 'selected' : ''}>Lost</option>
+          </select>`;
 
           html += `<tr>
             <td>
