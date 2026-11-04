@@ -715,18 +715,24 @@ document.addEventListener('change', e => {
     'pkg_3bhk': { name: '🏢 3BHK Package (Full House)', rooms: [{ name: 'KITCHEN', t: 'KITCHEN', items: [ { mk: 'kb2', q: 6 }, { mk: 'kw2', q: 3 }, { mk: 'ktp', q: 1 }, { mk: 'kl2', q: 3 }, { mk: 'kbsk', q: 1 } ]},{ name: 'MASTER BEDROOM', t: 'MASTER BEDROOM', items: [ { mk: 'wh4', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'drs', q: 1 }, { mk: 'tvw', q: 1 } ]},{ name: 'BEDROOM 2', t: 'BEDROOM 2', items: [ { mk: 'wh3', q: 1 }, { mk: 'wl2', q: 1 }, { mk: 'bdbx', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'std', q: 1 } ]},{ name: 'BEDROOM 3', t: 'BEDROOM 3', items: [ { mk: 'wh2', q: 1 }, { mk: 'wl1', q: 1 }, { mk: 'bdpl', q: 1 }, { mk: 'bst', q: 2 }, { mk: 'std', q: 1 } ]},{ name: 'LIVING ROOM', t: 'LIVING ROOM', items: [ { mk: 'tvb', q: 1 }, { mk: 'tvp', q: 1 }, { mk: 'shr', q: 1 }, { mk: 'cru', q: 1 } ]}] },
     'pkg_office': { name: '💼 Office / Commercial Basic', rooms: [{ name: 'RECEPTION', t: 'RECEPTION', items: [ { mk: 'utl', q: 1 }, { mk: 'shr', q: 1 }, { mk: 'cru', q: 1 } ]},{ name: 'WORKSTATION AREA', t: 'OPEN WORKSTATION AREA', items: [ { mk: 'std', q: 4 } ]},{ name: 'CABIN', t: 'PRIVATE CABIN', items: [ { mk: 'std', q: 1 }, { mk: 'utl', q: 1 } ]}] }
   };
-  function applyPackage(pkgId) {
-    const pkg = PACKAGES[pkgId]; if (!pkg) return;
+    function applyPackage(pkgId) {
+    const pkg = PACKAGES[pkgId]; 
+    if (!pkg) return;
     let q = T();
-    if (!q) { const id = 'q' + Date.now().toString(36); S.q[id] = { id, ts: Date.now(), name: '', by: lastBy(), project: '', address: '', contact: '', date: new Date().toISOString().slice(0, 10), rooms: [], ir: {}, grp: id, rev: 0, seq: 1, st: 'draft', pay: cl(S.set.pay), notes: S.set.notes }; S.cur = id; S.tab = 'e'; q = S.q[id]; }
+    if (!q) { 
+      const id = 'q' + Date.now().toString(36); 
+      S.q[id] = { id, ts: Date.now(), name: '', by: lastBy(), project: '', address: '', contact: '', date: new Date().toISOString().slice(0, 10), rooms: [], ir: {}, grp: id, rev: 0, seq: 1, st: 'draft', pay: cl(S.set.pay), notes: S.set.notes }; 
+      S.cur = id; S.tab = 'e'; q = S.q[id]; 
+    }
     pkg.rooms.forEach(pkgRoom => {
-      const newRoom = { id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), t: pkgRoom.t, name:       pkgRoom.items.forEach(item => { 
-          const m = MOD[item.mk]; 
-          if (!m) return; 
-          const w = m.sw ? (m.sw[Math.floor(m.sw.length/2)] || m.w0) : m.w0;
-          const r = modRow(newRoom, m, w, m.h, q); 
-          r.q = item.q || 1; 
-          newRoom.rows.push(r); 
+      const newRoom = { id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), t: pkgRoom.t, name: pkgRoom.name, w: 0, rate: '', rows: [] };
+      pkgRoom.items.forEach(item => { 
+        const m = MOD[item.mk]; 
+        if (!m) return; 
+        const w = m.sw ? (m.sw[Math.floor(m.sw.length/2)] || m.w0) : m.w0;
+        const r = modRow(newRoom, m, w, m.h, q); 
+        r.q = item.q || 1; 
+        newRoom.rows.push(r); 
       });
       if (typeof syncAuto === 'function') syncAuto(newRoom);
       q.rooms.push(newRoom);
