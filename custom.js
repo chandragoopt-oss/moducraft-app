@@ -2775,3 +2775,32 @@ setTimeout(() => {
         });
     }
 }, 1000);
+// ==========================================
+// FIX: Add Pricing Basis Options Dynamically
+// ==========================================
+setInterval(() => {
+    // Find the pricing dropdown
+    const sel = document.querySelector('select[data-p="pmo"]');
+    
+    // If the dropdown exists and hasn't been patched yet
+    if (sel && !sel.dataset.patched) {
+        sel.dataset.patched = "true";
+        const currentVal = sel.value; // Remember what was selected
+        
+        // Replace the options
+        sel.innerHTML = `
+            <option value="Module rates">Module rates (auto-calculated)</option>
+            <option value="Room base">Room base (per sq.ft)</option>
+            <option value="Package">Package (flat price per room)</option>
+            <option value="Material costing">Material costing (Internal only)</option>
+        `;
+        
+        // Restore the selection
+        sel.value = currentVal;
+        
+        // Force the app to recalculate whenever you change the dropdown
+        sel.addEventListener('change', () => {
+            if (typeof render === 'function') render();
+        });
+    }
+}, 1000);
