@@ -3103,6 +3103,7 @@ window.mcGenerateWAMsg = function(enqId) {
 
     // Create the Modal HTML
     const o = document.createElement('div');
+    o.id = 'wa-modal-wrapper'; // <--- Gave the modal an ID so we can close it easily
     o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
     
     o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:auto;">
@@ -3112,7 +3113,7 @@ window.mcGenerateWAMsg = function(enqId) {
         <div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px;">
             <div style="grid-column:1/-1;">
                 <label>Project Type</label>
-                <select id="wa_ptype" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;">
+                <select id="wa_ptype" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
                     <option value="House">House</option>
                     <option value="Office">Office</option>
                     <option value="Shop">Shop</option>
@@ -3122,15 +3123,15 @@ window.mcGenerateWAMsg = function(enqId) {
             </div>
             <div>
                 <label>Meeting Date</label>
-                <input type="date" id="wa_date" value="${today()}" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;">
+                <input type="date" id="wa_date" value="${today()}" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
             </div>
             <div>
                 <label>Meeting Time</label>
-                <input type="time" id="wa_time" value="14:00" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;">
+                <input type="time" id="wa_time" value="14:00" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
             </div>
             <div style="grid-column:1/-1;">
                 <label>Meeting Venue / Address</label>
-                <input type="text" id="wa_venue" placeholder="e.g. Site Address or Module Studio Office" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;">
+                <input type="text" id="wa_venue" placeholder="e.g. Site Address or Module Studio Office" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc; color:#333;">
             </div>
         </div>
 
@@ -3142,9 +3143,10 @@ window.mcGenerateWAMsg = function(enqId) {
         <div id="wa_result" style="display:none; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
             <h4 style="margin-top:0; color:#15803d;">✅ Details Generated!</h4>
             
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; margin-bottom:15px;">
-                <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold;">Follow these steps on WhatsApp:</p>
-                <ol style="font-size:12px; margin:0; padding-left:20px;">
+            <!-- Added color:#333 to fix dark mode text invisibility -->
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; margin-bottom:15px; color:#333;">
+                <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold; color:#333;">Follow these steps on WhatsApp:</p>
+                <ol style="font-size:12px; margin:0; padding-left:20px; color:#333;">
                     <li>Create a New Group and <b>paste the name</b>.</li>
                     <li>Add the client: <b>${esc(e.phone)}</b>.</li>
                     <li><b>Set Group Icon:</b> <a href="${logoUrl}" download="ModuleStudio_Logo.png" style="color:#1F4E79; font-weight:bold; text-decoration:underline;">Download Logo</a></li>
@@ -3152,7 +3154,7 @@ window.mcGenerateWAMsg = function(enqId) {
                 </ol>
             </div>
             
-                        <div style="margin-top:10px;">
+            <div style="margin-top:10px;">
                 <label style="font-size:11px;font-weight:bold;color:#555;">GROUP NAME:</label>
                 <div style="display:flex; gap:5px; margin-top:4px;">
                     <input type="text" id="wa_group_name" readonly style="flex:1; padding:8px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-weight:bold;">
@@ -3168,7 +3170,8 @@ window.mcGenerateWAMsg = function(enqId) {
             
             <button class="g" onclick="window.open('https://wa.me/${e.phone.replace(/[^0-9]/g,'')}', '_blank')" style="width:100%;margin-top:20px;background:#25D366;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;">Open WhatsApp Chat</button>
             
-            <button class="g" onclick="this.closest('div[style*=\\'position:fixed\\']').remove();" style="width:100%;margin-top:10px;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;">Close</button>
+            <!-- Fixed the Close button error by targeting the ID -->
+            <button class="g" onclick="document.getElementById('wa-modal-wrapper').remove();" style="width:100%;margin-top:10px;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;">Close</button>
         </div>
     </div>`;
 
@@ -3252,7 +3255,6 @@ _Designing Spaces. Defining Lifestyles._`;
         } catch(err) { console.log("Cloud save failed", err); }
         
         if (typeof render === 'function') render(); // Refresh the UI in background
-        // ---------------------------------------------------
 
         // Populate the fields
         document.getElementById('wa_group_name').value = groupName;
