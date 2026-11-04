@@ -2905,144 +2905,108 @@ vPrev = function() {
 };
 
 // ==========================================
-// ADD BANK & GST DETAILS TO SETTINGS
+// BANK & GST SETTINGS + PDF INJECTION (SAFE)
 // ==========================================
-const origVSet_BankUI = window.vSet;
-window.vSet = function() {
-    let html = origVSet_BankUI();
-    if (!S.set.co) S.set.co = {};
-    const co = S.set.co;
-
-    const bankCard = `<div class="card">
-        <h3>🏦 Bank & Payment Details (Prints on PDF)</h3>
-        <p class="mut">Fill in the details you want your clients to see on the quotation. If you leave the GSTIN blank, the GST section will automatically hide from the PDF.</p>
-        <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-            <div><label>Bank Name</label><input data-co-save="bankName" value="${esc(co.bankName || '')}" placeholder="e.g. HDFC Bank"></div>
-            <div><label>Account Name</label><input data-co-save="bankAccName" value="${esc(co.bankAccName || '')}" placeholder="e.g. Module Studio"></div>
-            <div><label>Account Number</label><input data-co-save="bankAccNo" value="${esc(co.bankAccNo || '')}" placeholder="e.g. 50200012345678"></div>
-            <div><label>IFSC Code</label><input data-co-save="bankIfsc" value="${esc(co.bankIfsc || '')}" placeholder="e.g. HDFC0001234"></div>
-            <div><label>UPI ID</label><input data-co-save="upiId" value="${esc(co.upiId || '')}" placeholder="e.g. yourname@okhdfcbank"></div>
-            <div><label>GSTIN (Leave blank if not registered)</label><input data-co-save="gstin" value="${esc(co.gstin || '')}" placeholder="15-character GSTIN" maxlength="15" style="text-transform:uppercase"></div>
-        </div>
-    </div>`;
-    
-    return html + bankCard;
-};
-
-// Listener to save the inputs automatically
-document.addEventListener('change', e => {
-    if (e.target.dataset && e.target.dataset.coSave) {
+(function() {
+    // 1. ADD BANK & GST DETAILS TO SETTINGS UI
+    const prevVSet = window.vSet;
+    window.vSet = function() {
+        let html = prevVSet.apply(this, arguments);
         if (!S.set.co) S.set.co = {};
-        S.set.co[e.target.dataset.coSave] = e.target.value.trim();
-        if (typeof save === 'function') save('s');
-        if (typeof flash === 'function') flash('Saved!');
-    }
-});
+        const co = S.set.co;
 
-// ==========================================
-// ADD BANK & GST DETAILS TO SETTINGS
-// ==========================================
-const origVSet_BankUI = window.vSet;
-window.vSet = function() {
-    let html = origVSet_BankUI();
-    if (!S.set.co) S.set.co = {};
-    const co = S.set.co;
+        const bankCard = `<div class="card">
+            <h3>🏦 Bank & Payment Details (Prints on PDF)</h3>
+            <p class="mut">Fill in the details you want your clients to see on the quotation. If you leave the GSTIN blank, the GST section will automatically hide from the PDF.</p>
+            <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+                <div><label>Bank Name</label><input data-co-save="bankName" value="${esc(co.bankName || '')}" placeholder="e.g. HDFC Bank"></div>
+                <div><label>Account Name</label><input data-co-save="bankAccName" value="${esc(co.bankAccName || '')}" placeholder="e.g. Module Studio"></div>
+                <div><label>Account Number</label><input data-co-save="bankAccNo" value="${esc(co.bankAccNo || '')}" placeholder="e.g. 50200012345678"></div>
+                <div><label>IFSC Code</label><input data-co-save="bankIfsc" value="${esc(co.bankIfsc || '')}" placeholder="e.g. HDFC0001234"></div>
+                <div><label>UPI ID</label><input data-co-save="upiId" value="${esc(co.upiId || '')}" placeholder="e.g. yourname@okhdfcbank"></div>
+                <div><label>GSTIN (Leave blank if not registered)</label><input data-co-save="gstin" value="${esc(co.gstin || '')}" placeholder="15-character GSTIN" maxlength="15" style="text-transform:uppercase"></div>
+            </div>
+        </div>`;
+        
+        return html + bankCard;
+    };
 
-    const bankCard = `<div class="card">
-        <h3>🏦 Bank & Payment Details (Prints on PDF)</h3>
-        <p class="mut">Fill in the details you want your clients to see on the quotation. If you leave the GSTIN blank, the GST section will automatically hide from the PDF.</p>
-        <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-            <div><label>Bank Name</label><input data-co-save="bankName" value="${esc(co.bankName || '')}" placeholder="e.g. HDFC Bank"></div>
-            <div><label>Account Name</label><input data-co-save="bankAccName" value="${esc(co.bankAccName || '')}" placeholder="e.g. Module Studio"></div>
-            <div><label>Account Number</label><input data-co-save="bankAccNo" value="${esc(co.bankAccNo || '')}" placeholder="e.g. 50200012345678"></div>
-            <div><label>IFSC Code</label><input data-co-save="bankIfsc" value="${esc(co.bankIfsc || '')}" placeholder="e.g. HDFC0001234"></div>
-            <div><label>UPI ID</label><input data-co-save="upiId" value="${esc(co.upiId || '')}" placeholder="e.g. yourname@okhdfcbank"></div>
-            <div><label>GSTIN (Leave blank if not registered)</label><input data-co-save="gstin" value="${esc(co.gstin || '')}" placeholder="15-character GSTIN" maxlength="15" style="text-transform:uppercase"></div>
-        </div>
-    </div>`;
-    
-    return html + bankCard;
-};
+    document.addEventListener('change', e => {
+        if (e.target.dataset && e.target.dataset.coSave) {
+            if (!S.set.co) S.set.co = {};
+            S.set.co[e.target.dataset.coSave] = e.target.value.trim();
+            if (typeof save === 'function') save('s');
+            if (typeof flash === 'function') flash('Saved!');
+        }
+    });
 
-// Listener to save the inputs automatically
-document.addEventListener('change', e => {
-    if (e.target.dataset && e.target.dataset.coSave) {
-        if (!S.set.co) S.set.co = {};
-        S.set.co[e.target.dataset.coSave] = e.target.value.trim();
-        if (typeof save === 'function') save('s');
-        if (typeof flash === 'function') flash('Saved!');
-    }
-});
+    // 2. DYNAMIC BANK & GST ON PDF
+    const prevPaperToPdf = window.paperToPdf;
+    window.paperToPdf = async function(mode) {
+        const paper = document.querySelector('.paper');
+        if (!paper) return prevPaperToPdf.apply(this, arguments);
 
-// ==========================================
-// DYNAMIC BANK & GST ON PDF
-// ==========================================
-const origPaperToPdf_BankGst = window.paperToPdf;
-window.paperToPdf = async function(mode) {
-    const paper = document.querySelector('.paper');
-    if (!paper) return origPaperToPdf_BankGst.apply(this, arguments);
+        const co = S.set.co || {};
+        const hasBank = co.bankAccNo || co.upiId || co.bankName;
+        const hasGst = co.gstin && co.gstin.trim() !== '';
 
-    const co = S.set.co || {};
-    const hasBank = co.bankAccNo || co.upiId || co.bankName;
-    const hasGst = co.gstin && co.gstin.trim() !== '';
+        if (!hasBank && !hasGst) return prevPaperToPdf.apply(this, arguments);
 
-    // If no bank or GST info is entered in settings, skip adding this section
-    if (!hasBank && !hasGst) return origPaperToPdf_BankGst.apply(this, arguments);
+        let bankHtml = '';
+        if (hasBank) {
+            bankHtml = `
+                <div style="flex: 1; border: 1px solid #ddd; padding: 12px; border-radius: 8px; background: #fdfdfd;">
+                    <b style="color: #1F4E79; font-size: 14px;">🏦 Payment Details</b><br>
+                    <div style="font-size: 12px; margin-top: 8px; line-height: 1.8;">
+                        ${co.bankName ? `<b>Bank:</b> ${esc(co.bankName)}<br>` : ''}
+                        ${co.bankAccName ? `<b>Acc Name:</b> ${esc(co.bankAccName)}<br>` : ''}
+                        ${co.bankAccNo ? `<b>Acc No:</b> ${esc(co.bankAccNo)}<br>` : ''}
+                        ${co.bankIfsc ? `<b>IFSC:</b> ${esc(co.bankIfsc)}<br>` : ''}
+                        ${co.upiId ? `<b>UPI ID:</b> ${esc(co.upiId)}` : ''}
+                    </div>
+                </div>`;
+        }
 
-    let bankHtml = '';
-    if (hasBank) {
-        bankHtml = `
-            <div style="flex: 1; border: 1px solid #ddd; padding: 12px; border-radius: 8px; background: #fdfdfd;">
-                <b style="color: #1F4E79; font-size: 14px;">🏦 Payment Details</b><br>
-                <div style="font-size: 12px; margin-top: 8px; line-height: 1.8;">
-                    ${co.bankName ? `<b>Bank:</b> ${esc(co.bankName)}<br>` : ''}
-                    ${co.bankAccName ? `<b>Acc Name:</b> ${esc(co.bankAccName)}<br>` : ''}
-                    ${co.bankAccNo ? `<b>Acc No:</b> ${esc(co.bankAccNo)}<br>` : ''}
-                    ${co.bankIfsc ? `<b>IFSC:</b> ${esc(co.bankIfsc)}<br>` : ''}
-                    ${co.upiId ? `<b>UPI ID:</b> ${esc(co.upiId)}` : ''}
-                </div>
-            </div>`;
-    }
+        let gstHtml = '';
+        if (hasGst) {
+            gstHtml = `
+                <div style="flex: 1; border: 1px solid #ddd; padding: 12px; border-radius: 8px; background: #fdfdfd;">
+                    <b style="color: #1F4E79; font-size: 14px;">🧾 Tax Information</b><br>
+                    <div style="font-size: 12px; margin-top: 8px; line-height: 1.8;">
+                        <b>GSTIN:</b> ${esc(co.gstin)}<br>
+                        <b>Place of Supply:</b> ${co.state || 'West Bengal'}<br>
+                        <b style="color: #b00020;">Note:</b> Prices are exclusive of GST.<br>
+                        GST will be applicable on the final invoice.
+                    </div>
+                </div>`;
+        }
 
-    let gstHtml = '';
-    if (hasGst) {
-        gstHtml = `
-            <div style="flex: 1; border: 1px solid #ddd; padding: 12px; border-radius: 8px; background: #fdfdfd;">
-                <b style="color: #1F4E79; font-size: 14px;">🧾 Tax Information</b><br>
-                <div style="font-size: 12px; margin-top: 8px; line-height: 1.8;">
-                    <b>GSTIN:</b> ${esc(co.gstin)}<br>
-                    <b>Place of Supply:</b> ${co.state || 'West Bengal'}<br>
-                    <b style="color: #b00020;">Note:</b> Prices are exclusive of GST.<br>
-                    GST will be applicable on the final invoice.
-                </div>
-            </div>`;
-    }
+        const bankGstHtml = `
+        <div class="pg" id="bank-gst-details" style="break-inside: avoid; margin-top: 25px; border-top: 2px solid var(--line); padding-top: 15px;">
+            <div class="sh" style="text-align:center; letter-spacing:2px;">PAYMENT & TAX INFORMATION</div>
+            <div style="display: flex; gap: 15px; margin-top: 15px; align-items: stretch;">
+                ${bankHtml}
+                ${gstHtml}
+            </div>
+        </div>`;
 
-    const bankGstHtml = `
-    <div class="pg" id="bank-gst-details" style="break-inside: avoid; margin-top: 25px; border-top: 2px solid var(--line); padding-top: 15px;">
-        <div class="sh" style="text-align:center; letter-spacing:2px;">PAYMENT & TAX INFORMATION</div>
-        <div style="display: flex; gap: 15px; margin-top: 15px; align-items: stretch;">
-            ${bankHtml}
-            ${gstHtml}
-        </div>
-    </div>`;
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = bankGstHtml;
+        const contentToInsert = tempDiv.firstElementChild;
 
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = bankGstHtml;
-    const contentToInsert = tempDiv.firstElementChild;
+        const warranty = paper.querySelector('#warranty-page');
+        if (warranty) {
+            warranty.insertAdjacentElement('beforebegin', contentToInsert);
+        } else {
+            const tbody = paper.querySelector('table.doc > tbody > tr > td');
+            if (tbody) tbody.appendChild(contentToInsert);
+        }
 
-    const warranty = paper.querySelector('#warranty-page');
-    if (warranty) {
-        warranty.insertAdjacentElement('beforebegin', contentToInsert);
-    } else {
-        const tbody = paper.querySelector('table.doc > tbody > tr > td');
-        if (tbody) tbody.appendChild(contentToInsert);
-    }
-
-    try {
-        return await origPaperToPdf_BankGst.apply(this, arguments);
-    } finally {
-        const el = document.getElementById('bank-gst-details');
-        if (el) el.remove();
-    }
-};
+        try {
+            return await prevPaperToPdf.apply(this, arguments);
+        } finally {
+            const el = document.getElementById('bank-gst-details');
+            if (el) el.remove();
+        }
+    };
+})();
