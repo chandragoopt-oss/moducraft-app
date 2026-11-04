@@ -2711,8 +2711,9 @@ document.addEventListener('click', function(e) {
             accessSpan.style.display = 'none';
         }
     }
+
 // ==========================================
-// CONSOLIDATED MASTER FIXES (DO NOT EDIT BELOW)
+// CONSOLIDATED MASTER FIXES (CLEAN VERSION)
 // ==========================================
 
 // 1. Missing Enquiry Functions & Module Crash Protection
@@ -2825,74 +2826,50 @@ setTimeout(() => {
     }
 }, 500);
 
-// ==========================================
-// BULLETPROOF BOQ DOM FIX (WATCHES SCREEN)
-// ==========================================
+// 5. BULLETPROOF BOQ DOM FIX (WATCHES SCREEN)
 setInterval(() => {
-    const paper = document.querySelector('.paper');
-    if (!paper) return;
+    try {
+        const paper = document.querySelector('.paper');
+        if (!paper) return;
 
-    const ths = Array.from(paper.querySelectorAll('th'));
-    if (!ths.length) return;
+        const ths = Array.from(paper.querySelectorAll('th'));
+        if (!ths.length) return;
 
-    // 1. Fix the Dimension Header
-    const dimTh = ths.find(th => th.textContent.includes('Dimension (mm'));
-    if (dimTh) {
-        dimTh.textContent = 'Dimensions (ft)';
-    }
-
-    // 2. Find the Material and Finish columns
-    const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
-    const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
-
-    if (matIdx === -1 && finIdx === -1) return;
-
-    const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
-    if (!q) return;
-
-    // 3. Fill the empty cells in the rows
-    paper.querySelectorAll('tbody tr').forEach(tr => {
-        const tds = tr.querySelectorAll('td');
-        
-        if (matIdx !== -1 && tds[matIdx]) {
-            const txt = tds[matIdx].textContent.trim();
-            // If it's empty or just a dash, fill it
-            if (!txt || txt === '—' || txt === '-' || txt === '') {
-                tds[matIdx].textContent = q.cf || 'BSL MR';
-            }
+        // Fix the Dimension Header
+        const dimTh = ths.find(th => th.textContent.includes('Dimension (mm'));
+        if (dimTh) {
+            dimTh.textContent = 'Dimensions (ft)';
         }
-        
-        if (finIdx !== -1 && tds[finIdx]) {
-            const txt = tds[finIdx].textContent.trim();
-            if (!txt || txt === '—' || txt === '-' || txt === '') {
-                tds[finIdx].textContent = q.fo || '0.8mm Laminate';
+
+        // Find the Material and Finish columns
+        const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
+        const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
+
+        if (matIdx === -1 && finIdx === -1) return;
+
+        const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
+        if (!q) return;
+
+        // Fill the empty cells in the rows
+        paper.querySelectorAll('tbody tr').forEach(tr => {
+            const tds = tr.querySelectorAll('td');
+            
+            if (matIdx !== -1 && tds[matIdx]) {
+                const txt = tds[matIdx].textContent.trim();
+                if (!txt || txt === '—' || txt === '-' || txt === '') {
+                    tds[matIdx].textContent = q.cf || 'BSL MR';
+                }
             }
-        }
-    });
+            
+            if (finIdx !== -1 && tds[finIdx]) {
+                const txt = tds[finIdx].textContent.trim();
+                if (!txt || txt === '—' || txt === '-' || txt === '') {
+                    tds[finIdx].textContent = q.fo || '0.8mm Laminate';
+                }
+            }
+        });
+    } catch(e) {}
 }, 500);
-
-            // Find columns
-            const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
-            const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
-
-            // Fill cells
-            if (matIdx !== -1 || finIdx !== -1) {
-                doc.querySelectorAll('tbody tr').forEach(tr => {
-                    const tds = tr.querySelectorAll('td');
-                    if (matIdx !== -1 && tds[matIdx]) {
-                        const txt = tds[matIdx].textContent.trim();
-                        if (!txt || txt === '—' || txt === '-') tds[matIdx].textContent = q.cf || 'BSL MR';
-                    }
-                    if (finIdx !== -1 && tds[finIdx]) {
-                        const txt = tds[finIdx].textContent.trim();
-                        if (!txt || txt === '—' || txt === '-') tds[finIdx].textContent = q.fo || '0.8mm Laminate';
-                    }
-                });
-            }
-            return doc.body.innerHTML;
-        } catch (e) { return html; }
-    };
-})();
 
 // 6. BANK & GST SETTINGS + PDF INJECTION
 (function() {
