@@ -19,6 +19,9 @@
             color: #333;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
+            -webkit-touch-callout: none; /* Disables long-press menu on mobile */
+            -webkit-user-select: none; /* Disables text selection */
+            user-select: none;
         }
         
         /* HERO SECTION WITH COVER IMAGE */
@@ -106,11 +109,15 @@
             overflow: hidden;
             border: 1px solid #ddd;
             background: #f0f0f0;
+            pointer-events: none; /* Prevents clicking the iframe directly to hide pop-out buttons */
         }
+        
+        /* We re-enable pointer events for the scrollbar area to allow scrolling */
         .pdf-container iframe {
             width: 100%;
             height: 100%;
             border: none;
+            pointer-events: auto; 
         }
 
         .btn {
@@ -169,12 +176,12 @@
             <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Swipe through our latest design brochure below.</p>
             
             <div class="pdf-container">
-                <!-- Google Drive Embed Link -->
-                <iframe src="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/preview" allow="autoplay"></iframe>
+                <!-- Google Drive Preview Embed Link (No download button) -->
+                <iframe src="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/preview?toolbar=0" allow="autoplay"></iframe>
             </div>
             
-            <!-- Button to open fullscreen (preview mode so it doesn't force download) -->
-            <a href="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/view" target="_blank" class="btn btn-dark">
+            <!-- Button to open fullscreen PREVIEW (Not View/Download) -->
+            <a href="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/preview" target="_blank" class="btn btn-dark">
                 🔍 View Full Screen
             </a>
         </div>
