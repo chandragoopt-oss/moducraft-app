@@ -2720,205 +2720,206 @@ document.addEventListener('click', function(e) {
     }
 
 // ==========================================
-// CONSOLIDATED MASTER FIXES (CLEAN VERSION)
+// CONSOLIDATED MASTER FIXES (SAFE WRAPPED)
 // ==========================================
-
-// 1. Missing Enquiry Functions & Module Crash Protection
-window.mcUpdateEnqStatus = function(id, newStatus, isQuotation) {
-    if (isQuotation) {
-        const q = S.q[id];
-        if (!q) return;
-        if (newStatus === 'Lost') {
-            q.out = 'lost';
-        } else if (newStatus === 'Won') {
-            q.out = 'won';
-            q.st = 'shared';
-        } else if (newStatus === 'Quoted') {
-            q.st = 'shared';
-            q.out = '';
-        } else {
-            q.st = 'draft';
-            q.out = '';
-        }
-        if (typeof save === 'function') save('q', id);
-    } else {
-        const e = window.ENQ[id];
-        if (!e) return;
-        e.status = newStatus;
-        if (window.saveEnq) window.saveEnq();
-    }
-    if (typeof render === 'function') render();
-    if (typeof flash === 'function') flash('Status updated to ' + newStatus);
-};
-
-window.mcDeleteEnq = function(id) {
-    if (confirm('Are you sure you want to delete this enquiry?')) {
-        delete window.ENQ[id];
-        if (window.saveEnq) window.saveEnq();
-        if (typeof render === 'function') render();
-        if (typeof flash === 'function') flash('Enquiry deleted');
-    }
-};
-
-setTimeout(() => {
-    if (typeof window.MOD !== 'undefined' && !window.__mcModPatched) {
-        window.__mcModPatched = true;
-        const origMOD = window.MOD;
-        window.MOD = new Proxy(origMOD, {
-            get: function(target, prop) {
-                if (prop === 'undefined' || prop === 'null' || !target[prop]) {
-                    return { M_ID: 'CUSTOM', name: 'Custom Item', au: false, w0: 0, h: 0, sw: [0] };
-                }
-                return target[prop];
-            }
-        });
-    }
-}, 1000);
-
-// 2. Add Pricing Basis Options Dynamically
-setInterval(() => {
-    const sel = document.querySelector('select[data-p="pmo"]');
-    if (sel && !sel.dataset.patched) {
-        sel.dataset.patched = "true";
-        const currentVal = sel.value; 
-        sel.innerHTML = `
-            <option value="Module rates">Module rates (auto-calculated)</option>
-            <option value="Room base">Room base (per sq.ft)</option>
-            <option value="Package">Package (flat price per room)</option>
-            <option value="Material costing">Material costing (Internal only)</option>
-        `;
-        sel.value = currentVal;
-        sel.addEventListener('change', () => {
-            if (typeof render === 'function') render();
-        });
-    }
-}, 1000);
-
-// 3. YEN (¥) TO RUPEE (Rs.) IN PDF
-const origPaperToPdf_RupeeFix = window.paperToPdf;
-window.paperToPdf = async function(mode) {
-    const paper = document.querySelector('.paper');
-    if (!paper) return origPaperToPdf_RupeeFix.apply(this, arguments);
-    const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, null, false);
-    let node;
-    const changedNodes = [];
-    while (node = walker.nextNode()) {
-        if (node.nodeValue.includes('₹')) {
-            changedNodes.push({ node: node, original: node.nodeValue });
-            node.nodeValue = node.nodeValue.replace(/₹/g, 'Rs. ');
-        }
-    }
-    try {
-        return await origPaperToPdf_RupeeFix.apply(this, arguments);
-    } finally {
-        changedNodes.forEach(item => item.node.nodeValue = item.original);
-    }
-};
-
-// 4. Auto-Add Validity & Timeline to Notes
-setTimeout(() => {
-    const noteText = "Quotation is valid for 30 days from the date of issue.\n\nEstimated Work Completion Timeline: 45 days + 15 days (Civil works/onsite services) from the date of finalization of design / carpentry milestone achievement / site validation (whichever is later).\n\nNote: This timeline may vary if payment milestones are not followed properly.";
-    if (window.S && S.cur && S.q[S.cur]) {
-        if (!S.q[S.cur].notes || !S.q[S.cur].notes.includes("valid for 15 days")) {
-            S.q[S.cur].notes = (S.q[S.cur].notes ? S.q[S.cur].notes.trim() + "\n\n" : "") + noteText;
-            if (typeof save === 'function') save('q', S.cur);
-            if (typeof render === 'function') render();
-        }
-    }
-    if (window.S && S.set) {
-        if (!S.set.notes || !S.set.notes.includes("valid for 15 days")) {
-            S.set.notes = (S.set.notes ? S.set.notes.trim() + "\n\n" : "") + noteText;
-            if (typeof save === 'function') save('s');
-        }
-    }
-}, 500);
-
-// ==========================================
-// MASTER DOM FIX (BOQ, TYPOS, WARNINGS, & BANK)
-// ==========================================
-
-// 1. FIX BOQ, TYPOS & PRICE WARNING (WATCHES SCREEN)
-setInterval(() => {
-    try {
-        const paper = document.querySelector('.paper');
-        if (!paper) return;
-
-        // A. Fix BOQ Header & Columns
-        const ths = Array.from(paper.querySelectorAll('th'));
-        if (ths.length) {
-            const dimTh = ths.find(th => th.textContent.includes('Dimension (mm'));
-            if (dimTh) dimTh.textContent = 'Dimensions (ft)';
-
-            const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
-            const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
-
-            if (matIdx !== -1 || finIdx !== -1) {
-                const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
-                if (q) {
-                    paper.querySelectorAll('tbody tr').forEach(tr => {
-                        const tds = tr.querySelectorAll('td');
-                        if (matIdx !== -1 && tds[matIdx] && (!tds[matIdx].textContent.trim() || tds[matIdx].textContent.trim() === '—')) {
-                            tds[matIdx].textContent = q.cf || 'BSL MR';
-                        }
-                        if (finIdx !== -1 && tds[finIdx] && (!tds[finIdx].textContent.trim() || tds[finIdx].textContent.trim() === '—')) {
-                            tds[finIdx].textContent = q.fo || '0.8mm Laminate';
-                        }
-                    });
-                }
-            }
-        }
-
-        // B. Fix Disclaimer Typos
-        if (paper.innerHTML.includes('Disclamer:')) {
-            paper.innerHTML = paper.innerHTML.replace(/\(Disclamer:[\s\S]*?site conditions\.\)/g, `(Disclaimer: Images provided in the quotation are for representational purposes only. Final products may vary slightly in texture and finish based on material batch availability and site conditions.)`);
-        }
-
-        // C. Highlight Final Price Variation
-        if (paper.innerHTML.includes('FINAL PRICE VARIATION') && !paper.innerHTML.includes('id="final-price-warning"')) {
-            const regex = /\*\*FINAL PRICE VARIATION[\s\S]*?(?=\*\*|<br>|<\/p>)/g;
-            paper.innerHTML = paper.innerHTML.replace(regex, (match) => {
-                let cleanText = match.replace(/\*\*/g, '').replace(/FINAL PRICE VARIATION:?/, '').trim();
-                return `<div id="final-price-warning" style="border: 2px solid #F59E0B; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #FFFBEB; page-break-inside: avoid;">
-                    <div style="color: #B45309; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⚠️ FINAL PRICE VARIATION:</div>
-                    <div style="color: #333; font-size: 12px; line-height: 1.5;">${cleanText}</div>
-                </div>`;
-            });
-        }
-        // D. Highlight Validity & Timeline (Auto-Calculate Date)
-        if (paper.innerHTML.includes('Quotation is valid for 30 days') && !paper.innerHTML.includes('id="validity-warning"')) {
-            
-            // Auto-calculate the +30 days validity date
-            let validUntilStr = "";
-            const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
-            if (q && q.date) {
-                const d = new Date(q.date);
-                d.setDate(d.getDate() + 30);
-                const dd = String(d.getDate()).padStart(2, '0');
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const yyyy = d.getFullYear();
-                validUntilStr = ` <b>(Valid until: ${dd}/${mm}/${yyyy})</b>`;
-            }
-
-            // Find the text and wrap it in a blue highlight box
-            const regex = /Quotation is valid for 30 days[\s\S]*?followed properly\./g;
-            paper.innerHTML = paper.innerHTML.replace(regex, (match) => {
-                let displayText = match;
-                // Inject the calculated date if it isn't there yet
-                if (validUntilStr && !displayText.includes('Valid until:')) {
-                    displayText = displayText.replace('from the date of issue.', 'from the date of issue.' + validUntilStr);
-                }
-                
-                return `<div id="validity-warning" style="border: 2px solid #1F4E79; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #F0F7FF; page-break-inside: avoid;">
-                    <div style="color: #1F4E79; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⏱️ VALIDITY & TIMELINE:</div>
-                    <div style="color: #333; font-size: 12px; line-height: 1.6;">${displayText.replace(/\n/g, '<br>')}</div>
-                </div>`;
-            });
-        }
-    } catch(e) {}
-}, 500);
-
-// 2. BANK & GST SETTINGS + PDF INJECTION
 (function() {
+    // 1. Missing Enquiry Functions & Module Crash Protection
+    window.mcUpdateEnqStatus = function(id, newStatus, isQuotation) {
+        if (isQuotation) {
+            const q = S.q[id];
+            if (!q) return;
+            if (newStatus === 'Lost') {
+                q.out = 'lost';
+            } else if (newStatus === 'Won') {
+                q.out = 'won';
+                q.st = 'shared';
+            } else if (newStatus === 'Quoted') {
+                q.st = 'shared';
+                q.out = '';
+            } else {
+                q.st = 'draft';
+                q.out = '';
+            }
+            if (typeof save === 'function') save('q', id);
+        } else {
+            const e = window.ENQ[id];
+            if (!e) return;
+            e.status = newStatus;
+            if (window.saveEnq) window.saveEnq();
+        }
+        if (typeof render === 'function') render();
+        if (typeof flash === 'function') flash('Status updated to ' + newStatus);
+    };
+
+    window.mcDeleteEnq = function(id) {
+        if (confirm('Are you sure you want to delete this enquiry?')) {
+            delete window.ENQ[id];
+            if (window.saveEnq) window.saveEnq();
+            if (typeof render === 'function') render();
+            if (typeof flash === 'function') flash('Enquiry deleted');
+        }
+    };
+
+    setTimeout(() => {
+        if (typeof window.MOD !== 'undefined' && !window.__mcModPatched) {
+            window.__mcModPatched = true;
+            const origMOD = window.MOD;
+            window.MOD = new Proxy(origMOD, {
+                get: function(target, prop) {
+                    if (prop === 'undefined' || prop === 'null' || !target[prop]) {
+                        return { M_ID: 'CUSTOM', name: 'Custom Item', au: false, w0: 0, h: 0, sw: [0] };
+                    }
+                    return target[prop];
+                }
+            });
+        }
+    }, 1000);
+
+    // 2. Add Pricing Basis Options Dynamically
+    setInterval(() => {
+        const sel = document.querySelector('select[data-p="pmo"]');
+        if (sel && !sel.dataset.patched) {
+            sel.dataset.patched = "true";
+            const currentVal = sel.value; 
+            sel.innerHTML = `
+                <option value="Module rates">Module rates (auto-calculated)</option>
+                <option value="Room base">Room base (per sq.ft)</option>
+                <option value="Package">Package (flat price per room)</option>
+                <option value="Material costing">Material costing (Internal only)</option>
+            `;
+            sel.value = currentVal;
+            sel.addEventListener('change', () => {
+                if (typeof render === 'function') render();
+            });
+        }
+    }, 1000);
+
+    // 3. YEN (¥) TO RUPEE (Rs.) IN PDF
+    const origPaperToPdf_RupeeFix = window.paperToPdf;
+    window.paperToPdf = async function(mode) {
+        const paper = document.querySelector('.paper');
+        if (!paper) return origPaperToPdf_RupeeFix.apply(this, arguments);
+        const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        const changedNodes = [];
+        while (node = walker.nextNode()) {
+            if (node.nodeValue.includes('₹')) {
+                changedNodes.push({ node: node, original: node.nodeValue });
+                node.nodeValue = node.nodeValue.replace(/₹/g, 'Rs. ');
+            }
+        }
+        try {
+            return await origPaperToPdf_RupeeFix.apply(this, arguments);
+        } finally {
+            changedNodes.forEach(item => item.node.nodeValue = item.original);
+        }
+    };
+
+    // 4. Auto-Add Validity & Timeline to Notes
+    setTimeout(() => {
+        const noteText = "Quotation is valid for 30 days from the date of issue.\n\nEstimated Work Completion Timeline: 45 days + 15 days (Civil works/onsite services) from the date of finalization of design / carpentry milestone achievement / site validation (whichever is later).\n\nNote: This timeline may vary if payment milestones are not followed properly.";
+        if (window.S && S.cur && S.q[S.cur]) {
+            if (!S.q[S.cur].notes || !S.q[S.cur].notes.includes("valid for 15 days")) {
+                S.q[S.cur].notes = (S.q[S.cur].notes ? S.q[S.cur].notes.trim() + "\n\n" : "") + noteText;
+                if (typeof save === 'function') save('q', S.cur);
+                if (typeof render === 'function') render();
+            }
+        }
+        if (window.S && S.set) {
+            if (!S.set.notes || !S.set.notes.includes("valid for 15 days")) {
+                S.set.notes = (S.set.notes ? S.set.notes.trim() + "\n\n" : "") + noteText;
+                if (typeof save === 'function') save('s');
+            }
+        }
+    }, 500);
+
+    // 5. FIX BOQ, TYPOS & PRICE WARNING (WATCHES SCREEN)
+    setInterval(() => {
+        try {
+            const paper = document.querySelector('.paper');
+            if (!paper) return;
+
+            // A. Fix BOQ Header & Columns
+            const ths = Array.from(paper.querySelectorAll('th'));
+            if (ths.length) {
+                const dimTh = ths.find(th => th.textContent.includes('Dimension (mm'));
+                if (dimTh) dimTh.textContent = 'Dimensions (ft)';
+
+                const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
+                const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
+
+                if (matIdx !== -1 || finIdx !== -1) {
+                    const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
+                    if (q) {
+                        paper.querySelectorAll('tbody tr').forEach(tr => {
+                            const tds = tr.querySelectorAll('td');
+                            if (matIdx !== -1 && tds[matIdx] && (!tds[matIdx].textContent.trim() || tds[matIdx].textContent.trim() === '—')) {
+                                tds[matIdx].textContent = q.cf || 'BSL MR';
+                            }
+                            if (finIdx !== -1 && tds[finIdx] && (!tds[finIdx].textContent.trim() || tds[finIdx].textContent.trim() === '—')) {
+                                tds[finIdx].textContent = q.fo || '0.8mm Laminate';
+                            }
+                        });
+                    }
+                }
+            }
+
+            // B. Fix Disclaimer Typos
+            if (paper.innerHTML.includes('Disclamer:')) {
+                paper.innerHTML = paper.innerHTML.replace(/\(Disclamer:[\s\S]*?site conditions\.\)/g, `(Disclaimer: Images provided in the quotation are for representational purposes only. Final products may vary slightly in texture and finish based on material batch availability and site conditions.)`);
+            }
+
+            // C. Highlight Final Price Variation
+            if (paper.innerHTML.includes('FINAL PRICE VARIATION') && !paper.innerHTML.includes('id="final-price-warning"')) {
+                const regex = /\*\*FINAL PRICE VARIATION[\s\S]*?(?=\*\*|<br>|<\/p>)/g;
+                paper.innerHTML = paper.innerHTML.replace(regex, (match) => {
+                    let cleanText = match.replace(/\*\*/g, '').replace(/FINAL PRICE VARIATION:?/, '').trim();
+                    return `<div id="final-price-warning" style="border: 2px solid #F59E0B; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #FFFBEB; page-break-inside: avoid;">
+                        <div style="color: #B45309; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⚠️ FINAL PRICE VARIATION:</div>
+                        <div style="color: #333; font-size: 12px; line-height: 1.5;">${cleanText}</div>
+                    </div>`;
+                });
+            }
+        } catch(e) {}
+    }, 500);
+
+    // 6. FORCE INJECT VALIDITY & TIMELINE BOX
+    const origVPrev_Validity = window.vPrev;
+    window.vPrev = function() {
+        let html = origVPrev_Validity.apply(this, arguments);
+        if (html.includes('id="validity-warning"')) return html;
+
+        const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
+        let validUntilStr = "";
+        
+        if (q && q.date) {
+            const d = new Date(q.date);
+            d.setDate(d.getDate() + 30);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            validUntilStr = ` <b>(Valid until: ${dd}/${mm}/${yyyy})</b>`;
+        }
+
+        const validityBox = `
+        <div id="validity-warning" style="border: 2px solid #1F4E79; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #F0F7FF; page-break-inside: avoid;">
+            <div style="color: #1F4E79; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⏱️ VALIDITY & TIMELINE:</div>
+            <div style="color: #333; font-size: 12px; line-height: 1.6;">
+                <b>1. Quotation Validity:</b> This quotation is valid for 30 days from the date of issue.${validUntilStr}<br><br>
+                <b>2. Estimated Work Completion:</b> 45 days + 15 days (Civil works/onsite services) from the date of finalization of design / carpentry milestone achievement / site validation (whichever is later).<br><br>
+                <span style="color: #b00020; font-weight: bold;">Note:</span> This timeline may vary if payment milestones are not followed properly.
+            </div>
+        </div>`;
+
+        if (html.includes('FINAL PRICE VARIATION')) {
+            html = html.replace('FINAL PRICE VARIATION', validityBox + '<br>FINAL PRICE VARIATION');
+        } else {
+            html += validityBox;
+        }
+        return html;
+    };
+
+    // 7. BANK & GST SETTINGS + PDF INJECTION
     const prevVSet = window.vSet;
     window.vSet = function() {
         let html = prevVSet.apply(this, arguments);
@@ -3017,79 +3018,25 @@ setInterval(() => {
             if (el) el.remove();
         }
     };
-})();
 
+    // 8. ADD BROCHURE LINK TO SETTINGS
+    const prevVSet_Brochure = window.vSet;
+    window.vSet = function() {
+        let html = prevVSet_Brochure.apply(this, arguments);
+        const brochureLink = window.location.origin + window.location.pathname.replace('index.html', '') + 'brochure.html';
 
-// ==========================================
-// FORCE INJECT VALIDITY & TIMELINE BOX
-// ==========================================
-const origVPrev_Validity = window.vPrev;
-window.vPrev = function() {
-    let html = origVPrev_Validity.apply(this, arguments);
-    
-    // Check if we already injected it to avoid duplicates
-    if (html.includes('id="validity-warning"')) return html;
+        const brochureCard = `<div class="card" style="border-left: 4px solid #B08D57;">
+            <h3>📢 Public Brochure Link</h3>
+            <p class="mut">Share this link with potential clients. They can view your portfolio and submit an enquiry without needing to log in.</p>
+            <div class="bar">
+                <input type="text" readonly value="${brochureLink}" id="brochure_link_input" style="max-width:400px; background:var(--bg); color:var(--ink);">
+                <button onclick="navigator.clipboard.writeText('${brochureLink}'); flash('Link copied!');" style="background:#1F4E79; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">Copy Link</button>
+            </div>
+        </div>`;
+        return html + brochureCard;
+    };
 
-    const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
-    let validUntilStr = "";
-    
-    // Auto-calculate the +30 days date
-    if (q && q.date) {
-        const d = new Date(q.date);
-        d.setDate(d.getDate() + 30);
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const yyyy = d.getFullYear();
-        validUntilStr = ` <b>(Valid until: ${dd}/${mm}/${yyyy})</b>`;
-    }
-
-    const validityBox = `
-    <div id="validity-warning" style="border: 2px solid #1F4E79; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #F0F7FF; page-break-inside: avoid;">
-        <div style="color: #1F4E79; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⏱️ VALIDITY & TIMELINE:</div>
-        <div style="color: #333; font-size: 12px; line-height: 1.6;">
-            <b>1. Quotation Validity:</b> This quotation is valid for 30 days from the date of issue.${validUntilStr}<br><br>
-            <b>2. Estimated Work Completion:</b> 45 days + 15 days (Civil works/onsite services) from the date of finalization of design / carpentry milestone achievement / site validation (whichever is later).<br><br>
-            <span style="color: #b00020; font-weight: bold;">Note:</span> This timeline may vary if payment milestones are not followed properly.
-        </div>
-    </div>`;
-
-    // Find the "FINAL PRICE VARIATION" text and insert the box right BEFORE it
-    if (html.includes('FINAL PRICE VARIATION')) {
-        html = html.replace('FINAL PRICE VARIATION', validityBox + '<br>FINAL PRICE VARIATION');
-    } else {
-        // If not found, just append it to the end
-        html += validityBox;
-    }
-
-    return html;
-};
-
-// ==========================================
-// ADD BROCHURE LINK TO SETTINGS
-// ==========================================
-const prevVSet_Brochure = window.vSet;
-window.vSet = function() {
-    let html = prevVSet_Brochure.apply(this, arguments);
-    
-    // Automatically grabs your website's base URL
-    const brochureLink = window.location.origin + window.location.pathname.replace('index.html', '') + 'brochure.html';
-
-    const brochureCard = `<div class="card" style="border-left: 4px solid #B08D57;">
-        <h3>📢 Public Brochure Link</h3>
-        <p class="mut">Share this link with potential clients. They can view your portfolio and submit an enquiry without needing to log in.</p>
-        <div class="bar">
-            <input type="text" readonly value="${brochureLink}" id="brochure_link_input" style="max-width:400px; background:var(--bg); color:var(--ink);">
-            <button onclick="navigator.clipboard.writeText('${brochureLink}'); flash('Link copied!');" style="background:#1F4E79; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">Copy Link</button>
-        </div>
-    </div>`;
-
-    return html + brochureCard;
-};
-
-/// ==========================================
-// WHATSAPP GROUP SETUP (SAFE WRAPPED VERSION)
-// ==========================================
-(function() {
+    // 9. WHATSAPP GROUP & WELCOME MESSAGE GENERATOR
     window.mcGenerateWAMsg = function(enqId) {
         const e = window.ENQ[enqId];
         if (!e) return alert("Enquiry not found.");
@@ -3221,6 +3168,7 @@ window.vSet = function() {
 
             document.getElementById('wa_group_name').value = groupName;
             document.getElementById('wa_msg_welcome').value = msgWelcome;
+            document.getElementById('wa_msg_invite').value = msgInvite;
             
             navigator.clipboard.writeText(groupName);
 
@@ -3229,6 +3177,7 @@ window.vSet = function() {
         };
     };
 
+    // 10. INJECT "WA GROUP" BUTTON INTO ENQUIRIES TAB
     const origVEnq_WA = window.vEnq;
     window.vEnq = function() {
         let html = origVEnq_WA.apply(this, arguments);
@@ -3244,5 +3193,3 @@ window.vSet = function() {
         return html;
     };
 })();
-    return html;
-};
