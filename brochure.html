@@ -10,6 +10,7 @@
             --dark: #1F2937;
             --bg: #fcfcfc;
             --card: #ffffff;
+            --wa-green: #25D366;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -19,15 +20,15 @@
             color: #333;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
-            -webkit-touch-callout: none; /* Disables long-press menu on mobile */
-            -webkit-user-select: none; /* Disables text selection */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
             user-select: none;
         }
         
-        /* HERO SECTION WITH COVER IMAGE */
+        /* HERO SECTION */
         .hero {
             position: relative;
-            background-image: url('cover.jpg'); /* Make sure this matches your image name */
+            background-image: url('cover.jpg'); 
             background-size: cover;
             background-position: center;
             height: 100vh;
@@ -40,7 +41,6 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        
         .hero::before {
             content: '';
             position: absolute;
@@ -48,113 +48,67 @@
             background: rgba(31, 41, 55, 0.65); 
             z-index: 1;
         }
-        
         .hero-content {
             position: relative;
             z-index: 2;
             animation: fadeIn 1.5s ease-in-out;
         }
-        
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(20px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
         .hero h1 { margin: 0; font-size: 34px; letter-spacing: 5px; font-weight: 300; }
         .hero p { color: var(--gold); font-weight: bold; margin-top: 10px; letter-spacing: 2px; font-size: 14px; text-transform: uppercase; }
         
         .scroll-down {
-            position: absolute;
-            bottom: 30px;
-            z-index: 2;
-            color: var(--gold);
-            font-size: 24px;
-            animation: bounce 2s infinite;
+            position: absolute; bottom: 30px; z-index: 2; color: var(--gold); font-size: 24px; animation: bounce 2s infinite;
         }
-        
-        @keyframes bounce { 
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 
-            40% { transform: translateY(-10px); } 
-            60% { transform: translateY(-5px); } 
-        }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
 
         /* CONTENT SECTIONS */
         .container { max-width: 800px; margin: -30px auto 20px; padding: 0 15px; position: relative; z-index: 5; }
-        
-        .card {
-            background: var(--card);
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
-        
-        .section-title {
-            color: var(--dark);
-            font-size: 22px;
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-weight: 600;
-            border-left: 4px solid var(--gold);
-            padding-left: 12px;
-        }
+        .card { background: var(--card); border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .section-title { color: var(--dark); font-size: 22px; margin-top: 0; margin-bottom: 15px; font-weight: 600; border-left: 4px solid var(--gold); padding-left: 12px; }
 
-        /* EMBEDDED PDF STYLES */
+        /* EMBEDDED PDF */
         .pdf-container {
-            position: relative;
-            width: 100%;
-            height: 60vh; /* Takes up 60% of screen height */
-            max-height: 600px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #ddd;
-            background: #f0f0f0;
-            pointer-events: none; /* Prevents clicking the iframe directly to hide pop-out buttons */
+            position: relative; width: 100%; height: 60vh; max-height: 600px; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; background: #f0f0f0;
         }
-        
-        /* We re-enable pointer events for the scrollbar area to allow scrolling */
-        .pdf-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            pointer-events: auto; 
-        }
+        .pdf-container iframe { width: 100%; height: 100%; border: none; }
 
-        .btn {
-            background: var(--gold);
-            color: #fff;
-            text-decoration: none;
-            padding: 16px 24px;
-            border-radius: 8px;
-            font-weight: bold;
-            display: block;
-            text-align: center;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-            box-sizing: border-box;
-            transition: background 0.3s;
-            margin-top: 15px;
-        }
-        .btn:hover { background: #9a7b4b; }
-        .btn-dark { background: var(--dark); }
+        /* QUICK ACTIONS */
+        .action-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
+        @media(min-width: 600px) { .action-grid { grid-template-columns: 1fr 1fr 1fr; } }
         
+        .action-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px; padding: 15px; border-radius: 8px; font-weight: bold; text-decoration: none; cursor: pointer; border: none; font-size: 15px; transition: all 0.3s;
+        }
+        .btn-meet { background: #e0f2fe; color: #0369a1; }
+        .btn-call { background: #fef3c7; color: #b45309; }
+        .btn-wa { background: #dcfce7; color: #15803d; }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
         /* FORM STYLES */
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #555; text-transform: uppercase; letter-spacing: 0.5px;}
+        .btn-main { background: var(--gold); color: #fff; text-decoration: none; padding: 16px; border-radius: 8px; font-weight: bold; display: block; text-align: center; border: none; cursor: pointer; font-size: 16px; width: 100%; transition: background 0.3s; margin-top: 10px; }
+        .btn-main:hover { background: #9a7b4b; }
+        
+        .form-group { margin-bottom: 16px; display: none; } /* Hidden by default until intent is selected */
+        .form-group.active { display: block; animation: fadeIn 0.5s; }
+        
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #555; text-transform: uppercase; }
         .form-group input, .form-group select, .form-group textarea {
-            width: 100%; padding: 14px; border: 1px solid #ccc; border-radius: 8px;
-            box-sizing: border-box; font-family: inherit; font-size: 16px;
-            background: #fafafa; transition: all 0.3s;
+            width: 100%; padding: 14px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 16px; background: #fafafa; transition: all 0.3s;
         }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none; border-color: var(--gold); background: #fff; box-shadow: 0 0 8px rgba(176, 141, 87, 0.2);
-        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); background: #fff; box-shadow: 0 0 8px rgba(176, 141, 87, 0.2); }
         
         #success-msg { display: none; color: #15803d; font-weight: bold; text-align: center; margin-top: 15px; background: #dcfce7; padding: 15px; border-radius: 8px; }
-        
-        .footer { text-align: center; font-size: 12px; color: #888; padding: 20px 0 40px; }
+
+        /* FLOATING WHATSAPP BUTTON */
+        .floating-wa {
+            position: fixed; bottom: 20px; right: 20px; background: var(--wa-green); width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); z-index: 1000; transition: transform 0.3s; text-decoration: none;
+        }
+        .floating-wa:hover { transform: scale(1.1); }
+        .floating-wa svg { width: 35px; height: 35px; fill: white; }
+
+        .footer { text-align: center; font-size: 12px; color: #888; padding: 20px 0 80px; }
     </style>
 </head>
 <body>
@@ -176,52 +130,60 @@
             <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Swipe through our latest design brochure below.</p>
             
             <div class="pdf-container">
-                <!-- Google Drive Preview Embed Link (No download button) -->
                 <iframe src="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/preview?toolbar=0" allow="autoplay"></iframe>
             </div>
-            
-            <!-- Button to open fullscreen PREVIEW (Not View/Download) -->
-            <a href="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/preview" target="_blank" class="btn btn-dark">
+            <a href="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/preview" target="_blank" class="btn-main" style="background:var(--dark);">
                 🔍 View Full Screen
             </a>
         </div>
 
-        <!-- About Section -->
-        <div class="card">
-            <h2 class="section-title">About Us</h2>
-            <p>At Module Studio, we create interiors that blend aesthetics with functionality, tailored to your lifestyle or business needs. We create innovative concepts to transform your living space into something truly special.</p>
-        </div>
-
-        <!-- Enquiry Form Section -->
-        <div class="card" id="enquiry-form-card" style="border-top: 4px solid var(--gold);">
-            <h2 class="section-title">Start Your Project</h2>
-            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Fill out the form below and our team will reach out to discuss your vision.</p>
+        <!-- QUICK ACTIONS & FORM -->
+        <div class="card" id="contact-section" style="border-top: 4px solid var(--gold);">
+            <h2 class="section-title">How can we help you?</h2>
+            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Choose an option below to connect with our team instantly.</p>
             
-            <form id="public-enq-form">
-                <div class="form-group">
+            <!-- QUICK ACTION BUTTONS -->
+            <div class="action-grid">
+                <button class="action-btn btn-meet" onclick="selectIntent('meeting')">📅 Schedule Meeting</button>
+                <button class="action-btn btn-call" onclick="selectIntent('callback')">📞 Request Callback</button>
+                <a href="https://wa.me/919830864409?text=Hi%20Module%20Studio,%20I%20just%20went%20through%20your%20brochure%20and%20would%20like%20to%20discuss%20a%20project." target="_blank" class="action-btn btn-wa">💬 WhatsApp Us</a>
+            </div>
+
+            <!-- THE SMART FORM -->
+            <form id="public-enq-form" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                
+                <div class="form-group active" id="group-intent">
+                    <label>I am looking to *</label>
+                    <select id="eq_intent" onchange="toggleMeetingDate()">
+                        <option value="General Enquiry">Make a General Enquiry</option>
+                        <option value="Request Callback">Request a Callback</option>
+                        <option value="Schedule Meeting">Schedule a Meeting</option>
+                    </select>
+                </div>
+
+                <div class="form-group active" id="group-name">
                     <label>Full Name *</label>
                     <input type="text" id="eq_name" required placeholder="Your Name">
                 </div>
-                <div class="form-group">
+                
+                <div class="form-group active" id="group-phone">
                     <label>Phone / WhatsApp *</label>
                     <input type="tel" id="eq_phone" required placeholder="Your Mobile Number">
                 </div>
-                <div class="form-group">
-                    <label>Project Type</label>
-                    <select id="eq_project">
-                        <option value="Residential">Residential</option>
-                        <option value="Commercial">Commercial / Shop</option>
-                        <option value="Office">Office Space</option>
-                        <option value="Modular Kitchen">Modular Kitchen</option>
-                        <option value="Vastu">Vastu Consultation</option>
-                    </select>
+
+                <!-- Date/Time Picker (Hidden by default) -->
+                <div class="form-group" id="group-date">
+                    <label>Preferred Date & Time *</label>
+                    <input type="datetime-local" id="eq_datetime">
                 </div>
-                <div class="form-group">
-                    <label>Message (Optional)</label>
-                    <textarea id="eq_notes" rows="3" placeholder="Tell us briefly about your requirements..."></textarea>
+
+                <div class="form-group active" id="group-notes">
+                    <label>Any specific requirements?</label>
+                    <textarea id="eq_notes" rows="3" placeholder="Tell us briefly about your space..."></textarea>
                 </div>
-                <button type="submit" class="btn" id="submit-btn">Submit Enquiry →</button>
-                <div id="success-msg">✅ Enquiry sent successfully! We will contact you soon.</div>
+                
+                <button type="submit" class="btn-main" id="submit-btn">Send Request →</button>
+                <div id="success-msg">✅ Request sent successfully! We will contact you soon.</div>
             </form>
         </div>
         
@@ -231,11 +193,49 @@
         </div>
     </div>
 
-    <!-- SCRIPT TO SEND DATA TO GOOGLE SHEETS -->
+    <!-- FLOATING WHATSAPP BUTTON -->
+    <a href="https://wa.me/919830864409?text=Hi%20Module%20Studio,%20I%20just%20went%20through%20your%20brochure%20and%20would%20like%20to%20discuss%20a%20project." target="_blank" class="floating-wa">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 2a13 13 0 0 0-11.2 19.6L3.3 28.8a1 1 0 0 0 1.2 1.2l7.3-1.5A13 13 0 1 0 16 2zm0 23.8a10.8 10.8 0 0 1-5.5-1.5l-.4-.2-4.1.8.8-4-.2-.4A10.8 10.8 0 1 1 16 25.8zm5.9-8.1c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1a8.7 8.7 0 0 1-2.6-1.6 9.8 9.8 0 0 1-1.8-2.2c-.2-.3 0-.5.1-.7l.5-.6a2.2 2.2 0 0 0 .5-.8.9.9 0 0 0 0-.8c0-.2-.7-1.7-.9-2.3s-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.6 3.6 0 0 0-1.1 2.7 6.3 6.3 0 0 0 1.3 3.3 14.4 14.4 0 0 0 5.5 4.8 18.6 18.6 0 0 0 1.8.7 4.4 4.4 0 0 0 2 .1 3.3 3.3 0 0 0 2.2-1.5 2.7 2.7 0 0 0 .2-1.5c-.1-.2-.3-.2-.6-.3z"/></svg>
+    </a>
+
+    <!-- SCRIPT TO HANDLE FORM & INTENT -->
     <script>
         const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
         const API_KEY = "ModuCraft@2026";
 
+        // Function to handle Quick Action clicks
+        function selectIntent(type) {
+            const select = document.getElementById('eq_intent');
+            if (type === 'meeting') {
+                select.value = 'Schedule Meeting';
+            } else if (type === 'callback') {
+                select.value = 'Request Callback';
+            }
+            
+            // Trigger the change event to show/hide the date picker
+            toggleMeetingDate();
+            
+            // Smooth scroll to the form
+            document.getElementById('contact-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Function to show/hide Date/Time picker based on selection
+        function toggleMeetingDate() {
+            const intent = document.getElementById('eq_intent').value;
+            const dateGroup = document.getElementById('group-date');
+            const dateInput = document.getElementById('eq_datetime');
+            
+            if (intent === 'Schedule Meeting') {
+                dateGroup.classList.add('active');
+                dateInput.required = true;
+            } else {
+                dateGroup.classList.remove('active');
+                dateInput.required = false;
+                dateInput.value = ''; // clear it
+            }
+        }
+
+        // Handle Form Submit
         document.getElementById('public-enq-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -243,18 +243,22 @@
             btn.textContent = 'Sending...';
             btn.disabled = true;
 
+            const intent = document.getElementById('eq_intent').value;
+            const meetTime = document.getElementById('eq_datetime').value;
+
             const enqData = {
                 id: 'e' + Date.now().toString(36),
                 name: document.getElementById('eq_name').value.trim(),
                 phone: document.getElementById('eq_phone').value.trim(),
-                project: document.getElementById('eq_project').value,
-                budget: '-', 
+                project: intent, // Store the Intent (Meeting/Callback/Enquiry)
+                budget: meetTime ? `Meeting: ${meetTime}` : '-', // Store the meeting time in the budget field temporarily, or append to notes
                 notes: document.getElementById('eq_notes').value.trim(),
                 status: 'Enquiry',
                 date: new Date().toISOString(),
                 platform: 'Public Brochure'
             };
 
+            // Send to Google Sheets
             fetch(GOOGLE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -263,17 +267,22 @@
             .then(res => res.json())
             .then(res => {
                 document.getElementById('public-enq-form').reset();
+                document.getElementById('group-date').classList.remove('active'); // hide date again
                 document.getElementById('success-msg').style.display = 'block';
-                btn.textContent = 'Sent Successfully';
+                btn.textContent = 'Request Sent Successfully';
                 btn.style.background = '#15803d';
                 
-                const wText = `🚨 NEW LEAD from Brochure!\n\nClient: ${enqData.name}\nPhone: ${enqData.phone}\nProject: ${enqData.project}\nNotes: ${enqData.notes}`;
-                const waUrl = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`;
+                // Trigger WhatsApp Alert to Owner (Official Number)
+                let wText = `🚨 NEW LEAD (${intent})!\n\nClient: ${enqData.name}\nPhone: ${enqData.phone}`;
+                if (meetTime) wText += `\nMeeting Time: ${meetTime}`;
+                wText += `\nNotes: ${enqData.notes}`;
+                
+                const waUrl = `https://wa.me/919830864409?text=${encodeURIComponent(wText)}`;
                 window.open(waUrl, '_blank');
             })
             .catch(err => {
                 alert('Something went wrong. Please try again.');
-                btn.textContent = 'Submit Enquiry →';
+                btn.textContent = 'Send Request →';
                 btn.disabled = false;
             });
         });
