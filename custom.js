@@ -156,51 +156,71 @@ function injectWarranty() {
         const tbody = paper.querySelector('table.doc > tbody > tr > td');
         if (tbody) {
             const warrantyHtml = `
-            <div class="pg" id="warranty-page" style="break-before: page;">
-                <h2 style="text-align:center;letter-spacing:3px">LIMITED WARRANTY & SERVICE POLICY</h2>
-                <p class="nt" style="text-align:center;margin-bottom:20px"><b>Module Studio</b> | Website: www.modulestudio.in<br>Customer Care: 9830864409 (Call & WhatsApp)</p>
-                <p class="nt">This document constitutes the formal warranty and service terms for the interior solutions provided by Module Studio. By accepting the quotation and engaging our services, the Customer agrees to the following terms and conditions.</p>
-                <div class="sh">1. THE 10-YEAR MATERIAL GUARANTEE</div>
-                <p class="nt">Module Studio maintains a strict manufacturing policy of utilizing only premium-grade, highly durable materials. We expressly do not use MDF (Medium Density Fiberboard) in our structural applications. We exclusively work with MR (Moisture Resistant) Plywood, BWR (Boiling Water Resistant) Plywood, BWP (Boiling Water Proof) Plywood, and HDHMR (High Density High Moisture Resistance) boards.</p>
-                <p class="nt">Subject to the limitations set forth below, Module Studio provides a comprehensive 10-Year Warranty on the core structural materials (carcass) and shutters of the fitted furniture manufactured by us. This guarantee covers manufacturing defects, structural delamination, and edge-banding failure under standard residential use.</p>
-                <div class="sh">2. THIRD-PARTY COMPONENTS (OEM WARRANTIES)</div>
-                <p class="nt">The Customer acknowledges that certain components within the project are not manufactured by Module Studio but are procured from Original Equipment Manufacturers (OEMs). These items are strictly governed by the respective manufacturer’s warranty terms:</p>
-                <ul class="nt" style="margin-left:20px;padding-left:0">
+            <div class="pg" id="warranty-page" style="break-before: page; font-size: 11px; line-height: 1.5;">
+                <h2 style="text-align:center;letter-spacing:3px; margin-bottom: 5px; font-size: 18px;">LIMITED WARRANTY & SERVICE POLICY</h2>
+                <p class="nt" style="text-align:center;margin-bottom:15px; font-size: 11px;"><b>Module Studio</b> | Website: www.modulestudio.in<br>Customer Care: 9830864409 (Call & WhatsApp)</p>
+                
+                <!-- QUICK SUMMARY BOX -->
+                <div style="border: 2px solid #B08D57; border-radius: 8px; padding: 12px; margin-bottom: 20px; background-color: #fffaf0;">
+                    <h3 style="color: #B08D57; margin-top: 0; margin-bottom: 8px; font-size: 14px;">📋 Quick Summary</h3>
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li style="margin-bottom: 4px;"><b>10-Year Warranty</b> on all structural materials (carcass) and shutters manufactured by us.</li>
+                        <li style="margin-bottom: 4px;"><b>OEM Warranty</b> applies to hardware, appliances, electricals, and mirrors.</li>
+                        <li><b>Not Covered:</b> Water damage/seepage, natural wear & tear, pests, or misuse.</li>
+                    </ul>
+                </div>
+
+                <p class="nt" style="margin-bottom: 15px;">This document constitutes the formal warranty and service terms for the interior solutions provided by Module Studio. By accepting the quotation and engaging our services, the Customer agrees to the following terms:</p>
+
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">1. THE 10-YEAR MATERIAL GUARANTEE</div>
+                <p class="nt" style="margin-bottom: 8px;">We strictly utilize premium-grade, highly durable materials. We expressly <b>do not use MDF</b> in our structural applications. We exclusively work with MR, BWR, BWP Plywood, and HDHMR boards.</p>
+                <p class="nt" style="margin-bottom: 12px;">Subject to the limitations below, Module Studio provides a <b>10-Year Warranty</b> on the core structural materials (carcass) and shutters manufactured by us. This covers manufacturing defects, structural delamination, and edge-banding failure under standard residential use.</p>
+
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">2. THIRD-PARTY COMPONENTS (OEM WARRANTIES)</div>
+                <p class="nt" style="margin-bottom: 6px;">Certain components are procured from Original Equipment Manufacturers (OEMs) and are governed by their respective warranty terms:</p>
+                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
                     <li><b>Hardware & Accessories:</b> Hinges, channels, handles, and moving parts carry the OEM’s standard warranty.</li>
-                    <li><b>Appliances & Sanitary Fixtures:</b> Chimneys, hobs, sinks, taps, etc., carry the OEM’s warranty. Any labor or cleaning charges associated with their servicing will be borne by the Customer.</li>
-                    <li><b>Electricals & Lighting:</b> Switches, lights, and wiring components carry the OEM’s warranty. Module Studio is not liable for wiring defects post-handover.</li>
-                    <li><b>Mirrors:</b> A 1-year warranty applies strictly to the electrical/LED components only. Module Studio provides no warranty on the mirror glass itself.</li>
+                    <li><b>Appliances & Sanitary Fixtures:</b> Chimneys, hobs, sinks, taps, etc., carry the OEM’s warranty. Labor/cleaning charges for servicing will be borne by the Customer.</li>
+                    <li><b>Electricals & Lighting:</b> Switches, lights, and wiring carry the OEM’s warranty. Module Studio is not liable for wiring defects post-handover.</li>
+                    <li><b>Mirrors:</b> A 1-year warranty applies strictly to the electrical/LED components only. No warranty on the mirror glass itself.</li>
                 </ul>
-                <div class="sh">3. ITEMS EXPRESSLY EXCLUDED (NO WARRANTY)</div>
-                <ul class="nt" style="margin-left:20px;padding-left:0">
-                    <li>Countertops (Material)</li><li>Civil work, Tiling, and Gas Piping</li><li>Fragile items (Mirror glass, loose glass, etc.)</li><li>Wallpapers (including base preparation and seepage-related peeling)</li><li>Home Automation systems (Smart locks, Wi-Fi cameras, etc.)</li>
+
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">3. ITEMS EXPRESSLY EXCLUDED (NO WARRANTY)</div>
+                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
+                    <li>Countertops (Material), Civil work, Tiling, and Gas Piping.</li>
+                    <li>Fragile items (Mirror glass, loose glass, etc.).</li>
+                    <li>Wallpapers (including base preparation and seepage-related peeling).</li>
+                    <li>Home Automation systems (Smart locks, Wi-Fi cameras, etc.).</li>
                 </ul>
-                <div class="sh">4. LIMITATIONS OF LIABILITY & WARRANTY VOIDANCE</div>
-                <ul class="nt" style="margin-left:20px;padding-left:0">
-                    <li><b>Water Damage & Seepage:</b> Damage resulting from continuous dampness or structural leakage exceeding the material's tolerance (e.g., continuous exposure beyond 72 hours for BWP, 48 hours for BWR, and 24 hours for HDHMR).</li>
-                    <li><b>Normal Wear & Tear:</b> Scratches, dents, chipping, or discoloration resulting from daily use.</li>
-                    <li><b>Environmental Factors:</b> Fading or degradation of laminates/finishes due to excessive exposure to direct sunlight, heat, or moisture.</li>
-                    <li><b>Misuse & Negligence:</b> Damage caused by accidents, improper handling, overloading of modules (e.g., tandem units, magic corners), or exposure to harsh chemical solvents (e.g., turpentine, strong cleaners).</li>
-                    <li><b>Pests:</b> Damage caused by termites, wood borers, rodents, or pets.</li>
-                    <li><b>Rusting:</b> Corrosion of metallic parts due to exposure to household chemicals or moisture.</li>
-                    <li><b>Force Majeure:</b> Acts of God, including but not limited to floods, earthquakes, fire, pandemics, or any event beyond Module Studio's control.</li>
-                    <li><b>Unauthorized Modifications:</b> Any alterations, repairs, or dismantling performed by the Customer or unauthorized third parties.</li>
-                    <li><b>Transfer of Ownership:</b> If the property is sold or the products are resold.</li>
+
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">4. LIMITATIONS OF LIABILITY & WARRANTY VOIDANCE</div>
+                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
+                    <li><b>Water Damage & Seepage:</b> Damage resulting from continuous dampness or leakage exceeding material tolerance (e.g., continuous exposure beyond 72 hours for BWP, 48 hours for BWR, and 24 hours for HDHMR).</li>
+                    <li><b>Normal Wear & Tear:</b> Scratches, dents, chipping, or discoloration from daily use.</li>
+                    <li><b>Environmental Factors:</b> Fading or degradation due to excessive direct sunlight, heat, or moisture.</li>
+                    <li><b>Misuse & Negligence:</b> Accidents, improper handling, overloading (e.g., tandem units), or exposure to harsh chemicals (e.g., turpentine).</li>
+                    <li><b>Pests & Rusting:</b> Damage caused by termites, rodents, or household chemicals causing rust.</li>
+                    <li><b>Force Majeure:</b> Acts of God (floods, earthquakes, fire, pandemics).</li>
+                    <li><b>Unauthorized Modifications or Transfer of Ownership:</b> Alterations by third parties, or if the property is sold.</li>
                 </ul>
-                <div class="sh">5. CLAIMS PROCEDURE</div>
-                <ul class="nt" style="margin-left:20px;padding-left:0">
+
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">5. CLAIMS PROCEDURE</div>
+                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
                     <li><b>How to reach us:</b> Visit www.modulestudio.in, or call/WhatsApp us at 9830864409.</li>
                     <li><b>Inspection:</b> An authorized representative will inspect the site to validate the claim.</li>
-                    <li><b>Resolution:</b> If approved, Module Studio will, at its sole discretion, repair or replace the defective product. The replaced product will be covered under the original warranty period only; no new warranty shall apply.</li>
+                    <li><b>Resolution:</b> If approved, Module Studio will repair or replace the defective product at its discretion. Replaced products carry the original warranty period only; no new warranty applies.</li>
                 </ul>
-                <div class="sh">6. SERVICE & MAINTENANCE POLICY</div>
-                <ul class="nt" style="margin-left:20px;padding-left:0">
-                    <li><b>Complimentary Service:</b> Module Studio provides one (1) free service visit within 6 months of project handover.</li>
-                    <li><b>Chargeable Service:</b> Post the 6-month period, any alignment or maintenance requests will be handled on a chargeable basis.</li>
+
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">6. SERVICE & MAINTENANCE POLICY</div>
+                <ul class="nt" style="margin-left:20px; padding-left:0; margin-bottom: 12px;">
+                    <li><b>Complimentary Service:</b> One (1) free service visit within 6 months of project handover.</li>
+                    <li><b>Chargeable Service:</b> Post the 6-month period, any alignment or maintenance requests will be chargeable.</li>
                 </ul>
-                <div class="sh">7. GOVERNING LAW & JURISDICTION</div>
-                <p class="nt">This warranty policy shall be governed by and construed in accordance with the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts located in the city/state where the Customer's project site is situated.</p>
-                <p class="nt" style="font-style:italic;font-size:10px;margin-top:20px">(Disclaimer: Images provided in the quotation are for representational purposes only. Final products may vary slightly in texture and finish based on material batch availability and site conditions.)</p>
+
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">7. GOVERNING LAW & JURISDICTION</div>
+                <p class="nt" style="margin-bottom: 15px;">This warranty policy is governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts located in the city/state where the Customer's project site is situated.</p>
+                
+                <p class="nt" style="font-style:italic;font-size:10px;margin-top:20px; color: #666;">(Disclaimer: Images provided in the quotation are for representational purposes only. Final products may vary slightly in texture and finish based on material batch availability and site conditions.)</p>
             </div>`;
             tbody.insertAdjacentHTML('beforeend', warrantyHtml);
             return true;
