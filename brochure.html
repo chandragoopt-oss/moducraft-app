@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Module Studio | Interior Design</title>
     <style>
         :root {
             --gold: #B08D57;
             --dark: #1F2937;
-            --bg: #f9f9f9;
+            --bg: #fcfcfc;
             --card: #ffffff;
         }
         body {
@@ -18,71 +18,179 @@
             background: var(--bg);
             color: #333;
             line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
-        .hero {
-            background: var(--dark);
-            color: #fff;
-            text-align: center;
-            padding: 40px 20px;
-        }
-        .hero h1 { margin: 0; font-size: 28px; letter-spacing: 2px; }
-        .hero p { color: var(--gold); font-weight: bold; margin-top: 5px; }
         
-        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        /* HERO SECTION WITH COVER IMAGE */
+        .hero {
+            position: relative;
+            background-image: url('COVER copy.jpg'); /* YOUR UPLOADED IMAGE */
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #fff;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        /* Dark overlay so white text is readable over the image */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(31, 41, 55, 0.65); 
+            z-index: 1;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        .hero h1 { 
+            margin: 0; 
+            font-size: 34px; 
+            letter-spacing: 5px; 
+            font-weight: 300; 
+        }
+        .hero p { 
+            color: var(--gold); 
+            font-weight: bold; 
+            margin-top: 10px; 
+            letter-spacing: 2px; 
+            font-size: 14px; 
+            text-transform: uppercase; 
+        }
+        
+        .scroll-down {
+            position: absolute;
+            bottom: 30px;
+            z-index: 2;
+            color: var(--gold);
+            font-size: 24px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce { 
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 
+            40% { transform: translateY(-10px); } 
+            60% { transform: translateY(-5px); } 
+        }
+
+        /* CONTENT SECTIONS */
+        .container { 
+            max-width: 800px; 
+            margin: -30px auto 20px; 
+            padding: 0 15px; 
+            position: relative; 
+            z-index: 5; 
+        }
         
         .card {
             background: var(--card);
-            border-radius: 10px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
         
         .section-title {
-            color: var(--gold);
-            border-bottom: 2px solid var(--gold);
-            padding-bottom: 5px;
-            display: inline-block;
+            color: var(--dark);
+            font-size: 22px;
+            margin-top: 0;
             margin-bottom: 15px;
-            font-size: 20px;
+            font-weight: 600;
+            border-left: 4px solid var(--gold);
+            padding-left: 12px;
         }
 
+        .service-list { list-style: none; padding: 0; margin: 0; }
+        .service-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 15px;
+        }
+        .service-list li:last-child { border-bottom: none; }
+        .service-list b { color: var(--gold); display: block; font-size: 16px; margin-bottom: 4px;}
+
+        /* FORM STYLES */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #555; text-transform: uppercase; letter-spacing: 0.5px;}
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; 
+            padding: 14px; 
+            border: 1px solid #ccc; 
+            border-radius: 8px;
+            box-sizing: border-box; 
+            font-family: inherit; 
+            font-size: 16px; /* Prevents auto-zoom on iPhone */
+            background: #fafafa; 
+            transition: all 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; 
+            border-color: var(--gold); 
+            background: #fff; 
+            box-shadow: 0 0 8px rgba(176, 141, 87, 0.2);
+        }
+        
         .btn {
             background: var(--gold);
             color: #fff;
             text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 6px;
+            padding: 16px 24px;
+            border-radius: 8px;
             font-weight: bold;
-            display: inline-block;
+            display: block;
             text-align: center;
             border: none;
             cursor: pointer;
             font-size: 16px;
             width: 100%;
             box-sizing: border-box;
+            transition: background 0.3s;
         }
         .btn:hover { background: #9a7b4b; }
-        .btn-dark { background: var(--dark); }
         
-        /* Form Styles */
-        .form-group { margin-bottom: 15px; text-align: left; }
-        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;
-            box-sizing: border-box; font-family: inherit; font-size: 14px;
+        #success-msg { 
+            display: none; 
+            color: #15803d; 
+            font-weight: bold; 
+            text-align: center; 
+            margin-top: 15px; 
+            background: #dcfce7; 
+            padding: 15px; 
+            border-radius: 8px; 
         }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none; border-color: var(--gold);
+        
+        .footer { 
+            text-align: center; 
+            font-size: 12px; 
+            color: #888; 
+            padding: 20px 0 40px; 
         }
-        #success-msg { display: none; color: #15803d; font-weight: bold; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
 
+    <!-- HERO SECTION (Cover Image Background) -->
     <div class="hero">
-        <h1>MODULE STUDIO</h1>
-        <p>Interior Design • Fabrication • Turnkey Execution</p>
+        <div class="hero-content">
+            <h1>MODULE STUDIO</h1>
+            <p>Interior Design • Fabrication • Turnkey</p>
+        </div>
+        <div class="scroll-down">▼</div>
     </div>
 
     <div class="container">
@@ -91,37 +199,32 @@
         <div class="card">
             <h2 class="section-title">About Us</h2>
             <p>At Module Studio, we create interiors that blend aesthetics with functionality, tailored to your lifestyle or business needs. We create innovative concepts to transform your living space into something truly special.</p>
-            
-            <!-- UPDATED GOOGLE DRIVE LINK IS HERE -->
-            <a href="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/view?usp=drive_link" target="_blank" class="btn btn-dark" style="margin-top: 10px;">
-                📄 View Full Brochure PDF
-            </a>
         </div>
 
         <!-- Services Section -->
         <div class="card">
-            <h2 class="section-title">Our Services</h2>
-            <ul style="padding-left: 20px;">
-                <li><b>Residential:</b> Living rooms, modular kitchens, bedrooms.</li>
-                <li><b>Commercial:</b> Showrooms, cafes, restaurants.</li>
-                <li><b>Office Spaces:</b> Ergonomic workspaces and corporate lobbies.</li>
-                <li><b>Vastu Consultation:</b> Aligning layouts with ancient principles.</li>
+            <h2 class="section-title">Our Expertise</h2>
+            <ul class="service-list">
+                <li><b>Residential Spaces</b> Living rooms, modular kitchens, luxury bedrooms.</li>
+                <li><b>Commercial Spaces</b> Showrooms, cafes, restaurants, retail stores.</li>
+                <li><b>Office Spaces</b> Ergonomic workspaces, corporate lobbies, meeting rooms.</li>
+                <li><b>Vastu Consultation</b> Aligning layouts with ancient principles for harmony.</li>
             </ul>
         </div>
 
         <!-- Enquiry Form Section -->
-        <div class="card" id="enquiry-form-card">
-            <h2 class="section-title">Get a Free Consultation</h2>
-            <p style="font-size: 14px; color: #666;">Fill out the form below and our team will reach out to you shortly.</p>
+        <div class="card" id="enquiry-form-card" style="border-top: 4px solid var(--gold);">
+            <h2 class="section-title">Start Your Project</h2>
+            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Fill out the form below and our team will reach out to discuss your vision.</p>
             
             <form id="public-enq-form">
                 <div class="form-group">
                     <label>Full Name *</label>
-                    <input type="text" id="eq_name" required placeholder="e.g. Rahul Sharma">
+                    <input type="text" id="eq_name" required placeholder="Your Name">
                 </div>
                 <div class="form-group">
                     <label>Phone / WhatsApp *</label>
-                    <input type="tel" id="eq_phone" required placeholder="e.g. 9830000000">
+                    <input type="tel" id="eq_phone" required placeholder="Your Mobile Number">
                 </div>
                 <div class="form-group">
                     <label>Project Type</label>
@@ -138,17 +241,18 @@
                     <input type="text" id="eq_budget" placeholder="e.g. 5-10 Lakhs">
                 </div>
                 <div class="form-group">
-                    <label>Any specific requirements?</label>
-                    <textarea id="eq_notes" rows="3" placeholder="Tell us about your space..."></textarea>
+                    <label>Message (Optional)</label>
+                    <textarea id="eq_notes" rows="3" placeholder="Tell us briefly about your requirements..."></textarea>
                 </div>
-                <button type="submit" class="btn" id="submit-btn">Submit Enquiry</button>
+                <button type="submit" class="btn" id="submit-btn">Submit Enquiry →</button>
                 <div id="success-msg">✅ Enquiry sent successfully! We will contact you soon.</div>
             </form>
         </div>
         
-        <p style="text-align:center; font-size:12px; color:#999; margin-bottom: 30px;">
-            © 2026 Module Studio. All rights reserved.
-        </p>
+        <div class="footer">
+            © 2026 Module Studio. All rights reserved.<br>
+            www.modulestudio.in
+        </div>
     </div>
 
     <!-- SCRIPT TO SEND DATA TO GOOGLE SHEETS -->
@@ -196,14 +300,14 @@
                 btn.textContent = 'Sent Successfully';
                 btn.style.background = '#15803d';
                 
-                // Trigger WhatsApp Alert to Owner
+                // Trigger WhatsApp Alert to Owner (You)
                 const wText = `🚨 NEW LEAD from Brochure!\n\nClient: ${enqData.name}\nPhone: ${enqData.phone}\nProject: ${enqData.project}\nBudget: ${enqData.budget}\nNotes: ${enqData.notes}`;
                 const waUrl = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`;
                 window.open(waUrl, '_blank');
             })
             .catch(err => {
                 alert('Something went wrong. Please try again.');
-                btn.textContent = 'Submit Enquiry';
+                btn.textContent = 'Submit Enquiry →';
                 btn.disabled = false;
             });
         });
