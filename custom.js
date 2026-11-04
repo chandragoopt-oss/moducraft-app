@@ -3103,12 +3103,12 @@ window.mcGenerateWAMsg = function(enqId) {
 
     // Create the Modal HTML
     const o = document.createElement('div');
-    o.id = 'wa-modal-wrapper'; // <--- Gave the modal an ID so we can close it easily
+    o.id = 'wa-modal-wrapper'; 
     o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;z-index:100001;padding:20px;overflow-y:auto';
     
-    o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:auto;">
+    o.innerHTML = `<div style="background:var(--card,#fff);color:var(--ink,#222);border-radius:12px;padding:20px;max-width:550px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);margin:auto;">
         <h3 style="margin-top:0;color:#1F4E79;">💬 WhatsApp Group Setup</h3>
-        <p class="mut" style="font-size:13px;margin-bottom:15px;">Fill in the meeting details to auto-generate the group name and welcome message.</p>
+        <p class="mut" style="font-size:13px;margin-bottom:15px;">Fill in the meeting details to auto-generate the group name and messages.</p>
         
         <div class="dgrid" style="grid-template-columns:1fr 1fr;gap:10px;">
             <div style="grid-column:1/-1;">
@@ -3143,14 +3143,13 @@ window.mcGenerateWAMsg = function(enqId) {
         <div id="wa_result" style="display:none; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
             <h4 style="margin-top:0; color:#15803d;">✅ Details Generated!</h4>
             
-            <!-- Added color:#333 to fix dark mode text invisibility -->
             <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; margin-bottom:15px; color:#333;">
                 <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold; color:#333;">Follow these steps on WhatsApp:</p>
                 <ol style="font-size:12px; margin:0; padding-left:20px; color:#333;">
-                    <li>Create a New Group and <b>paste the name</b>.</li>
-                    <li>Add the client: <b>${esc(e.phone)}</b>.</li>
-                    <li><b>Set Group Icon:</b> <a href="${logoUrl}" download="ModuleStudio_Logo.png" style="color:#1F4E79; font-weight:bold; text-decoration:underline;">Download Logo</a></li>
-                    <li>Send the <b>welcome message</b> below.</li>
+                    <li>Send <b>Message 1</b> to the client to get consent.</li>
+                    <li>Create a New Group and <b>paste the Group Name</b>.</li>
+                    <li>Add the client: <b>${esc(e.phone)}</b> & Set Icon: <a href="${logoUrl}" download="ModuleStudio_Logo.png" style="color:#1F4E79; font-weight:bold; text-decoration:underline;">Download Logo</a></li>
+                    <li>Send <b>Message 2</b> inside the new group.</li>
                 </ol>
             </div>
             
@@ -3162,15 +3161,22 @@ window.mcGenerateWAMsg = function(enqId) {
                 </div>
             </div>
             
+            <!-- MESSAGE 1: INVITATION -->
             <div style="margin-top:15px;">
-                <label style="font-size:11px;font-weight:bold;color:#555;">INVITATION / WELCOME MESSAGE:</label>
-                <textarea id="wa_msg_text" readonly rows="8" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
-                <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_text').value); alert('Message Copied!');" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:10px;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Message</button>
+                <label style="font-size:11px;font-weight:bold;color:#555;">1. INVITATION MESSAGE (Send before group):</label>
+                <textarea id="wa_msg_invite" readonly rows="6" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
+                <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_invite').value); alert('Invitation Copied!');" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:10px;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Invitation</button>
+            </div>
+
+            <!-- MESSAGE 2: WELCOME & DETAILS -->
+            <div style="margin-top:15px;">
+                <label style="font-size:11px;font-weight:bold;color:#555;">2. WELCOME MESSAGE (Send inside group):</label>
+                <textarea id="wa_msg_welcome" readonly rows="8" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
+                <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_welcome').value); alert('Welcome Message Copied!');" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:10px;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Welcome Message</button>
             </div>
             
             <button class="g" onclick="window.open('https://wa.me/${e.phone.replace(/[^0-9]/g,'')}', '_blank')" style="width:100%;margin-top:20px;background:#25D366;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;">Open WhatsApp Chat</button>
             
-            <!-- Fixed the Close button error by targeting the ID -->
             <button class="g" onclick="document.getElementById('wa-modal-wrapper').remove();" style="width:100%;margin-top:10px;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;">Close</button>
         </div>
     </div>`;
@@ -3200,12 +3206,34 @@ window.mcGenerateWAMsg = function(enqId) {
         // Generate Group Name
         const groupName = `${firstName} ${pType} Interior / ModuleStudio`;
 
-        // Generate Message
-        const msg = `Hello *${firstName}*! 👋
+        // Generate Message 1 (Invite)
+        const msgInvite = `Hello *${firstName}*! 😊
+
+I'm *Nirmalya, Interior Designer at MODULE STUDIO.* I'll be coordinating with you regarding your interior design requirements and helping you throughout the design journey.
+
+To ensure smooth communication and keep all project-related discussions, design updates, references and important information in one place, we would be happy to create a dedicated WhatsApp group for your project.
+
+You may also invite your family members or anyone involved in the decision-making process so that everyone stays updated and can share their suggestions conveniently.
+
+*Would you like us to create a dedicated project WhatsApp group and add you to it?*
+
+Looking forward to working with you and making your interior design journey a wonderful experience!
+
+*Warm Regards,*
+Nirmalya
+Interior Designer
+*MODULE STUDIO*
+
+_Designing Spaces. Defining Lifestyles._`;
+
+        // Generate Message 2 (Welcome & Meeting Details)
+        const msgWelcome = `Hello *${firstName}*! 👋
 
 Warm greetings from *MODULE STUDIO!*
 
 Thank you for connecting with us and considering us for your interior design requirements.
+
+I'm *Nirmalya, Interior Designer at MODULE STUDIO.* I'll be coordinating with you regarding your interior design requirements and helping you throughout your design journey.
 
 We are delighted to be a part of your journey towards creating a beautiful, comfortable and functional space.
 
@@ -3219,7 +3247,7 @@ We would love to understand your ideas, requirements and preferences and help tr
 *Time:* ${fTime}
 *Venue:* ${mVenue}
 
-Kindly reply *"CONFIRMED"* if the above schedule is convenient for you. If you would prefer a different date, time or meeting location, please let us know so that we can coordinate accordingly.
+Kindly reply *"CONFIRMED"* if the above schedule is convenient for you. If you would prefer a different date, time or meeting location, please let me know so that I can coordinate accordingly.
 
 In the meantime, feel free to explore our work and services:
 
@@ -3229,10 +3257,11 @@ https://www.modulestudio.in
 📖 *Our Previous Projects & Online Brochure:*
 https://moducraft-app.pages.dev/brochure.html
 
-We look forward to meeting you, ${firstName}, understanding your vision and creating something wonderful together!
+Looking forward to meeting you, understanding your vision and helping you create a space that truly reflects your lifestyle!
 
 *Warm Regards,*
-Team MODULE STUDIO
+*Nirmalya*
+Interior Designer | MODULE STUDIO
 
 _Designing Spaces. Defining Lifestyles._`;
 
@@ -3254,11 +3283,12 @@ _Designing Spaces. Defining Lifestyles._`;
             });
         } catch(err) { console.log("Cloud save failed", err); }
         
-        if (typeof render === 'function') render(); // Refresh the UI in background
+        if (typeof render === 'function') render();
 
         // Populate the fields
         document.getElementById('wa_group_name').value = groupName;
-        document.getElementById('wa_msg_text').value = msg;
+        document.getElementById('wa_msg_invite').value = msgInvite;
+        document.getElementById('wa_msg_welcome').value = msgWelcome;
         document.getElementById('wa_result').style.display = 'block';
         document.getElementById('wa_generate').style.display = 'none';
     };
