@@ -3120,7 +3120,7 @@ document.addEventListener('click', function(e) {
                     </div>
                 </details>
                 
-                <button class="g" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;">Open DM with Client</button>
+                <button class="g" id="wa_open_dm" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;">Open DM with Client</button>
                 
                 <button class="g" onclick="document.getElementById('wa-modal-wrapper').remove();" style="width:100%;margin-top:10px;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;">Close</button>
             </div>
@@ -3172,8 +3172,12 @@ document.addEventListener('click', function(e) {
             
             navigator.clipboard.writeText(groupName);
 
-            document.getElementById('wa_result').style.display = 'block';
-            document.getElementById('wa_generate').style.display = 'none';
+            document.getElementById('wa_open_dm').onclick = () => {
+    window.open('https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(msgInvite), '_blank');
+};
+
+document.getElementById('wa_result').style.display = 'block';
+document.getElementById('wa_generate').style.display = 'none';
         };
     };
 
