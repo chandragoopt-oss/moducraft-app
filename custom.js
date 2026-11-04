@@ -3146,11 +3146,11 @@ document.addEventListener('click', function(e) {
             hours = hours ? hours : 12; 
             const fTime = `${hours}:${minutes} ${ampm}`;
 
-            const groupName = `${firstName} ${pType} Interior / ModuleStudio`;
+                        const groupName = `${firstName} ${pType} Interior / ModuleStudio`;
 
             const msgWelcome = `Hello *${firstName}*! 👋\n\nWarm greetings from *MODULE STUDIO!*\n\nThank you for connecting with us and considering us for your interior design requirements.\n\nI'm *Nirmalya, Interior Designer at MODULE STUDIO.* I'll be coordinating with you regarding your interior design requirements and helping you throughout your design journey.\n\nWe are delighted to be a part of your journey towards creating a beautiful, comfortable and functional space.\n\nAt Module Studio, we specialise in interior design and fabrication for residential, commercial and office spaces, combining creative design, quality craftsmanship and personalised solutions.\n\nWe would love to understand your ideas, requirements and preferences and help transform your vision into reality.\n\n📅 *MEETING DETAILS*\n\n*Date:* ${fDate}\n*Time:* ${fTime}\n*Venue:* ${mVenue}\n\nKindly reply *"CONFIRMED"* if the above schedule is convenient for you. If you would prefer a different date, time or meeting location, please let me know so that I can coordinate accordingly.\n\nIn the meantime, feel free to explore our work and services:\n\n🌐 *Our Website:*\nhttps://www.modulestudio.in\n\n📖 *Our Previous Projects & Online Brochure:*\nhttps://moducraft-app.pages.dev/brochure.html\n\nLooking forward to meeting you, understanding your vision and helping you create a space that truly reflects your lifestyle!\n\n*Warm Regards,*\n*Nirmalya*\nInterior Designer | MODULE STUDIO\n\n_Designing Spaces. Defining Lifestyles._`;
 
-            const meetingNote = `\n\n[Meeting Scheduled via WA]\nProject: ${pType}\nDate: ${fDate}\nTime: ${fTime}\nVenue: ${mVenue}`;
+            const msgInvite = `Hello *${firstName}*,\n\nThis is Nirmalya from *MODULE STUDIO*. I hope you are doing well!\n\nWe are looking forward to our meeting regarding your ${pType} project on *${fDate}* at *${fTime}*.\n\nTo make our communication smoother and keep all project details in one place, I would like to create a WhatsApp group for us. May I have your permission to add you?\n\nLet me know if that works for you!\n\n*Warm Regards,*\n*Nirmalya*\nInterior Designer | MODULE STUDIO`;
             if (!e.notes || !e.notes.includes('[Meeting Scheduled via WA]')) {
                 e.notes = (e.notes || '').trim() + meetingNote;
             }
