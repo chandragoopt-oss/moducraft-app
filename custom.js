@@ -3159,7 +3159,9 @@ window.mcGenerateWAMsg = function(enqId) {
                 <label style="font-size:11px;font-weight:bold;color:#555;">MESSAGE:</label>
                 <textarea id="wa_msg_text" readonly rows="6" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;font-size:12px;font-family:monospace;"></textarea>
             </div>
-            <button class="g" onclick="window.open('https://wa.me/${e.phone.replace(/[^0-9]/g,'')}', '_blank')" style="width:100%;margin-top:10px;background:#25D366;color:#fff;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;">Open WhatsApp Chat</button>
+                        <button class="g" onclick="window.open('https://wa.me/${e.phone.replace(/[^0-9]/g,'')}', '_blank')" style="width:100%;margin-top:10px;background:#25D366;color:#fff;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;">Open WhatsApp Chat</button>
+            
+            <button class="g" onclick="this.closest('div[style*=\\'position:fixed\\']').remove();" style="width:100%;margin-top:10px;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;">Close</button>
         </div>
     </div>`;
 
