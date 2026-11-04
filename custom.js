@@ -2804,3 +2804,38 @@ setInterval(() => {
         });
     }
 }, 1000);
+
+// ==========================================
+// FIX: YEN (¥) TO RUPEE (Rs.) IN PDF
+// ==========================================
+// The PDF library doesn't support the ₹ character, so it prints ¥.
+// This intercepts the PDF generation and temporarily swaps ₹ for "Rs. "
+// in the background, then restores your screen back to normal.
+
+const origPaperToPdf_RupeeFix = window.paperToPdf;
+window.paperToPdf = async function(mode) {
+    const paper = document.querySelector('.paper');
+    if (!paper) return origPaperToPdf_RupeeFix.apply(this, arguments);
+
+    // Find all text elements in the print document
+    const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    const changedNodes = [];
+
+    while (node = walker.nextNode()) {
+        if (node.nodeValue.includes('₹')) {
+            // Remember the original text
+            changedNodes.push({ node: node, original: node.nodeValue });
+            // Swap ₹ for Rs.
+            node.nodeValue = node.nodeValue.replace(/₹/g, 'Rs. ');
+        }
+    }
+
+    try {
+        // Generate the PDF
+        return await origPaperToPdf_RupeeFix.apply(this, arguments);
+    } finally {
+        // Restore the ₹ symbol on your screen so the app still looks good
+        changedNodes.forEach(item => item.node.nodeValue = item.original);
+    }
+};
