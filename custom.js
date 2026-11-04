@@ -3087,7 +3087,7 @@ window.vSet = function() {
 };
 
 // ==========================================
-// WHATSAPP GROUP & WELCOME MESSAGE GENERATOR
+// WHATSAPP GROUP & WELCOME MESSAGE GENERATOR (NO SAVE CONTACT)
 // ==========================================
 window.mcGenerateWAMsg = function(enqId) {
     const e = window.ENQ[enqId];
@@ -3097,6 +3097,10 @@ window.mcGenerateWAMsg = function(enqId) {
     let logoUrl = "https://chandragupt-oss.github.io/modu-craft-app/logo.png";
     const headerLogo = document.getElementById('tl');
     if (headerLogo && headerLogo.src) logoUrl = headerLogo.src;
+
+    // Clean phone number for WhatsApp link
+    let cleanPhone = e.phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone;
 
     const o = document.createElement('div');
     o.id = 'wa-modal-wrapper'; 
@@ -3140,37 +3144,38 @@ window.mcGenerateWAMsg = function(enqId) {
             <h4 style="margin-top:0; color:#15803d;">✅ Ready to Create Group!</h4>
             
             <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; margin-bottom:15px; color:#333;">
-                <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold; color:#333;">Action Steps:</p>
+                <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold; color:#333;">How to add client without saving number:</p>
                 <ol style="font-size:12px; margin:0; padding-left:20px; color:#333;">
-                    <li><i>(Optional)</i> Send <b>Invitation Message</b> if consent is not yet received.</li>
-                    <li>Create a New Group and <b>paste the Group Name</b>.</li>
-                    <li>Add the client: <b>${esc(e.phone)}</b> & Set Icon: <a href="${logoUrl}" download="ModuleStudio_Logo.png" style="color:#1F4E79; font-weight:bold; text-decoration:underline;">Download Logo</a></li>
-                    <li>Paste the <b>Welcome Message</b> inside the new group.</li>
+                    <li>Open WhatsApp -> Create a New Group (just add yourself).</li>
+                    <li><b>Paste the Group Name</b> and tap Create.</li>
+                    <li>Tap <b>Invite via Link</b> and copy the link.</li>
+                    <li>Open the DM with client (button below).</li>
+                    <li>Paste the link + <b>Welcome Message</b> and send!</li>
                 </ol>
             </div>
 
             <!-- PRIMARY ACTIONS (AUTO-COPIED) -->
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
                 <div style="display:flex; gap:5px;">
-                    <input type="text" id="wa_group_name" readonly style="flex:1; padding:8px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-weight:bold;">
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_group_name').value); alert('Group Name Copied!');" style="background:#1F4E79;color:#fff;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-weight:bold;width:120px;">Copy Name</button>
+                    <input type="text" id="wa_group_name" readonly style="flex:1; padding:8px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-weight:bold;">
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_group_name').value); alert('Group Name Copied!');" style="background:#1F4E79;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:bold;width:120px;">Copy Name</button>
                 </div>
                 <div>
-                    <textarea id="wa_msg_welcome" readonly rows="6" style="width:100%;padding:8px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_welcome').value); alert('Welcome Message Copied!');" style="width:100%;background:#25D366;color:#fff;border:none;padding:12px;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Welcome Message</button>
+                    <textarea id="wa_msg_welcome" readonly rows="6" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_welcome').value); alert('Welcome Message Copied!');" style="width:100%;background:#25D366;color:#fff;border:none;padding:12px;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Welcome Message</button>
                 </div>
             </div>
 
-            <!-- SECONDARY ACTION: INVITATION (Optional, Hidden by default) -->
+            <!-- SECONDARY ACTION: INVITATION (Optional) -->
             <details style="margin-bottom:15px; border-top:1px dashed #ccc; padding-top:10px;">
                 <summary style="font-size:12px; font-weight:bold; color:#1F4E79; cursor:pointer;">Need consent first? (Optional Invitation Message)</summary>
                 <div style="margin-top:10px;">
-                    <textarea id="wa_msg_invite" readonly rows="4" style="width:100%;padding:8px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_invite').value); alert('Invitation Copied!');" style="width:100%;background:#6B7280;color:#fff;border:none;padding:8px;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Invitation Message</button>
+                    <textarea id="wa_msg_invite" readonly rows="4" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_invite').value); alert('Invitation Copied!');" style="width:100%;background:#6B7280;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Invitation Message</button>
                 </div>
             </details>
             
-            <button class="g" onclick="window.open('https://wa.me/${e.phone.replace(/[^0-9]/g,'')}', '_blank')" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;">Open WhatsApp Chat</button>
+            <button class="g" onclick="window.open('https://wa.me/${cleanPhone}', '_blank')" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;">Open DM with Client</button>
             
             <button class="g" onclick="document.getElementById('wa-modal-wrapper').remove();" style="width:100%;margin-top:10px;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;">Close</button>
         </div>
@@ -3198,8 +3203,6 @@ window.mcGenerateWAMsg = function(enqId) {
 
         const groupName = `${firstName} ${pType} Interior / ModuleStudio`;
 
-        const msgInvite = `Hello *${firstName}*! 😊\n\nI'm *Nirmalya, Interior Designer at MODULE STUDIO.* I'll be coordinating with you regarding your interior design requirements and helping you throughout the design journey.\n\nTo ensure smooth communication and keep all project-related discussions, design updates, references and important information in one place, we would be happy to create a dedicated WhatsApp group for your project.\n\nYou may also invite your family members or anyone involved in the decision-making process so that everyone stays updated and can share their suggestions conveniently.\n\n*Would you like us to create a dedicated project WhatsApp group and add you to it?*\n\nLooking forward to working with you and making your interior design journey a wonderful experience!\n\n*Warm Regards,*\nNirmalya\nInterior Designer\n*MODULE STUDIO*\n\n_Designing Spaces. Defining Lifestyles._`;
-
         const msgWelcome = `Hello *${firstName}*! 👋\n\nWarm greetings from *MODULE STUDIO!*\n\nThank you for connecting with us and considering us for your interior design requirements.\n\nI'm *Nirmalya, Interior Designer at MODULE STUDIO.* I'll be coordinating with you regarding your interior design requirements and helping you throughout your design journey.\n\nWe are delighted to be a part of your journey towards creating a beautiful, comfortable and functional space.\n\nAt Module Studio, we specialise in interior design and fabrication for residential, commercial and office spaces, combining creative design, quality craftsmanship and personalised solutions.\n\nWe would love to understand your ideas, requirements and preferences and help transform your vision into reality.\n\n📅 *MEETING DETAILS*\n\n*Date:* ${fDate}\n*Time:* ${fTime}\n*Venue:* ${mVenue}\n\nKindly reply *"CONFIRMED"* if the above schedule is convenient for you. If you would prefer a different date, time or meeting location, please let me know so that I can coordinate accordingly.\n\nIn the meantime, feel free to explore our work and services:\n\n🌐 *Our Website:*\nhttps://www.modulestudio.in\n\n📖 *Our Previous Projects & Online Brochure:*\nhttps://moducraft-app.pages.dev/brochure.html\n\nLooking forward to meeting you, understanding your vision and helping you create a space that truly reflects your lifestyle!\n\n*Warm Regards,*\n*Nirmalya*\nInterior Designer | MODULE STUDIO\n\n_Designing Spaces. Defining Lifestyles._`;
 
         // Save meeting note to Enquiry
@@ -3219,10 +3222,8 @@ window.mcGenerateWAMsg = function(enqId) {
         
         if (typeof render === 'function') render();
 
-        // Populate UI
         document.getElementById('wa_group_name').value = groupName;
         document.getElementById('wa_msg_welcome').value = msgWelcome;
-        document.getElementById('wa_msg_invite').value = msgInvite;
         
         // Auto-copy group name to clipboard for quick pasting
         navigator.clipboard.writeText(groupName);
@@ -3248,5 +3249,7 @@ window.vEnq = function() {
             html = html.replace(target, waBtn + target);
         }
     });
+    return html;
+};
     return html;
 };
