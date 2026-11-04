@@ -3018,3 +3018,48 @@ setInterval(() => {
         }
     };
 })();
+
+
+// ==========================================
+// FORCE INJECT VALIDITY & TIMELINE BOX
+// ==========================================
+const origVPrev_Validity = window.vPrev;
+window.vPrev = function() {
+    let html = origVPrev_Validity.apply(this, arguments);
+    
+    // Check if we already injected it to avoid duplicates
+    if (html.includes('id="validity-warning"')) return html;
+
+    const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
+    let validUntilStr = "";
+    
+    // Auto-calculate the +30 days date
+    if (q && q.date) {
+        const d = new Date(q.date);
+        d.setDate(d.getDate() + 30);
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        validUntilStr = ` <b>(Valid until: ${dd}/${mm}/${yyyy})</b>`;
+    }
+
+    const validityBox = `
+    <div id="validity-warning" style="border: 2px solid #1F4E79; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #F0F7FF; page-break-inside: avoid;">
+        <div style="color: #1F4E79; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⏱️ VALIDITY & TIMELINE:</div>
+        <div style="color: #333; font-size: 12px; line-height: 1.6;">
+            <b>1. Quotation Validity:</b> This quotation is valid for 30 days from the date of issue.${validUntilStr}<br><br>
+            <b>2. Estimated Work Completion:</b> 45 days + 15 days (Civil works/onsite services) from the date of finalization of design / carpentry milestone achievement / site validation (whichever is later).<br><br>
+            <span style="color: #b00020; font-weight: bold;">Note:</span> This timeline may vary if payment milestones are not followed properly.
+        </div>
+    </div>`;
+
+    // Find the "FINAL PRICE VARIATION" text and insert the box right BEFORE it
+    if (html.includes('FINAL PRICE VARIATION')) {
+        html = html.replace('FINAL PRICE VARIATION', validityBox + '<br>FINAL PRICE VARIATION');
+    } else {
+        // If not found, just append it to the end
+        html += validityBox;
+    }
+
+    return html;
+};
