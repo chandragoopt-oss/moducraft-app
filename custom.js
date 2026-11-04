@@ -3145,11 +3145,11 @@ window.mcGenerateWAMsg = function(enqId) {
             
             <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; margin-bottom:15px; color:#333;">
                 <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold; color:#333;">Follow these steps on WhatsApp:</p>
-                <ol style="font-size:12px; margin:0; padding-left:20px; color:#333;">
-                    <li>Send <b>Message 1</b> to the client to get consent.</li>
+                                <ol style="font-size:12px; margin:0; padding-left:20px; color:#333;">
+                    <li><i>(Optional)</i> Send <b>Invitation Message</b> if consent is not yet received.</li>
                     <li>Create a New Group and <b>paste the Group Name</b>.</li>
                     <li>Add the client: <b>${esc(e.phone)}</b> & Set Icon: <a href="${logoUrl}" download="ModuleStudio_Logo.png" style="color:#1F4E79; font-weight:bold; text-decoration:underline;">Download Logo</a></li>
-                    <li>Send <b>Message 2</b> inside the new group.</li>
+                    <li>Send <b>Welcome Message</b> inside the new group.</li>
                 </ol>
             </div>
             
@@ -3163,7 +3163,7 @@ window.mcGenerateWAMsg = function(enqId) {
             
             <!-- MESSAGE 1: INVITATION -->
             <div style="margin-top:15px;">
-                <label style="font-size:11px;font-weight:bold;color:#555;">1. INVITATION MESSAGE (Send before group):</label>
+                <label style="font-size:11px;font-weight:bold;color:#555;">1. 1. INVITATION MESSAGE (Optional):</label>
                 <textarea id="wa_msg_invite" readonly rows="6" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;color:#333;font-size:12px;font-family:monospace;"></textarea>
                 <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_invite').value); alert('Invitation Copied!');" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:10px;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Invitation</button>
             </div>
