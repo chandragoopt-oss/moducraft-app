@@ -2833,52 +2833,61 @@ setTimeout(() => {
     }
 }, 500);
 
-// 5. BULLETPROOF BOQ DOM FIX (WATCHES SCREEN)
+// ==========================================
+// MASTER DOM FIX (BOQ, TYPOS, WARNINGS, & BANK)
+// ==========================================
+
+// 1. FIX BOQ, TYPOS & PRICE WARNING (WATCHES SCREEN)
 setInterval(() => {
     try {
         const paper = document.querySelector('.paper');
         if (!paper) return;
 
+        // A. Fix BOQ Header & Columns
         const ths = Array.from(paper.querySelectorAll('th'));
-        if (!ths.length) return;
+        if (ths.length) {
+            const dimTh = ths.find(th => th.textContent.includes('Dimension (mm'));
+            if (dimTh) dimTh.textContent = 'Dimensions (ft)';
 
-        // Fix the Dimension Header
-        const dimTh = ths.find(th => th.textContent.includes('Dimension (mm'));
-        if (dimTh) {
-            dimTh.textContent = 'Dimensions (ft)';
+            const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
+            const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
+
+            if (matIdx !== -1 || finIdx !== -1) {
+                const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
+                if (q) {
+                    paper.querySelectorAll('tbody tr').forEach(tr => {
+                        const tds = tr.querySelectorAll('td');
+                        if (matIdx !== -1 && tds[matIdx] && (!tds[matIdx].textContent.trim() || tds[matIdx].textContent.trim() === '—')) {
+                            tds[matIdx].textContent = q.cf || 'BSL MR';
+                        }
+                        if (finIdx !== -1 && tds[finIdx] && (!tds[finIdx].textContent.trim() || tds[finIdx].textContent.trim() === '—')) {
+                            tds[finIdx].textContent = q.fo || '0.8mm Laminate';
+                        }
+                    });
+                }
+            }
         }
 
-        // Find the Material and Finish columns
-        const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
-        const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
+        // B. Fix Disclaimer Typos
+        if (paper.innerHTML.includes('Disclamer:')) {
+            paper.innerHTML = paper.innerHTML.replace(/\(Disclamer:[\s\S]*?site conditions\.\)/g, `(Disclaimer: Images provided in the quotation are for representational purposes only. Final products may vary slightly in texture and finish based on material batch availability and site conditions.)`);
+        }
 
-        if (matIdx === -1 && finIdx === -1) return;
-
-        const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
-        if (!q) return;
-
-        // Fill the empty cells in the rows
-        paper.querySelectorAll('tbody tr').forEach(tr => {
-            const tds = tr.querySelectorAll('td');
-            
-            if (matIdx !== -1 && tds[matIdx]) {
-                const txt = tds[matIdx].textContent.trim();
-                if (!txt || txt === '—' || txt === '-' || txt === '') {
-                    tds[matIdx].textContent = q.cf || 'BSL MR';
-                }
-            }
-            
-            if (finIdx !== -1 && tds[finIdx]) {
-                const txt = tds[finIdx].textContent.trim();
-                if (!txt || txt === '—' || txt === '-' || txt === '') {
-                    tds[finIdx].textContent = q.fo || '0.8mm Laminate';
-                }
-            }
-        });
+        // C. Highlight Final Price Variation
+        if (paper.innerHTML.includes('FINAL PRICE VARIATION') && !paper.innerHTML.includes('id="final-price-warning"')) {
+            const regex = /\*\*FINAL PRICE VARIATION[\s\S]*?(?=\*\*|<br>|<\/p>)/g;
+            paper.innerHTML = paper.innerHTML.replace(regex, (match) => {
+                let cleanText = match.replace(/\*\*/g, '').replace(/FINAL PRICE VARIATION:?/, '').trim();
+                return `<div id="final-price-warning" style="border: 2px solid #F59E0B; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #FFFBEB; page-break-inside: avoid;">
+                    <div style="color: #B45309; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⚠️ FINAL PRICE VARIATION:</div>
+                    <div style="color: #333; font-size: 12px; line-height: 1.5;">${cleanText}</div>
+                </div>`;
+            });
+        }
     } catch(e) {}
 }, 500);
 
-// 6. BANK & GST SETTINGS + PDF INJECTION
+// 2. BANK & GST SETTINGS + PDF INJECTION
 (function() {
     const prevVSet = window.vSet;
     window.vSet = function() {
@@ -2977,33 +2986,5 @@ setInterval(() => {
             const el = document.getElementById('bank-gst-details');
             if (el) el.remove();
         }
-    };
-})();
-
-// ==========================================
-// HIGHLIGHT FINAL PRICE VARIATION & FIX TYPOS
-// ==========================================
-(function() {
-    const origVPrev_FinalPrice = window.vPrev;
-    window.vPrev = function() {
-        let html = origVPrev_FinalPrice.apply(this, arguments);
-        
-        // 1. Highlight the Final Price Variation text with a warning box
-        const priceVarRegex = /\*\*FINAL PRICE VARIATION:([\s\S]*?)\*\*/g;
-        html = html.replace(priceVarRegex, (match, p1) => {
-            return `<div style="border: 2px solid #F59E0B; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #FFFBEB; page-break-inside: avoid;">
-                <div style="color: #B45309; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⚠️ FINAL PRICE VARIATION:</div>
-                <div style="color: #333; font-size: 12px; line-height: 1.5;">${p1.trim()}</div>
-            </div>`;
-        });
-
-        // 2. Automatically fix the spelling mistakes in the disclaimer
-        const typoStr = "Disclamer: mages provided in the quation are for represntational purposes only. Final products may vary slightly in texture and finish based on material batch availabilit and site conditions.";
-        const fixedStr = "Disclaimer: Images provided in the quotation are for representational purposes only. Final products may vary slightly in texture and finish based on material batch availability and site conditions.";
-        
-        // Replace it using Regex to catch the exact sentence
-        html = html.replace(/\(Disclamer:[\s\S]*?site conditions\.\)/g, `(${fixedStr})`);
-
-        return html;
     };
 })();
