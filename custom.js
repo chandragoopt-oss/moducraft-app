@@ -2712,10 +2712,10 @@ document.addEventListener('click', function(e) {
         }
     }
 // ==========================================
-// FIX: Missing Enquiry Functions & Module Crash Protection
+// CONSOLIDATED MASTER FIXES (DO NOT EDIT BELOW)
 // ==========================================
 
-// 1. Provide the missing functions for the Enquiries tab
+// 1. Missing Enquiry Functions & Module Crash Protection
 window.mcUpdateEnqStatus = function(id, newStatus, isQuotation) {
     if (isQuotation) {
         const q = S.q[id];
@@ -2724,7 +2724,7 @@ window.mcUpdateEnqStatus = function(id, newStatus, isQuotation) {
             q.out = 'lost';
         } else if (newStatus === 'Won') {
             q.out = 'won';
-            q.st = 'shared'; // Won implies it was shared
+            q.st = 'shared';
         } else if (newStatus === 'Quoted') {
             q.st = 'shared';
             q.out = '';
@@ -2752,8 +2752,6 @@ window.mcDeleteEnq = function(id) {
     }
 };
 
-// 2. Patch the Module database (MOD) to prevent 'M_ID' crashes
-// This creates a dummy fallback for custom items so the core app doesn't crash.
 setTimeout(() => {
     if (typeof window.MOD !== 'undefined' && !window.__mcModPatched) {
         window.__mcModPatched = true;
@@ -2761,102 +2759,64 @@ setTimeout(() => {
         window.MOD = new Proxy(origMOD, {
             get: function(target, prop) {
                 if (prop === 'undefined' || prop === 'null' || !target[prop]) {
-                    return { 
-                        M_ID: 'CUSTOM', 
-                        name: 'Custom Item', 
-                        au: false, 
-                        w0: 0, 
-                        h: 0, 
-                        sw: [0] 
-                    };
+                    return { M_ID: 'CUSTOM', name: 'Custom Item', au: false, w0: 0, h: 0, sw: [0] };
                 }
                 return target[prop];
             }
         });
     }
 }, 1000);
-// ==========================================
-// FIX: Add Pricing Basis Options Dynamically
-// ==========================================
+
+// 2. Add Pricing Basis Options Dynamically
 setInterval(() => {
-    // Find the pricing dropdown
     const sel = document.querySelector('select[data-p="pmo"]');
-    
-    // If the dropdown exists and hasn't been patched yet
     if (sel && !sel.dataset.patched) {
         sel.dataset.patched = "true";
-        const currentVal = sel.value; // Remember what was selected
-        
-        // Replace the options
+        const currentVal = sel.value; 
         sel.innerHTML = `
             <option value="Module rates">Module rates (auto-calculated)</option>
             <option value="Room base">Room base (per sq.ft)</option>
             <option value="Package">Package (flat price per room)</option>
             <option value="Material costing">Material costing (Internal only)</option>
         `;
-        
-        // Restore the selection
         sel.value = currentVal;
-        
-        // Force the app to recalculate whenever you change the dropdown
         sel.addEventListener('change', () => {
             if (typeof render === 'function') render();
         });
     }
 }, 1000);
 
-// ==========================================
-// FIX: YEN (¥) TO RUPEE (Rs.) IN PDF
-// ==========================================
-// The PDF library doesn't support the ₹ character, so it prints ¥.
-// This intercepts the PDF generation and temporarily swaps ₹ for "Rs. "
-// in the background, then restores your screen back to normal.
-
+// 3. YEN (¥) TO RUPEE (Rs.) IN PDF
 const origPaperToPdf_RupeeFix = window.paperToPdf;
 window.paperToPdf = async function(mode) {
     const paper = document.querySelector('.paper');
     if (!paper) return origPaperToPdf_RupeeFix.apply(this, arguments);
-
-    // Find all text elements in the print document
     const walker = document.createTreeWalker(paper, NodeFilter.SHOW_TEXT, null, false);
     let node;
     const changedNodes = [];
-
     while (node = walker.nextNode()) {
         if (node.nodeValue.includes('₹')) {
-            // Remember the original text
             changedNodes.push({ node: node, original: node.nodeValue });
-            // Swap ₹ for Rs.
             node.nodeValue = node.nodeValue.replace(/₹/g, 'Rs. ');
         }
     }
-
     try {
-        // Generate the PDF
         return await origPaperToPdf_RupeeFix.apply(this, arguments);
     } finally {
-        // Restore the ₹ symbol on your screen so the app still looks good
         changedNodes.forEach(item => item.node.nodeValue = item.original);
     }
 };
 
-// ==========================================
-// AUTO-ADD VALIDITY & TIMELINE TO NOTES
-// ==========================================
+// 4. Auto-Add Validity & Timeline to Notes
 setTimeout(() => {
-    const noteText = "Quotation valid for 15 days. Estimated timeline: 45 working days.";
-    
-    // 1. Add it to the quotation you currently have open
+    const noteText = "Quotation valid for 15 days. Estimated timeline: 30 working days.";
     if (window.S && S.cur && S.q[S.cur]) {
         if (!S.q[S.cur].notes || !S.q[S.cur].notes.includes("valid for 15 days")) {
             S.q[S.cur].notes = (S.q[S.cur].notes ? S.q[S.cur].notes.trim() + "\n\n" : "") + noteText;
             if (typeof save === 'function') save('q', S.cur);
             if (typeof render === 'function') render();
-            if (typeof flash === 'function') flash('Validity & Timeline note added to this quotation.');
         }
     }
-
-    // 2. Save it as the default note for every NEW quotation you create going forward
     if (window.S && S.set) {
         if (!S.set.notes || !S.set.notes.includes("valid for 15 days")) {
             S.set.notes = (S.set.notes ? S.set.notes.trim() + "\n\n" : "") + noteText;
@@ -2865,50 +2825,51 @@ setTimeout(() => {
     }
 }, 500);
 
-
-// ==========================================
-// AUTO-FILL BLANK MATERIAL COLUMNS IN BOQ
-// ==========================================
-const origVPrev_MatFill = vPrev;
-vPrev = function() {
-    let html = origVPrev_MatFill();
-    const q = T();
-    if (!q) return html;
-
-    // This script temporarily fills the blank BOQ columns with your global settings
-    // right before the PDF prints.
-    if (typeof document !== 'undefined') {
-        setTimeout(() => {
-            const paper = document.querySelector('.paper');
-            if (paper) {
-                // Find the BOQ table headers
-                const ths = Array.from(paper.querySelectorAll('th'));
-                const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
-                const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
-                
-                if (matIdx !== -1 || finIdx !== -1) {
-                    paper.querySelectorAll('tbody tr').forEach(tr => {
-                        const tds = tr.querySelectorAll('td');
-                        // If the cell is empty, fill it
-                        if (matIdx !== -1 && tds[matIdx] && !tds[matIdx].textContent.trim()) {
-                            tds[matIdx].textContent = q.cf || 'BSL MR'; // Pulls global carcass finish
-                        }
-                        if (finIdx !== -1 && tds[finIdx] && !tds[finIdx].textContent.trim()) {
-                            tds[finIdx].textContent = q.fo || '0.8mm Laminate'; // Pulls global shutter finish
-                        }
-                    });
-                }
-            }
-        }, 100); // Waits for the preview to load
-    }
-    return html;
-};
-
-// ==========================================
-// BANK & GST SETTINGS + PDF INJECTION (SAFE)
-// ==========================================
+// 5. BULLETPROOF BOQ FIX (Header & Empty Columns)
 (function() {
-    // 1. ADD BANK & GST DETAILS TO SETTINGS UI
+    const origVPrev_BOQ = window.vPrev;
+    window.vPrev = function() {
+        let html = origVPrev_BOQ.apply(this, arguments);
+        const q = window.T ? window.T() : null;
+        if (!q || typeof DOMParser === 'undefined') return html;
+
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // Fix Header
+            const ths = Array.from(doc.querySelectorAll('th'));
+            ths.forEach(th => {
+                if (th.textContent.includes('Dimension (mm')) {
+                    th.textContent = 'Dimensions (ft)';
+                }
+            });
+
+            // Find columns
+            const matIdx = ths.findIndex(th => th.textContent.includes('Cabinet Material'));
+            const finIdx = ths.findIndex(th => th.textContent.includes('Shutter Finish'));
+
+            // Fill cells
+            if (matIdx !== -1 || finIdx !== -1) {
+                doc.querySelectorAll('tbody tr').forEach(tr => {
+                    const tds = tr.querySelectorAll('td');
+                    if (matIdx !== -1 && tds[matIdx]) {
+                        const txt = tds[matIdx].textContent.trim();
+                        if (!txt || txt === '—' || txt === '-') tds[matIdx].textContent = q.cf || 'BSL MR';
+                    }
+                    if (finIdx !== -1 && tds[finIdx]) {
+                        const txt = tds[finIdx].textContent.trim();
+                        if (!txt || txt === '—' || txt === '-') tds[finIdx].textContent = q.fo || '0.8mm Laminate';
+                    }
+                });
+            }
+            return doc.body.innerHTML;
+        } catch (e) { return html; }
+    };
+})();
+
+// 6. BANK & GST SETTINGS + PDF INJECTION
+(function() {
     const prevVSet = window.vSet;
     window.vSet = function() {
         let html = prevVSet.apply(this, arguments);
@@ -2917,7 +2878,7 @@ vPrev = function() {
 
         const bankCard = `<div class="card">
             <h3>🏦 Bank & Payment Details (Prints on PDF)</h3>
-            <p class="mut">Fill in the details you want your clients to see on the quotation. If you leave the GSTIN blank, the GST section will automatically hide from the PDF.</p>
+            <p class="mut">Fill in the details you want your clients to see. If you leave the GSTIN blank, the GST section will automatically hide from the PDF.</p>
             <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
                 <div><label>Bank Name</label><input data-co-save="bankName" value="${esc(co.bankName || '')}" placeholder="e.g. HDFC Bank"></div>
                 <div><label>Account Name</label><input data-co-save="bankAccName" value="${esc(co.bankAccName || '')}" placeholder="e.g. Module Studio"></div>
@@ -2927,7 +2888,6 @@ vPrev = function() {
                 <div><label>GSTIN (Leave blank if not registered)</label><input data-co-save="gstin" value="${esc(co.gstin || '')}" placeholder="15-character GSTIN" maxlength="15" style="text-transform:uppercase"></div>
             </div>
         </div>`;
-        
         return html + bankCard;
     };
 
@@ -2940,7 +2900,6 @@ vPrev = function() {
         }
     });
 
-    // 2. DYNAMIC BANK & GST ON PDF
     const prevPaperToPdf = window.paperToPdf;
     window.paperToPdf = async function(mode) {
         const paper = document.querySelector('.paper');
