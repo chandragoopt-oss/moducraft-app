@@ -2979,3 +2979,31 @@ setInterval(() => {
         }
     };
 })();
+
+// ==========================================
+// HIGHLIGHT FINAL PRICE VARIATION & FIX TYPOS
+// ==========================================
+(function() {
+    const origVPrev_FinalPrice = window.vPrev;
+    window.vPrev = function() {
+        let html = origVPrev_FinalPrice.apply(this, arguments);
+        
+        // 1. Highlight the Final Price Variation text with a warning box
+        const priceVarRegex = /\*\*FINAL PRICE VARIATION:([\s\S]*?)\*\*/g;
+        html = html.replace(priceVarRegex, (match, p1) => {
+            return `<div style="border: 2px solid #F59E0B; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #FFFBEB; page-break-inside: avoid;">
+                <div style="color: #B45309; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⚠️ FINAL PRICE VARIATION:</div>
+                <div style="color: #333; font-size: 12px; line-height: 1.5;">${p1.trim()}</div>
+            </div>`;
+        });
+
+        // 2. Automatically fix the spelling mistakes in the disclaimer
+        const typoStr = "Disclamer: mages provided in the quation are for represntational purposes only. Final products may vary slightly in texture and finish based on material batch availabilit and site conditions.";
+        const fixedStr = "Disclaimer: Images provided in the quotation are for representational purposes only. Final products may vary slightly in texture and finish based on material batch availability and site conditions.";
+        
+        // Replace it using Regex to catch the exact sentence
+        html = html.replace(/\(Disclamer:[\s\S]*?site conditions\.\)/g, `(${fixedStr})`);
+
+        return html;
+    };
+})();
