@@ -3063,3 +3063,25 @@ window.vPrev = function() {
 
     return html;
 };
+
+// ==========================================
+// ADD BROCHURE LINK TO SETTINGS
+// ==========================================
+const prevVSet_Brochure = window.vSet;
+window.vSet = function() {
+    let html = prevVSet_Brochure.apply(this, arguments);
+    
+    // Automatically grabs your website's base URL
+    const brochureLink = window.location.origin + window.location.pathname.replace('index.html', '') + 'brochure.html';
+
+    const brochureCard = `<div class="card" style="border-left: 4px solid #B08D57;">
+        <h3>📢 Public Brochure Link</h3>
+        <p class="mut">Share this link with potential clients. They can view your portfolio and submit an enquiry without needing to log in.</p>
+        <div class="bar">
+            <input type="text" readonly value="${brochureLink}" id="brochure_link_input" style="max-width:400px; background:var(--bg); color:var(--ink);">
+            <button onclick="navigator.clipboard.writeText('${brochureLink}'); flash('Link copied!');" style="background:#1F4E79; color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">Copy Link</button>
+        </div>
+    </div>`;
+
+    return html + brochureCard;
+};
