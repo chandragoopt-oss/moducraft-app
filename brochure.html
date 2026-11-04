@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Studio | Interior Design</title>
+    <style>
+        :root {
+            --gold: #B08D57;
+            --dark: #1F2937;
+            --bg: #f9f9f9;
+            --card: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: #333;
+            line-height: 1.6;
+        }
+        .hero {
+            background: var(--dark);
+            color: #fff;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .hero h1 { margin: 0; font-size: 28px; letter-spacing: 2px; }
+        .hero p { color: var(--gold); font-weight: bold; margin-top: 5px; }
+        
+        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        
+        .card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        
+        .section-title {
+            color: var(--gold);
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 5px;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .btn {
+            background: var(--gold);
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .btn:hover { background: #9a7b4b; }
+        .btn-dark { background: var(--dark); }
+        
+        /* Form Styles */
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;
+            box-sizing: border-box; font-family: inherit; font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; border-color: var(--gold);
+        }
+        #success-msg { display: none; color: #15803d; font-weight: bold; text-align: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="hero">
+        <h1>MODULE STUDIO</h1>
+        <p>Interior Design • Fabrication • Turnkey Execution</p>
+    </div>
+
+    <div class="container">
+        
+        <!-- About Section -->
+        <div class="card">
+            <h2 class="section-title">About Us</h2>
+            <p>At Module Studio, we create interiors that blend aesthetics with functionality, tailored to your lifestyle or business needs. We create innovative concepts to transform your living space into something truly special.</p>
+            
+            <a href="MODULE STUDIO_BROCHURE2_compressed.pdf" target="_blank" class="btn btn-dark" style="margin-top: 10px;">
+                📄 View Full Brochure PDF
+            </a>
+        </div>
+
+        <!-- Services Section -->
+        <div class="card">
+            <h2 class="section-title">Our Services</h2>
+            <ul style="padding-left: 20px;">
+                <li><b>Residential:</b> Living rooms, modular kitchens, bedrooms.</li>
+                <li><b>Commercial:</b> Showrooms, cafes, restaurants.</li>
+                <li><b>Office Spaces:</b> Ergonomic workspaces and corporate lobbies.</li>
+                <li><b>Vastu Consultation:</b> Aligning layouts with ancient principles.</li>
+            </ul>
+        </div>
+
+        <!-- Enquiry Form Section -->
+        <div class="card" id="enquiry-form-card">
+            <h2 class="section-title">Get a Free Consultation</h2>
+            <p style="font-size: 14px; color: #666;">Fill out the form below and our team will reach out to you shortly.</p>
+            
+            <form id="public-enq-form">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="eq_name" required placeholder="e.g. Rahul Sharma">
+                </div>
+                <div class="form-group">
+                    <label>Phone / WhatsApp *</label>
+                    <input type="tel" id="eq_phone" required placeholder="e.g. 9830000000">
+                </div>
+                <div class="form-group">
+                    <label>Project Type</label>
+                    <select id="eq_project">
+                        <option value="Residential">Residential</option>
+                        <option value="Commercial">Commercial / Shop</option>
+                        <option value="Office">Office Space</option>
+                        <option value="Modular Kitchen">Modular Kitchen</option>
+                        <option value="Vastu">Vastu Consultation</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Budget (Optional)</label>
+                    <input type="text" id="eq_budget" placeholder="e.g. 5-10 Lakhs">
+                </div>
+                <div class="form-group">
+                    <label>Any specific requirements?</label>
+                    <textarea id="eq_notes" rows="3" placeholder="Tell us about your space..."></textarea>
+                </div>
+                <button type="submit" class="btn" id="submit-btn">Submit Enquiry</button>
+                <div id="success-msg">✅ Enquiry sent successfully! We will contact you soon.</div>
+            </form>
+        </div>
+        
+        <p style="text-align:center; font-size:12px; color:#999; margin-bottom: 30px;">
+            © 2026 Module Studio. All rights reserved.
+        </p>
+    </div>
+
+    <!-- SCRIPT TO SEND DATA TO GOOGLE SHEETS -->
+    <script>
+        const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
+        const API_KEY = "ModuCraft@2026";
+
+        document.getElementById('public-enq-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submit-btn');
+            btn.textContent = 'Sending...';
+            btn.disabled = true;
+
+            // Get form data
+            const enqData = {
+                id: 'e' + Date.now().toString(36),
+                name: document.getElementById('eq_name').value.trim(),
+                phone: document.getElementById('eq_phone').value.trim(),
+                project: document.getElementById('eq_project').value,
+                budget: document.getElementById('eq_budget').value.trim(),
+                notes: document.getElementById('eq_notes').value.trim(),
+                status: 'Enquiry',
+                date: new Date().toISOString(),
+                platform: 'Public Brochure'
+            };
+
+            // Send to Google Sheets
+            fetch(GOOGLE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ 
+                    action: 'save', 
+                    collection: 'enquiries',
+                    id: enqData.id,
+                    data: enqData,
+                    apiKey: API_KEY
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                // Show success message
+                document.getElementById('public-enq-form').reset();
+                document.getElementById('success-msg').style.display = 'block';
+                btn.textContent = 'Sent Successfully';
+                btn.style.background = '#15803d';
+                
+                // Trigger WhatsApp Alert to Owner
+                const wText = `🚨 NEW LEAD from Brochure!\n\nClient: ${enqData.name}\nPhone: ${enqData.phone}\nProject: ${enqData.project}\nBudget: ${enqData.budget}\nNotes: ${enqData.notes}`;
+                const waUrl = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`;
+                window.open(waUrl, '_blank');
+            })
+            .catch(err => {
+                alert('Something went wrong. Please try again.');
+                btn.textContent = 'Submit Enquiry';
+                btn.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
