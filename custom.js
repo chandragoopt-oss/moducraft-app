@@ -2817,7 +2817,7 @@ window.paperToPdf = async function(mode) {
 
 // 4. Auto-Add Validity & Timeline to Notes
 setTimeout(() => {
-    const noteText = "Quotation valid for 15 days. Estimated timeline: 30 working days.";
+    const noteText = "Quotation is valid for 30 days from the date of issue.\n\nEstimated Work Completion Timeline: 45 days + 15 days (Civil works/onsite services) from the date of finalization of design / carpentry milestone achievement / site validation (whichever is later).\n\nNote: This timeline may vary if payment milestones are not followed properly.";
     if (window.S && S.cur && S.q[S.cur]) {
         if (!S.q[S.cur].notes || !S.q[S.cur].notes.includes("valid for 15 days")) {
             S.q[S.cur].notes = (S.q[S.cur].notes ? S.q[S.cur].notes.trim() + "\n\n" : "") + noteText;
@@ -2881,6 +2881,36 @@ setInterval(() => {
                 return `<div id="final-price-warning" style="border: 2px solid #F59E0B; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #FFFBEB; page-break-inside: avoid;">
                     <div style="color: #B45309; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⚠️ FINAL PRICE VARIATION:</div>
                     <div style="color: #333; font-size: 12px; line-height: 1.5;">${cleanText}</div>
+                </div>`;
+            });
+        }
+        // D. Highlight Validity & Timeline (Auto-Calculate Date)
+        if (paper.innerHTML.includes('Quotation is valid for 30 days') && !paper.innerHTML.includes('id="validity-warning"')) {
+            
+            // Auto-calculate the +30 days validity date
+            let validUntilStr = "";
+            const q = typeof T === 'function' ? T() : (window.T ? window.T() : null);
+            if (q && q.date) {
+                const d = new Date(q.date);
+                d.setDate(d.getDate() + 30);
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yyyy = d.getFullYear();
+                validUntilStr = ` <b>(Valid until: ${dd}/${mm}/${yyyy})</b>`;
+            }
+
+            // Find the text and wrap it in a blue highlight box
+            const regex = /Quotation is valid for 30 days[\s\S]*?followed properly\./g;
+            paper.innerHTML = paper.innerHTML.replace(regex, (match) => {
+                let displayText = match;
+                // Inject the calculated date if it isn't there yet
+                if (validUntilStr && !displayText.includes('Valid until:')) {
+                    displayText = displayText.replace('from the date of issue.', 'from the date of issue.' + validUntilStr);
+                }
+                
+                return `<div id="validity-warning" style="border: 2px solid #1F4E79; border-radius: 8px; padding: 12px; margin-top: 20px; background-color: #F0F7FF; page-break-inside: avoid;">
+                    <div style="color: #1F4E79; font-weight: bold; font-size: 13px; text-decoration: underline; margin-bottom: 6px;">⏱️ VALIDITY & TIMELINE:</div>
+                    <div style="color: #333; font-size: 12px; line-height: 1.6;">${displayText.replace(/\n/g, '<br>')}</div>
                 </div>`;
             });
         }
