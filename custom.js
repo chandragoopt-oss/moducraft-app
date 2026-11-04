@@ -3136,30 +3136,37 @@ window.mcGenerateWAMsg = function(enqId) {
 
         <div class="bar" style="margin-top:20px;justify-content:flex-end;">
             <button class="g" id="wa_cancel" style="margin-right:auto;">Cancel</button>
-            <button id="wa_generate" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:10px 20px;font-weight:bold;cursor:pointer;">Generate & Copy</button>
+            <button id="wa_generate" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:10px 20px;font-weight:bold;cursor:pointer;">Generate Details</button>
         </div>
         
         <div id="wa_result" style="display:none; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
-            <h4 style="margin-top:0; color:#15803d;">✅ Copied to Clipboard!</h4>
+            <h4 style="margin-top:0; color:#15803d;">✅ Details Generated!</h4>
+            
             <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:6px; margin-bottom:15px;">
-                <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold;">Follow these 3 steps on WhatsApp:</p>
+                <p style="font-size:12px; margin:0 0 5px 0; font-weight:bold;">Follow these steps on WhatsApp:</p>
                 <ol style="font-size:12px; margin:0; padding-left:20px;">
-                    <li>Create a New Group and <b>Paste the Name</b>.</li>
+                    <li>Create a New Group and <b>paste the name</b>.</li>
                     <li>Add the client: <b>${esc(e.phone)}</b>.</li>
-                    <li><b>Set Group Icon:</b> <a href="${logoUrl}" download="ModuleStudio_Logo.png" style="color:#1F4E79; font-weight:bold; text-decoration:underline;">Download Logo Here</a> (Long press to save on mobile).</li>
-                    <li>Send the <b>Welcome Message</b> below.</li>
+                    <li><b>Set Group Icon:</b> <a href="${logoUrl}" download="ModuleStudio_Logo.png" style="color:#1F4E79; font-weight:bold; text-decoration:underline;">Download Logo</a></li>
+                    <li>Send the <b>welcome message</b> below.</li>
                 </ol>
             </div>
             
             <div style="margin-top:10px;">
                 <label style="font-size:11px;font-weight:bold;color:#555;">GROUP NAME:</label>
-                <input type="text" id="wa_group_name" readonly style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;font-weight:bold;">
+                <div style="display:flex; gap:5px; margin-top:4px;">
+                    <input type="text" id="wa_group_name" readonly style="flex:1; padding:8px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;font-weight:bold;">
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('wa_group_name').value); alert('Group Name Copied!');" style="background:#1F4E79;color:#fff;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">Copy</button>
+                </div>
             </div>
-            <div style="margin-top:10px;">
-                <label style="font-size:11px;font-weight:bold;color:#555;">MESSAGE:</label>
-                <textarea id="wa_msg_text" readonly rows="6" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;font-size:12px;font-family:monospace;"></textarea>
+            
+            <div style="margin-top:15px;">
+                <label style="font-size:11px;font-weight:bold;color:#555;">INVITATION / WELCOME MESSAGE:</label>
+                <textarea id="wa_msg_text" readonly rows="8" style="width:100%;padding:8px;margin-top:4px;border-radius:4px;border:1px solid #ccc;background:#f9f9f9;font-size:12px;font-family:monospace;"></textarea>
+                <button onclick="navigator.clipboard.writeText(document.getElementById('wa_msg_text').value); alert('Message Copied!');" style="width:100%;background:#1F4E79;color:#fff;border:none;padding:10px;border-radius:4px;cursor:pointer;font-weight:bold;margin-top:5px;">📋 Copy Message</button>
             </div>
-                        <button class="g" onclick="window.open('https://wa.me/${e.phone.replace(/[^0-9]/g,'')}', '_blank')" style="width:100%;margin-top:10px;background:#25D366;color:#fff;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;">Open WhatsApp Chat</button>
+            
+            <button class="g" onclick="window.open('https://wa.me/${e.phone.replace(/[^0-9]/g,'')}', '_blank')" style="width:100%;margin-top:20px;background:#25D366;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;">Open WhatsApp Chat</button>
             
             <button class="g" onclick="this.closest('div[style*=\\'position:fixed\\']').remove();" style="width:100%;margin-top:10px;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:14px;">Close</button>
         </div>
@@ -3226,14 +3233,32 @@ Team MODULE STUDIO
 
 _Designing Spaces. Defining Lifestyles._`;
 
-        // Copy to Clipboard
-        const fullTextToCopy = `Group Name: ${groupName}\n\nMessage:\n${msg}`;
-        navigator.clipboard.writeText(fullTextToCopy).then(() => {
-            document.getElementById('wa_group_name').value = groupName;
-            document.getElementById('wa_msg_text').value = msg;
-            document.getElementById('wa_result').style.display = 'block';
-            document.getElementById('wa_generate').style.display = 'none';
-        });
+        // --- SAVE MEETING DETAILS TO ENQUIRY NOTE ---
+        const meetingNote = `\n\n[Meeting Scheduled via WA]\nProject: ${pType}\nDate: ${fDate}\nTime: ${fTime}\nVenue: ${mVenue}`;
+        if (!e.notes || !e.notes.includes('[Meeting Scheduled via WA]')) {
+            e.notes = (e.notes || '').trim() + meetingNote;
+        }
+        
+        window.ENQ[enqId] = e;
+        window.saveEnq();
+
+        // Sync to Google Sheets in the background
+        try {
+            fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'save', collection: 'enquiries', id: e.id, data: e, apiKey: "ModuCraft@2026" })
+            });
+        } catch(err) { console.log("Cloud save failed", err); }
+        
+        if (typeof render === 'function') render(); // Refresh the UI in background
+        // ---------------------------------------------------
+
+        // Populate the fields
+        document.getElementById('wa_group_name').value = groupName;
+        document.getElementById('wa_msg_text').value = msg;
+        document.getElementById('wa_result').style.display = 'block';
+        document.getElementById('wa_generate').style.display = 'none';
     };
 };
 
