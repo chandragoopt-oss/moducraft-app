@@ -24,7 +24,7 @@
         /* HERO SECTION WITH COVER IMAGE */
         .hero {
             position: relative;
-            background-image: url('cover.jpg'); /* YOUR UPLOADED IMAGE */
+            background-image: url('cover.jpg'); /* Make sure this matches your image name */
             background-size: cover;
             background-position: center;
             height: 100vh;
@@ -38,7 +38,6 @@
             box-sizing: border-box;
         }
         
-        /* Dark overlay so white text is readable over the image */
         .hero::before {
             content: '';
             position: absolute;
@@ -58,20 +57,8 @@
             to { opacity: 1; transform: translateY(0); } 
         }
         
-        .hero h1 { 
-            margin: 0; 
-            font-size: 34px; 
-            letter-spacing: 5px; 
-            font-weight: 300; 
-        }
-        .hero p { 
-            color: var(--gold); 
-            font-weight: bold; 
-            margin-top: 10px; 
-            letter-spacing: 2px; 
-            font-size: 14px; 
-            text-transform: uppercase; 
-        }
+        .hero h1 { margin: 0; font-size: 34px; letter-spacing: 5px; font-weight: 300; }
+        .hero p { color: var(--gold); font-weight: bold; margin-top: 10px; letter-spacing: 2px; font-size: 14px; text-transform: uppercase; }
         
         .scroll-down {
             position: absolute;
@@ -89,13 +76,7 @@
         }
 
         /* CONTENT SECTIONS */
-        .container { 
-            max-width: 800px; 
-            margin: -30px auto 20px; 
-            padding: 0 15px; 
-            position: relative; 
-            z-index: 5; 
-        }
+        .container { max-width: 800px; margin: -30px auto 20px; padding: 0 15px; position: relative; z-index: 5; }
         
         .card {
             background: var(--card);
@@ -115,36 +96,23 @@
             padding-left: 12px;
         }
 
-        .service-list { list-style: none; padding: 0; margin: 0; }
-        .service-list li {
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
-            font-size: 15px;
-        }
-        .service-list li:last-child { border-bottom: none; }
-        .service-list b { color: var(--gold); display: block; font-size: 16px; margin-bottom: 4px;}
-
-        /* FORM STYLES */
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #555; text-transform: uppercase; letter-spacing: 0.5px;}
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%; 
-            padding: 14px; 
-            border: 1px solid #ccc; 
+        /* EMBEDDED PDF STYLES */
+        .pdf-container {
+            position: relative;
+            width: 100%;
+            height: 60vh; /* Takes up 60% of screen height */
+            max-height: 600px;
             border-radius: 8px;
-            box-sizing: border-box; 
-            font-family: inherit; 
-            font-size: 16px; /* Prevents auto-zoom on iPhone */
-            background: #fafafa; 
-            transition: all 0.3s;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            background: #f0f0f0;
         }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline: none; 
-            border-color: var(--gold); 
-            background: #fff; 
-            box-shadow: 0 0 8px rgba(176, 141, 87, 0.2);
+        .pdf-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
-        
+
         .btn {
             background: var(--gold);
             color: #fff;
@@ -160,31 +128,31 @@
             width: 100%;
             box-sizing: border-box;
             transition: background 0.3s;
+            margin-top: 15px;
         }
         .btn:hover { background: #9a7b4b; }
+        .btn-dark { background: var(--dark); }
         
-        #success-msg { 
-            display: none; 
-            color: #15803d; 
-            font-weight: bold; 
-            text-align: center; 
-            margin-top: 15px; 
-            background: #dcfce7; 
-            padding: 15px; 
-            border-radius: 8px; 
+        /* FORM STYLES */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; color: #555; text-transform: uppercase; letter-spacing: 0.5px;}
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 14px; border: 1px solid #ccc; border-radius: 8px;
+            box-sizing: border-box; font-family: inherit; font-size: 16px;
+            background: #fafafa; transition: all 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; border-color: var(--gold); background: #fff; box-shadow: 0 0 8px rgba(176, 141, 87, 0.2);
         }
         
-        .footer { 
-            text-align: center; 
-            font-size: 12px; 
-            color: #888; 
-            padding: 20px 0 40px; 
-        }
+        #success-msg { display: none; color: #15803d; font-weight: bold; text-align: center; margin-top: 15px; background: #dcfce7; padding: 15px; border-radius: 8px; }
+        
+        .footer { text-align: center; font-size: 12px; color: #888; padding: 20px 0 40px; }
     </style>
 </head>
 <body>
 
-    <!-- HERO SECTION (Cover Image Background) -->
+    <!-- HERO SECTION -->
     <div class="hero">
         <div class="hero-content">
             <h1>MODULE STUDIO</h1>
@@ -195,21 +163,26 @@
 
     <div class="container">
         
+        <!-- EMBEDDED PDF SECTION -->
+        <div class="card" style="border-top: 4px solid var(--gold);">
+            <h2 class="section-title">Our Portfolio</h2>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Swipe through our latest design brochure below.</p>
+            
+            <div class="pdf-container">
+                <!-- Google Drive Embed Link -->
+                <iframe src="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/preview" allow="autoplay"></iframe>
+            </div>
+            
+            <!-- Button to open fullscreen (preview mode so it doesn't force download) -->
+            <a href="https://drive.google.com/file/d/15J7PKr-XfV9-6NUJuvpwDNCptqH502r3/view" target="_blank" class="btn btn-dark">
+                🔍 View Full Screen
+            </a>
+        </div>
+
         <!-- About Section -->
         <div class="card">
             <h2 class="section-title">About Us</h2>
             <p>At Module Studio, we create interiors that blend aesthetics with functionality, tailored to your lifestyle or business needs. We create innovative concepts to transform your living space into something truly special.</p>
-        </div>
-
-        <!-- Services Section -->
-        <div class="card">
-            <h2 class="section-title">Our Expertise</h2>
-            <ul class="service-list">
-                <li><b>Residential Spaces</b> Living rooms, modular kitchens, luxury bedrooms.</li>
-                <li><b>Commercial Spaces</b> Showrooms, cafes, restaurants, retail stores.</li>
-                <li><b>Office Spaces</b> Ergonomic workspaces, corporate lobbies, meeting rooms.</li>
-                <li><b>Vastu Consultation</b> Aligning layouts with ancient principles for harmony.</li>
-            </ul>
         </div>
 
         <!-- Enquiry Form Section -->
@@ -235,10 +208,6 @@
                         <option value="Modular Kitchen">Modular Kitchen</option>
                         <option value="Vastu">Vastu Consultation</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label>Budget (Optional)</label>
-                    <input type="text" id="eq_budget" placeholder="e.g. 5-10 Lakhs">
                 </div>
                 <div class="form-group">
                     <label>Message (Optional)</label>
@@ -267,41 +236,31 @@
             btn.textContent = 'Sending...';
             btn.disabled = true;
 
-            // Get form data
             const enqData = {
                 id: 'e' + Date.now().toString(36),
                 name: document.getElementById('eq_name').value.trim(),
                 phone: document.getElementById('eq_phone').value.trim(),
                 project: document.getElementById('eq_project').value,
-                budget: document.getElementById('eq_budget').value.trim(),
+                budget: '-', 
                 notes: document.getElementById('eq_notes').value.trim(),
                 status: 'Enquiry',
                 date: new Date().toISOString(),
                 platform: 'Public Brochure'
             };
 
-            // Send to Google Sheets
             fetch(GOOGLE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ 
-                    action: 'save', 
-                    collection: 'enquiries',
-                    id: enqData.id,
-                    data: enqData,
-                    apiKey: API_KEY
-                })
+                body: JSON.stringify({ action: 'save', collection: 'enquiries', id: enqData.id, data: enqData, apiKey: API_KEY })
             })
             .then(res => res.json())
             .then(res => {
-                // Show success message
                 document.getElementById('public-enq-form').reset();
                 document.getElementById('success-msg').style.display = 'block';
                 btn.textContent = 'Sent Successfully';
                 btn.style.background = '#15803d';
                 
-                // Trigger WhatsApp Alert to Owner (You)
-                const wText = `🚨 NEW LEAD from Brochure!\n\nClient: ${enqData.name}\nPhone: ${enqData.phone}\nProject: ${enqData.project}\nBudget: ${enqData.budget}\nNotes: ${enqData.notes}`;
+                const wText = `🚨 NEW LEAD from Brochure!\n\nClient: ${enqData.name}\nPhone: ${enqData.phone}\nProject: ${enqData.project}\nNotes: ${enqData.notes}`;
                 const waUrl = `https://wa.me/919830051060?text=${encodeURIComponent(wText)}`;
                 window.open(waUrl, '_blank');
             })
