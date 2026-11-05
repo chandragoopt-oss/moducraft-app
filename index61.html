@@ -32,14 +32,15 @@
   .workspace-grid { display: grid; grid-template-columns: minmax(240px, 280px) minmax(400px, 1fr) minmax(260px, 320px); gap: 15px; padding: 15px 20px; flex: 1; overflow: hidden; }
   .panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
   .panel-header { padding: 10px 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-main); font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
-  .panel-header:hover { background: var(--border-color); cursor: pointer; }
-
+  
   /* LEFT COLUMN (Elevations) */
   .left-col { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
-  .elevation-box { height: 200px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+  .elevation-box { height: 180px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
   .elev-canvas { flex: 1; position: relative; background: #fdfdfd; overflow: hidden; }
   .env-floor { position: absolute; bottom: 0; width: 100%; height: 4px; background: #374151; z-index: 10; }
   .env-ceiling { position: absolute; top: 0; width: 100%; height: 4px; background: #9ca3af; z-index: 10; }
+  .elev-module { position: absolute; background: var(--accent-green); border: 1px solid #047857; opacity: 0.9; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: bold; cursor: move; touch-action: none; }
+  .elev-module.selected { outline: 2px solid var(--accent-yellow); z-index: 50; }
 
   /* CENTER PLAN */
   .center-col { background: #e5e7eb; position: relative; }
@@ -50,20 +51,10 @@
 
   /* PLAN SHAPES & MODULES */
   .plan-canvas { position: absolute; transform-origin: 0 0; transition: transform 0.1s; }
-  .room-shape { position: absolute; inset: 0; background: #fdfdfd; box-shadow: 0 0 0 8px #9ca3af; pointer-events: none; }
-  .module { position: absolute; background: var(--accent-blue); color: white; border: 2px solid #1d4ed8; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: move; box-shadow: 0 4px 6px rgba(0,0,0,0.1); touch-action: none; z-index: 10; }
+  .module { position: absolute; background: var(--accent-blue); color: white; border: 2px solid #1d4ed8; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-align: center; line-height: 1.1; cursor: move; box-shadow: 0 4px 6px rgba(0,0,0,0.1); touch-action: none; z-index: 10; }
   .module.selected { outline: 3px solid var(--accent-yellow); outline-offset: 2px; z-index: 50; }
 
-  /* ELEVATION MODULES */
-  .elev-static { position: absolute; bottom: 4px; background: #9ca3af; border: 1px solid #4b5563; opacity: 0.8; color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-  .elev-module { position: absolute; background: var(--accent-green); border: 2px solid #047857; opacity: 0.9; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: bold; cursor: move; touch-action: none; }
-  .elev-module.ghost { opacity: 0.4; background: repeating-linear-gradient(45deg, #10b981, #10b981 10px, #059669 10px, #059669 20px); cursor: not-allowed; pointer-events: none; }
-  .elev-module.selected { outline: 3px solid var(--accent-yellow); outline-offset: 2px; z-index: 50; }
-
   /* GUIDES & TAGS */
-  .guide-line { position: absolute; background: var(--accent-red); display: none; z-index: 90; pointer-events: none; }
-  .guide-x { width: 100%; height: 1px; left: 0; }
-  .guide-y { width: 1px; height: 100%; top: 0; }
   .dim-tag { position: absolute; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 95; display: none; }
   .float-3d-btn { position: absolute; bottom: 15px; right: 15px; background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 6px; }
 
@@ -75,20 +66,20 @@
   .btn-row { display: flex; gap: 5px; flex-wrap: wrap; }
   .btn-row button { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 4px; font-size: 12px; cursor: pointer; flex: 1; text-align: center; }
   .btn-row button:hover { background: var(--border-color); }
-  .btn-row button.active { background: var(--accent-blue); color: white; }
-
+  
   .properties-panel { flex: 1; overflow-y: auto; }
   .properties-content { padding: 15px; font-size: 13px; }
   .prop-form { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
   .prop-form label { font-size: 12px; color: var(--text-muted); }
-  .prop-form input, .prop-form select { width: 100%; padding: 8px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 13px; margin-top: 4px; }
+  .prop-form input { width: 100%; padding: 8px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 13px; margin-top: 4px; }
 
   /* MODALS */
   .quick-add-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-start; justify-content: center; z-index: 10000; padding-top: 15vh; }
-  .quick-add-box { background: var(--bg-panel); width: 90%; max-width: 500px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: hidden; border: 1px solid var(--border-color); }
-  .quick-add-box input { width: 100%; padding: 16px 20px; font-size: 18px; border: none; border-bottom: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); outline: none; }
-  .quick-add-list { max-height: 300px; overflow-y: auto; }
-  .quick-add-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; }
+  .quick-add-box { background: var(--bg-panel); width: 90%; max-width: 500px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: hidden; border: 1px solid var(--border-color); display: flex; flex-direction: column; max-height: 70vh; }
+  .quick-add-box input { width: 100%; padding: 16px 20px; font-size: 18px; border: none; border-bottom: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); outline: none; flex-shrink: 0; }
+  .quick-add-list { overflow-y: auto; flex: 1; padding-bottom: 10px; }
+  .quick-add-cat { padding: 8px 20px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: var(--text-muted); background: var(--bg-main); position: sticky; top: 0; }
+  .quick-add-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; font-size: 14px; }
   .quick-add-item:hover { background: var(--accent-blue); color: #fff; }
 
   .custom-context-menu { position: fixed; display: none; z-index: 10000; background: var(--bg-panel); border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-radius: 6px; min-width: 180px; padding: 5px 0; }
@@ -121,7 +112,6 @@
           <option value="rectangle">Rectangle</option>
           <option value="l-shape">L-Shape</option>
           <option value="u-shape">U-Shape</option>
-          <option value="freehand">Freehand (Draw)</option>
         </select>
       </div>
     </div>
@@ -132,8 +122,6 @@
     <div class="action-tabs">
       <button class="active" onclick="updateRightPanel('View & Tools', this)">View & Tools</button>
       <button onclick="updateRightPanel('Room Setting', this)">Room Setting</button>
-      <button onclick="updateRightPanel('Add To Wall', this)">Add To Wall</button>
-      <button onclick="updateRightPanel('Warning of Conflict', this)">Warning of Conflict</button>
     </div>
   </div>
 
@@ -162,12 +150,10 @@
     <div class="panel center-col" id="box-center" data-view="plan">
       <div class="panel-header" onclick="showContextMenu(event, this.parentElement)">
         <span id="center-title">Plan View</span> 
-        <span style="font-size:11px;color:var(--text-muted);font-weight:normal">(Scroll to Zoom, Drag to Pan)</span>
+        <span style="font-size:11px;color:var(--text-muted);font-weight:normal">(Scroll to Zoom)</span>
       </div>
       
       <div class="plan-viewport" id="viewport">
-        <div class="guide-line guide-x" id="guide-x"></div>
-        <div class="guide-line guide-y" id="guide-y"></div>
         <div class="dim-tag" id="dim-tag">800mm</div>
 
         <div class="view-container active" id="view-plan">
@@ -218,12 +204,6 @@
               <button onclick="rotateModule(1)">↻</button>
             </div>
           </div>
-          <div class="tool-group">
-            <div class="btn-row">
-              <button onclick="undoAction()">↶ Undo</button>
-              <button onclick="redoAction()">↷ Redo</button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -242,10 +222,8 @@
   <!-- Modals -->
   <div class="quick-add-modal" id="quick-add-modal">
     <div class="quick-add-box">
-      <input type="text" id="quick-add-input" placeholder="Search modules... (e.g. Wardrobe, Sink)" onkeyup="filterQuickAdd()">
-      <div class="quick-add-list" id="quick-add-list">
-        <!-- Populated dynamically -->
-      </div>
+      <input type="text" id="quick-add-input" placeholder="Search your modules..." onkeyup="filterQuickAdd()">
+      <div class="quick-add-list" id="quick-add-list"></div>
     </div>
   </div>
 
@@ -260,36 +238,46 @@
 <script>
   const viewport = document.getElementById('viewport');
   const plan = document.getElementById('plan');
-  const guideX = document.getElementById('guide-x');
-  const guideY = document.getElementById('guide-y');
   const dimTag = document.getElementById('dim-tag');
   const ctxMenu = document.getElementById('ctx-menu');
-  const tabContent = document.getElementById('tab-content');
 
   window.modules = [];
   let selectedId = null;
   let isDragging = false, dragType = '', startX, startY, startLeft, startTop;
-  let isPanning = false, panX = 0, panY = 0, currentZoom = 1;
+  let currentZoom = 1, panX = 0, panY = 0;
   const snapThreshold = 15; 
-  let userHasPanned = false;
 
   window.ROOM_WIDTH = 800;  
   window.ROOM_HEIGHT = 600; 
   window.CEILING_HEIGHT = 240;
   window.CURRENT_SHAPE = 'rectangle';
 
-  // Standard modules list extracted from your backend
-  const STANDARD_MODULES = [
-    { n: 'Wardrobe', mk: 'wh3', cat: 'base', w: 120, h: 220 },
-    { n: 'Kitchen Base Unit', mk: 'kb2', cat: 'base', w: 60, h: 86 },
-    { n: 'TV Unit', mk: 'tvb', cat: 'base', w: 120, h: 45 },
-    { n: 'Dresser', mk: 'drs', cat: 'base', w: 80, h: 80 },
-    { n: 'Loft', mk: 'kl2', cat: 'loft', w: 100, h: 45 },
-    { n: 'Wall Unit', mk: 'kw2', cat: 'wall', w: 60, h: 72 },
-    { n: 'Bed (Queen)', mk: 'bdpl', cat: 'base', w: 160, h: 90 }
-  ];
+  // Fetch actual modules from the parent app (app.js has MODS)
+  function getBackendModules() {
+    let list = [];
+    // If MODS exists (pulled from parent), use it
+    if (typeof MODS !== 'undefined') {
+      Object.values(MODS).forEach(m => {
+        if (!m.au) { // skip auto-generated parts
+          let cat = 'Base / Floor';
+          if (m.ty === 'wall') cat = 'Wall Units';
+          else if (m.ty === 'loft') cat = 'Loft Units';
+          else if (m.ty === 'tall') cat = 'Tall Units';
+          
+          list.push({ id: m.id, n: m.n, cat: cat, w: m.w0 || 60, h: m.h || 80 });
+        }
+      });
+    } else {
+      // Fallback if opened standalone
+      list = [
+        { id: 'wh3', n: 'Wardrobe (3 Door)', cat: 'Base / Floor', w: 120, h: 220 },
+        { id: 'kb2', n: 'Kitchen Base (2 Door)', cat: 'Base / Floor', w: 60, h: 86 }
+      ];
+    }
+    return list.sort((a,b) => a.cat.localeCompare(b.cat) || a.n.localeCompare(b.n));
+  }
 
-  // --- 1. SHAPE ENGINE ---
+  // --- SHAPE ENGINE ---
   window.changeRoomShape = function(shape) {
     CURRENT_SHAPE = shape;
     if (shape === 'l-shape') {
@@ -304,13 +292,8 @@
     saveState();
   };
 
-  // --- 2. RENDER PLAN ---
+  // --- RENDER PLAN ---
   function renderPlanHTML() {
-    const pctL = (mm) => (mm / ROOM_WIDTH) * 100;
-    const pctT = (mm) => (mm / ROOM_HEIGHT) * 100;
-    const pctW = (mm) => (mm / ROOM_WIDTH) * 100;
-    const pctH = (mm) => (mm / ROOM_HEIGHT) * 100;
-    
     let modulesHtml = '';
     window.modules.forEach(m => {
         modulesHtml += `
@@ -320,30 +303,30 @@
           </div>`;
     });
 
-    let shapeHtml = '';
+    // Using SVG for perfect room shapes
+    let shapeSvg = '';
     if (CURRENT_SHAPE === 'l-shape') {
-        shapeHtml = `<div style="position:absolute; top:0; left:0; width:100%; height:60%; background:#fdfdfd; border:8px solid #9ca3af; border-right:none;"></div>
-                     <div style="position:absolute; bottom:0; right:0; width:60%; height:40%; background:#fdfdfd; border:8px solid #9ca3af; border-top:none; border-left:none;"></div>
-                     <div style="position:absolute; bottom:40%; right:40%; width:20%; height:20%; background:var(--bg-main); border-bottom:8px solid #9ca3af; border-right:8px solid #9ca3af;"></div>`;
+        shapeSvg = `<svg width="100%" height="100%" style="position:absolute; inset:0; pointer-events:none;">
+          <path d="M 8,8 L ${ROOM_WIDTH-8},8 L ${ROOM_WIDTH-8},${ROOM_HEIGHT*0.6} L ${ROOM_WIDTH*0.6},${ROOM_HEIGHT*0.6} L ${ROOM_WIDTH*0.6},${ROOM_HEIGHT-8} L 8,${ROOM_HEIGHT-8} Z" 
+                fill="#fdfdfd" stroke="#9ca3af" stroke-width="8" stroke-linejoin="round" />
+        </svg>`;
     } else if (CURRENT_SHAPE === 'u-shape') {
-        shapeHtml = `<div style="position:absolute; top:0; left:0; width:100%; height:100%; background:#fdfdfd; border:8px solid #9ca3af;"></div>
-                     <div style="position:absolute; bottom:0; left:30%; width:40%; height:40%; background:var(--bg-main); border-top:8px solid #9ca3af; border-left:8px solid #9ca3af; border-right:8px solid #9ca3af;"></div>`;
+        shapeSvg = `<svg width="100%" height="100%" style="position:absolute; inset:0; pointer-events:none;">
+          <path d="M 8,8 L ${ROOM_WIDTH-8},8 L ${ROOM_WIDTH-8},${ROOM_HEIGHT-8} L ${ROOM_WIDTH*0.7},${ROOM_HEIGHT-8} L ${ROOM_WIDTH*0.7},${ROOM_HEIGHT*0.5} L ${ROOM_WIDTH*0.3},${ROOM_HEIGHT*0.5} L ${ROOM_WIDTH*0.3},${ROOM_HEIGHT-8} L 8,${ROOM_HEIGHT-8} Z" 
+                fill="#fdfdfd" stroke="#9ca3af" stroke-width="8" stroke-linejoin="round" />
+        </svg>`;
     } else {
-        shapeHtml = `<div style="position:absolute; inset:0; background:#fdfdfd; border:8px solid #9ca3af;"></div>`;
+        shapeSvg = `<svg width="100%" height="100%" style="position:absolute; inset:0; pointer-events:none;">
+          <rect x="8" y="8" width="${ROOM_WIDTH-16}" height="${ROOM_HEIGHT-16}" fill="#fdfdfd" stroke="#9ca3af" stroke-width="8" />
+        </svg>`;
     }
 
-    return `
-      ${shapeHtml}
-      ${modulesHtml}
-    `;
+    return shapeSvg + modulesHtml;
   }
 
-  // --- 3. RENDER ELEVATIONS ---
+  // --- RENDER ELEVATIONS ---
   function renderElevationHTML(wall) {
     let html = `<div class="env-floor"></div><div class="env-ceiling"></div>`;
-    
-    // Simplified static elements for visual reference
-    if (wall === 'A') html += `<div class="elev-static" style="left: 10%; width: 20%; height: 80%;">Static Ref</div>`;
     
     window.modules.forEach(mod => {
         if (mod.wall !== wall) return;
@@ -361,7 +344,7 @@
     return html;
   }
 
-  // --- 4. UPDATE ALL VIEWS ---
+  // --- UPDATE ALL VIEWS ---
   function updateAllViews() {
     window.modules.forEach(mod => {
         mod.left = Math.max(0, Math.min(ROOM_WIDTH - mod.width, mod.left));
@@ -384,10 +367,12 @@
         const altWrapper = document.querySelector('#alt-content .zoom-wrapper');
         if (altWrapper) altWrapper.innerHTML = renderElevationHTML(wall);
     }
-    updateRightPanelInputs();
+    
+    // Refresh right panel
+    window.updateRightPanel(null, null);
   }
 
-  // --- 5. VIEW SWITCHING ---
+  // --- VIEW SWITCHING ---
   window.changeView = function(viewType, targetBox) {
     if (!targetBox) targetBox = document.getElementById('box-center');
     targetBox.setAttribute('data-view', viewType);
@@ -414,10 +399,25 @@
     ctxMenu.style.display = 'none';
   };
 
-  // --- 6. MODULE ADDING ---
+  // --- MODULE ADDING ---
   window.openAddModuleModal = function() {
     const list = document.getElementById('quick-add-list');
-    list.innerHTML = STANDARD_MODULES.map(m => `<div class="quick-add-item" onclick="addModule('${m.n}', '${m.mk}', ${m.cat === 'loft' ? 200 : 0})">${m.n}</div>`).join('');
+    const bMods = getBackendModules();
+    let html = '';
+    let currentCat = '';
+    
+    bMods.forEach(m => {
+      if (m.cat !== currentCat) {
+        html += `<div class="quick-add-cat">${m.cat}</div>`;
+        currentCat = m.cat;
+      }
+      html += `<div class="quick-add-item" data-search="${m.n.toLowerCase()}" onclick="addModule('${m.n.replace(/'/g,"\\'")}', '${m.id}', '${m.cat.includes('Loft') ? 200 : 0}')">
+                 <span>${m.n}</span>
+                 <span style="font-size:11px; opacity:0.6">${m.w}cm</span>
+               </div>`;
+    });
+    
+    list.innerHTML = html;
     document.getElementById('quick-add-modal').style.display = 'flex';
     document.getElementById('quick-add-input').value = '';
     document.getElementById('quick-add-input').focus();
@@ -425,7 +425,9 @@
 
   window.filterQuickAdd = function() {
     const q = document.getElementById('quick-add-input').value.toLowerCase();
-    document.querySelectorAll('.quick-add-item').forEach(el => { el.style.display = el.innerText.toLowerCase().includes(q) ? 'flex' : 'none'; });
+    document.querySelectorAll('.quick-add-item').forEach(el => { 
+      el.style.display = el.dataset.search.includes(q) ? 'flex' : 'none'; 
+    });
   };
 
   window.addModule = function(type, mk, zHeight) { 
@@ -436,7 +438,7 @@
         mk: mk,
         left: Math.round(ROOM_WIDTH / 2 - 40),
         top: Math.round(ROOM_HEIGHT / 2 - 40),
-        z: zHeight,
+        z: parseInt(zHeight),
         width: 80,
         height: 80,
         rotation: 0,
@@ -446,10 +448,9 @@
     selectedId = newMod.id;
     saveState();
     updateAllViews();
-    updateRightPanel('View & Tools', document.querySelector('.action-tabs button'));
   };
 
-  // --- 7. DRAGGING & SELECTION ---
+  // --- DRAGGING & SELECTION ---
   document.addEventListener('mousedown', (e) => {
     const modEl = e.target.closest('.module, .elev-module');
     if (modEl) {
@@ -463,17 +464,16 @@
         
         if (modEl.classList.contains('elev-module')) {
             dragType = 'elev';
-            if (e.target.closest('.elevation-box')) mod.wall = e.target.closest('.elevation-box').getAttribute('data-view').replace('wall', '');
+            const box = e.target.closest('.elevation-box');
+            if (box) mod.wall = box.getAttribute('data-view').replace('wall', '');
         } else {
             dragType = 'plan';
         }
         
         updateAllViews();
-        updateRightPanel('View & Tools', document.querySelector('.action-tabs button'));
     } else {
         selectedId = null;
         updateAllViews();
-        updateRightPanel('View & Tools', document.querySelector('.action-tabs button'));
     }
   });
 
@@ -489,6 +489,7 @@
         let newLeft = startLeft + dx;
         let newTop = startTop + dy;
         
+        // Snapping
         if (document.getElementById('snap-wall').checked) {
             if (Math.abs(newLeft) < snapThreshold) newLeft = 0;
             if (Math.abs(newTop) < snapThreshold) newTop = 0;
@@ -499,7 +500,7 @@
         mod.left = newLeft;
         mod.top = newTop;
         
-        // Auto-detect wall
+        // Auto-detect which wall it's closest to based on position
         if (mod.top < 20) mod.wall = 'A';
         else if (mod.top + mod.height > ROOM_HEIGHT - 20) mod.wall = 'C';
         else if (mod.left < 20) mod.wall = 'D';
@@ -520,7 +521,7 @@
     }
   });
 
-  // --- 8. ZOOM & PAN ---
+  // --- ZOOM & PAN ---
   function applyTransform() {
       if (plan) plan.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
   }
@@ -556,7 +557,7 @@
     if (mod) { mod.rotation += dir * (parseInt(document.getElementById('rot-step').value) || 90); updateAllViews(); }
   };
 
-  // --- 9. UI HELPERS ---
+  // --- UI HELPERS ---
   function initializeViews() {
     plan.style.width = ROOM_WIDTH + 'px';
     plan.style.height = ROOM_HEIGHT + 'px';
@@ -564,8 +565,10 @@
   }
 
   window.updateRightPanel = function(tabName, btnElement) {
-    document.querySelectorAll('.action-tabs button').forEach(b => b.classList.remove('active'));
-    if (btnElement) btnElement.classList.add('active');
+    if (btnElement) {
+        document.querySelectorAll('.action-tabs button').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
     
     const titleEl = document.getElementById('prop-title');
     const bodyEl = document.getElementById('prop-body');
@@ -595,21 +598,18 @@
 
   document.addEventListener('click', (e) => { if (!e.target.closest('.panel-header')) ctxMenu.style.display = 'none'; });
 
-  // --- 10. HISTORY (Simplified for stability) ---
-  let lastSavedSerialized = '';
-  function serializeState() { return JSON.stringify({ modules: window.modules, W: ROOM_WIDTH, H: ROOM_HEIGHT, shape: CURRENT_SHAPE }); }
-  function saveState() { lastSavedSerialized = serializeState(); }
-  window.undoAction = function() { alert('Undo will be fully wired in the next step!'); };
-  window.redoAction = function() { alert('Redo will be fully wired in the next step!'); };
+  // --- HISTORY (Simplified) ---
+  function saveState() { }
+  window.undoAction = function() { alert('Undo coming soon!'); };
+  window.redoAction = function() { alert('Redo coming soon!'); };
 
-  // --- 11. INITIALIZE ---
+  // --- INITIALIZE ---
   initializeViews();
   centerPlan();
 
   /* -------- PREVIEW BRIDGE -------- */
   const { quoteId, roomIdx } = window.__dsParams;
   
-  // Load room data
   try {
     const saved = JSON.parse(localStorage.getItem('msq_v2') || 'null');
     if (saved && saved.q && saved.q[quoteId] && saved.q[quoteId].rooms && saved.q[quoteId].rooms[roomIdx]) {
@@ -621,7 +621,6 @@
       }
       if (room.name) document.getElementById('room-name-input').value = room.name;
       
-      // Load existing modules
       const existingDS = (room.rows || []).filter(r => r._fromDS && r.fpId);
       if (existingDS.length) {
         window.modules = existingDS.map(r => ({
@@ -636,7 +635,6 @@
     }
   } catch(e) {}
 
-  // Save handler
   window.addEventListener('message', function(ev) {
     if (!ev.data || ev.data.type !== 'ds-request-save') return;
     try {
