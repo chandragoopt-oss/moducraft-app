@@ -294,6 +294,59 @@ vPrev = function() {
         const payHtmlNew = q.pay.map(p => `<tr><td>${esc(p.m)}<td class="r">${esc(p.p)}%<td>${esc(p.t)}<td class="r">${fmt(cGt*(parseFloat(p.p)||0)/100)}</tr>`).join('');
         if (payHtmlOld.length > 0) html = html.replace(payHtmlOld, payHtmlNew);
     }
+        // Force warranty to appear on the preview screen
+    if (!html.includes('id="warranty-page"')) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const tbody = tempDiv.querySelector('table.doc > tbody > tr > td');
+        if (tbody && tbody.querySelector('.hero')) {
+            tbody.insertAdjacentHTML('beforeend', `
+            <div class="pg" id="warranty-page" style="break-before: page; font-size: 11px; line-height: 1.5;">
+                <h2 style="text-align:center;letter-spacing:3px; margin-bottom: 5px; font-size: 18px;">LIMITED WARRANTY & SERVICE POLICY</h2>
+                <p class="nt" style="text-align:center;margin-bottom:15px; font-size: 11px;"><b>Module Studio</b> | Website: www.modulestudio.in<br>Customer Care: 9830864409 (Call & WhatsApp)</p>
+                <div style="border: 2px solid #B08D57; border-radius: 8px; padding: 12px; margin-bottom: 20px; background-color: #fffaf0;">
+                    <h3 style="color: #B08D57; margin-top: 0; margin-bottom: 8px; font-size: 14px;">📋 Quick Summary</h3>
+                    <p style="margin: 0 0 4px 0;">• <b>10-Year Warranty</b> on all structural materials (carcass) and shutters manufactured by us.</p>
+                    <p style="margin: 0 0 4px 0;">• <b>OEM Warranty</b> applies to hardware, appliances, electricals, and mirrors.</p>
+                    <p style="margin: 0;">• <b>Not Covered:</b> Water damage/seepage, natural wear & tear, pests, or misuse.</p>
+                </div>
+                <p class="nt" style="margin-bottom: 15px;">This document constitutes the formal warranty and service terms for the interior solutions provided by Module Studio. By accepting the quotation and engaging our services, the Customer agrees to the following terms:</p>
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">1. THE 10-YEAR MATERIAL GUARANTEE</div>
+                <p class="nt" style="margin-bottom: 8px;">We strictly utilize premium-grade, highly durable materials. We expressly <b>do not use MDF</b> in our structural applications. We exclusively work with MR, BWR, BWP Plywood, and HDHMR boards.</p>
+                <p class="nt" style="margin-bottom: 12px;">Subject to the limitations below, Module Studio provides a <b>10-Year Warranty</b> on the core structural materials (carcass) and shutters manufactured by us. This covers manufacturing defects, structural delamination, and edge-banding failure under standard residential use.</p>
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">2. THIRD-PARTY COMPONENTS (OEM WARRANTIES)</div>
+                <p class="nt" style="margin-bottom: 6px;">Certain components are procured from Original Equipment Manufacturers (OEMs) and are governed by their respective warranty terms:</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Hardware & Accessories:</b> Hinges, channels, handles, and moving parts carry the OEM’s standard warranty.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Appliances & Sanitary Fixtures:</b> Chimneys, hobs, sinks, taps, etc., carry the OEM’s warranty. Labor/cleaning charges for servicing will be borne by the Customer.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Electricals & Lighting:</b> Switches, lights, and wiring carry the OEM’s warranty. Module Studio is not liable for wiring defects post-handover.</p>
+                <p class="nt" style="margin-bottom: 12px;">• <b>Mirrors:</b> A 1-year warranty applies strictly to the electrical/LED components only. No warranty on the mirror glass itself.</p>
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">3. ITEMS EXPRESSLY EXCLUDED (NO WARRANTY)</div>
+                <p class="nt" style="margin-bottom: 4px;">• Countertops (Material), Civil work, Tiling, and Gas Piping.</p>
+                <p class="nt" style="margin-bottom: 4px;">• Fragile items (Mirror glass, loose glass, etc.).</p>
+                <p class="nt" style="margin-bottom: 4px;">• Wallpapers (including base preparation and seepage-related peeling).</p>
+                <p class="nt" style="margin-bottom: 12px;">• Home Automation systems (Smart locks, Wi-Fi cameras, etc.).</p>
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">4. LIMITATIONS OF LIABILITY & WARRANTY VOIDANCE</div>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Water Damage & Seepage:</b> Damage resulting from continuous dampness or leakage exceeding material tolerance (e.g., continuous exposure beyond 72 hours for BWP, 48 hours for BWR, and 24 hours for HDHMR).</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Normal Wear & Tear:</b> Scratches, dents, chipping, or discoloration from daily use.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Environmental Factors:</b> Fading or degradation due to excessive direct sunlight, heat, or moisture.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Misuse & Negligence:</b> Accidents, improper handling, overloading (e.g., tandem units), or exposure to harsh chemicals (e.g., turpentine).</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Pests & Rusting:</b> Damage caused by termites, rodents, or household chemicals causing rust.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Force Majeure:</b> Acts of God (floods, earthquakes, fire, pandemics).</p>
+                <p class="nt" style="margin-bottom: 12px;">• <b>Unauthorized Modifications or Transfer of Ownership:</b> Alterations by third parties, or if the property is sold.</p>
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">5. CLAIMS PROCEDURE</div>
+                <p class="nt" style="margin-bottom: 4px;">• <b>How to reach us:</b> Visit www.modulestudio.in, or call/WhatsApp us at 9830864409.</p>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Inspection:</b> An authorized representative will inspect the site to validate the claim.</p>
+                <p class="nt" style="margin-bottom: 12px;">• <b>Resolution:</b> If approved, Module Studio will repair or replace the defective product at its discretion. Replaced products carry the original warranty period only; no new warranty applies.</p>
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">6. SERVICE & MAINTENANCE POLICY</div>
+                <p class="nt" style="margin-bottom: 4px;">• <b>Complimentary Service:</b> One (1) free service visit within 6 months of project handover.</p>
+                <p class="nt" style="margin-bottom: 12px;">• <b>Chargeable Service:</b> Post the 6-month period, any alignment or maintenance requests will be chargeable.</p>
+                <div class="sh" style="font-size: 12px; margin-top: 10px;">7. GOVERNING LAW & JURISDICTION</div>
+                <p class="nt" style="margin-bottom: 15px;">This warranty policy is governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts located in the city/state where the Customer's project site is situated.</p>
+                <p class="nt" style="font-style:italic;font-size:10px;margin-top:20px; color: #666;">(Disclaimer: Images provided in the quotation are for representational purposes only. Final products may vary slightly in texture and finish based on material batch availability and site conditions.)</p>
+            </div>`);
+            html = tempDiv.innerHTML;
+        }
+    }
     return html;
 };
 function injectMaterialSummary() {
@@ -2309,12 +2362,13 @@ const IO = srt(items,i=>i.n).map(i=>`<option>${esc(i.n)}</option>`).join('');
         grouped[dateLabel].forEach(e => {
           const stColor = e.status === 'Won' ? '#15803d' : e.status === 'Lost' ? '#b00020' : '#1F4E79';
           
-          let actionButtons = '';
+                    let actionButtons = '';
           if (e.isQuotation) {
               actionButtons = `<button class="g" data-a="oq" data-i="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit Quote</button>
                                <button class="g" data-a="pq" data-i="${e.id}" style="padding: 4px 8px; font-size: 12px; margin-left:4px;">Preview</button>`;
           } else {
-              actionButtons = `<button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+              actionButtons = `<button onclick="mcGenerateWAMsg('${e.id}')" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-right:4px;font-weight:bold;">💬 WA</button>
+              <button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>
               ${(() => {
                   const linkedQ = Object.values(S.q || {}).find(q => q.enqId === e.id);
                   if (!linkedQ) {
@@ -3178,22 +3232,5 @@ document.addEventListener('click', function(e) {
 document.getElementById('wa_result').style.display = 'block';
 document.getElementById('wa_generate').style.display = 'none';
         };
-    };
-
-        // 10. INJECT "WA GROUP" BUTTON INTO ENQUIRIES TAB
-    const origVEnq_WA = window.vEnq;
-    window.vEnq = function() {
-        let html = origVEnq_WA.apply(this, arguments);
-        
-        Object.values(window.ENQ).forEach(e => {
-            const waBtn = `<button onclick="mcGenerateWAMsg('${e.id}')" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-right:4px;font-weight:bold;">💬 WA Group</button>`;
-            
-            // Inject it before the Edit button
-            const target = `<button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>`;
-            if (html.includes(target) && !html.includes(`mcGenerateWAMsg('${e.id}')`)) {
-                html = html.replace(target, waBtn + target);
-            }
-        });
-        return html;
-    };
+    };        
 })();
