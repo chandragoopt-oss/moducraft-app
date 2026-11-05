@@ -27,18 +27,18 @@ let activeWall = 'A';
 let isDragging = false, dragType = '', startX, startY, startLeft, startTop;
 let isPanning = false, panStartX, panStartY;
 let currentZoom = 1, panX = 0, panY = 0;
-
-// --- WALL DEFINITIONS ---
+window.SHAPE_CUT = 0.4;   
+window.SHAPE_CUT_Y = 0.4;
 function getWallSegments() {
   const W = wallDims.A, H = wallDims.B;
   const walls = [];
   if (CURRENT_SHAPE === 'l-shape') {
-    walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W*0.6, y2: 0 });
-    walls.push({ id: 'B', name: 'B', x1: W*0.6, y1: 0, x2: W, y2: 0 });
-    walls.push({ id: 'C', name: 'C', x1: W, y1: 0, x2: W, y2: H*0.6 });
-    walls.push({ id: 'D', name: 'D', x1: W, y1: H*0.6, x2: W*0.6, y2: H*0.6 });
-    walls.push({ id: 'E', name: 'E', x1: W*0.6, y1: H*0.6, x2: W*0.6, y2: H });
-    walls.push({ id: 'F', name: 'F', x1: W*0.6, y1: H, x2: 0, y2: H });
+    walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W*(1-SHAPE_CUT), y2: 0 });
+    walls.push({ id: 'B', name: 'B', x1: W*(1-SHAPE_CUT), y1: 0, x2: W, y2: 0 });
+    walls.push({ id: 'C', name: 'C', x1: W, y1: 0, x2: W, y2: H*(1-SHAPE_CUT_Y) });
+    walls.push({ id: 'D', name: 'D', x1: W, y1: H*(1-SHAPE_CUT_Y), x2: W*SHAPE_CUT, y2: H*(1-SHAPE_CUT_Y) });
+    walls.push({ id: 'E', name: 'E', x1: W*SHAPE_CUT, y1: H*(1-SHAPE_CUT_Y), x2: W*SHAPE_CUT, y2: H });
+    walls.push({ id: 'F', name: 'F', x1: W*SHAPE_CUT, y1: H, x2: 0, y2: H });
     walls.push({ id: 'G', name: 'G', x1: 0, y1: H, x2: 0, y2: 0 });
   } else if (CURRENT_SHAPE === 'u-shape') {
     walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W*0.3, y2: 0 });
@@ -59,7 +59,6 @@ function getWallSegments() {
   }
   return walls;
 }
-
 // --- LOAD DATA ---
 function loadRoomsDropdown() {
   const select = document.getElementById('active-room-select');
