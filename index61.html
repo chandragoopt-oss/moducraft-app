@@ -6,81 +6,54 @@
 <title>Design Studio - ModuCraft</title>
 
 <style>
-  :root {
-    --bg-main: #f5f1ea; --bg-panel: #ffffff; --bg-input: #faf8f4;
-    --text-main: #24313A; --text-muted: #6b7280; --border-color: #E2DACB;
-    --accent-blue: #3b82f6; --accent-green: #10b981; --accent-red: #ef4444; --accent-yellow: #f59e0b;
-    --header-height: 60px;
-  }
-  [data-theme="dark"] {
-    --bg-main: #0f172a; --bg-panel: #1e293b; --bg-input: #0f172a;
-    --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155;
-  }
+  /* --- STYLES (Same clean CAD look) --- */
+  :root { --bg-main: #f5f1ea; --bg-panel: #ffffff; --bg-input: #faf8f4; --text-main: #24313A; --text-muted: #6b7280; --border-color: #E2DACB; --accent-blue: #3b82f6; --accent-green: #10b981; --accent-red: #ef4444; --accent-yellow: #f59e0b; --header-height: 60px; }
+  [data-theme="dark"] { --bg-main: #0f172a; --bg-panel: #1e293b; --bg-input: #0f172a; --text-main: #f8fafc; --text-muted: #94a3b8; --border-color: #334155; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
-
   .top-nav { display: flex; align-items: center; justify-content: space-between; background: var(--bg-panel); padding: 10px 20px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; height: var(--header-height); z-index: 1000; }
   .logo-area { display: flex; align-items: center; gap: 15px; }
   .logo-area h1 { margin: 0; font-size: 18px; }
-  
   .sub-header { display: flex; align-items: center; padding: 0 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); flex-shrink: 0; gap: 15px; overflow-x: auto; }
   .action-tabs { display: flex; gap: 2px; padding: 0; white-space: nowrap; }
   .action-tabs button { background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); padding: 12px 16px; font-size: 13px; font-weight: bold; cursor: pointer; }
   .action-tabs button.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); background: var(--bg-main); }
-  .action-tabs button:hover { color: var(--text-main); }
-
   .workspace-grid { display: grid; grid-template-columns: minmax(220px, 260px) minmax(400px, 1fr) minmax(280px, 320px); gap: 15px; padding: 15px 20px; flex: 1; overflow: hidden; }
   .panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
   .panel-header { padding: 10px 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-main); font-weight: bold; font-size: 12px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px; }
-  
   .left-col { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
   .elevation-box { height: 160px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; position: relative; cursor: pointer; transition: 0.2s; }
   .elevation-box:hover { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
   .elev-canvas { flex: 1; position: relative; background: #fdfdfd; overflow: hidden; }
   .env-floor { position: absolute; bottom: 0; width: 100%; height: 4px; background: #374151; z-index: 10; }
   .env-ceiling { position: absolute; top: 0; width: 100%; height: 4px; background: #9ca3af; z-index: 10; }
-  
-  /* Draggable Elements in Elevation */
   .elev-module { position: absolute; background: rgba(59, 130, 246, 0.8); border: 1px solid #1d4ed8; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: bold; cursor: move; z-index: 5; }
-  .elev-door { position: absolute; border: 2px solid #8b5a2b; border-bottom: none; background: #f5deb3; display: flex; align-items: flex-start; justify-content: center; padding-top: 4px; font-size: 9px; color: #5a3a1b; font-weight: bold; z-index: 5; cursor: move; }
+  .elev-door { position: absolute; bottom: 0; border: 2px solid #8b5a2b; border-bottom: none; background: #f5deb3; display: flex; align-items: flex-start; justify-content: center; padding-top: 4px; font-size: 9px; color: #5a3a1b; font-weight: bold; z-index: 5; cursor: move; }
   .elev-window { position: absolute; border: 2px solid #3b82f6; background: #bfdbfe; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #1e40af; font-weight: bold; z-index: 5; cursor: move; }
-  
   .center-col { background: #e5e7eb; position: relative; }
   .plan-viewport { flex: 1; overflow: hidden; margin: 10px; position: relative; border: 1px solid #888; background: #fff; box-shadow: inset 0 0 20px rgba(0,0,0,0.05); touch-action: none; cursor: grab;}
   .plan-viewport:active { cursor: grabbing; }
   .view-container { position: absolute; inset: 0; display: none; overflow: hidden; }
   .view-container.active { display: block; }
   .zoom-wrapper { width: 100%; height: 100%; position: relative; transform-origin: 0 0; transition: transform 0.1s; }
-
   .plan-canvas { position: absolute; transform-origin: 0 0; transition: transform 0.1s; }
-  
   .module { position: absolute; background: rgba(16, 185, 129, 0.85); color: white; border: 2px solid #047857; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-align: center; line-height: 1.1; cursor: move; box-shadow: 0 4px 6px rgba(0,0,0,0.1); touch-action: none; z-index: 10; }
   .module.selected { outline: 3px solid var(--accent-yellow); outline-offset: 2px; z-index: 50; }
-  
   .plan-door { position: absolute; background: #f5deb3; cursor: ew-resize; z-index: 5; border: 1px solid #8b5a2b; }
   .plan-window { position: absolute; background: #bfdbfe; cursor: ew-resize; z-index: 5; border: 1px solid #3b82f6; }
   .plan-pillar { position: absolute; background: #9ca3af; border: 1px solid #4b5563; z-index: 6; cursor: move; }
-  
-  .plan-door.selected, .plan-window.selected, .plan-pillar.selected { outline: 2px solid var(--accent-yellow); z-index: 60; }
-
   .float-3d-btn { position: absolute; bottom: 15px; right: 15px; background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 6px; }
-
   .right-col { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
   .toolbar-content { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
   .tool-group { border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 4px; }
-  .tool-group:last-child { border: none; margin-bottom: 0; }
   .tool-group-title { font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; display: block; font-weight: bold; }
   .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .btn-row button { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; flex: 1; text-align: center; }
-  .btn-row button:hover { background: var(--border-color); }
-  
   .properties-panel { flex: 1; overflow-y: auto; }
   .properties-content { padding: 15px; }
   .prop-form { display: flex; flex-direction: column; gap: 10px; }
   .prop-form label { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 2px; display: block; }
   .prop-form input, .prop-form select { width: 100%; padding: 8px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 13px; font-weight: bold; }
-  .prop-form input:focus { outline: 2px solid var(--accent-blue); }
-
   .quick-add-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-start; justify-content: center; z-index: 10000; padding-top: 10vh; }
   .quick-add-box { background: var(--bg-panel); width: 90%; max-width: 500px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: hidden; border: 1px solid var(--border-color); display: flex; flex-direction: column; max-height: 80vh; }
   .quick-add-box input { width: 100%; padding: 16px 20px; font-size: 18px; border: none; border-bottom: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); outline: none; flex-shrink: 0; }
@@ -88,15 +61,12 @@
   .quick-add-cat { padding: 8px 20px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: var(--text-muted); background: var(--bg-main); position: sticky; top: 0; }
   .quick-add-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; font-size: 14px; }
   .quick-add-item:hover { background: var(--accent-blue); color: #fff; }
-
-  .ctx-menu { position: fixed; display: none; background: var(--bg-panel); border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-radius: 6px; z-index: 10000; min-width: 180px; padding: 5px 0; }
-  .ctx-menu div { padding: 8px 15px; font-size: 13px; cursor: pointer; color: var(--text-main); }
-  .ctx-menu div:hover { background: var(--accent-blue); color: #fff; }
 </style>
 </head>
 <body data-theme="dark">
 
   <script>
+    // Read theme & room from URL
     (function() {
       const params = new URLSearchParams(location.search);
       const t = params.get('theme');
@@ -132,48 +102,40 @@
     <div class="action-tabs">
       <button class="active" onclick="updateRightPanel('View & Tools', this)">View & Tools</button>
       <button onclick="updateRightPanel('Room Setting', this)">Room Setting</button>
-      <button onclick="updateRightPanel('Add to Wall', this)">Add to Wall</button>
       <button onclick="updateRightPanel('Site Structure', this)">Site Structure</button>
       <button onclick="updateRightPanel('Auto Loft', this)">Auto Loft</button>
-      <button onclick="updateRightPanel('Export', this)">Export Drawing</button>
     </div>
   </div>
 
   <div class="workspace-grid">
-    <!-- LEFT: ELEVATIONS (Dynamically generated) -->
     <div class="left-col" id="elevations-container"></div>
 
-    <!-- CENTER: PLAN -->
     <div class="panel center-col" id="box-center" data-view="plan">
-      <div class="panel-header" onclick="changeView('plan')" style="cursor:pointer;" title="Click to return to Plan View">
+      <div class="panel-header" onclick="changeView('plan')" style="cursor:pointer;">
         <span id="center-title">Plan View</span> 
-        <span style="font-size:11px;color:var(--text-muted);font-weight:normal; text-transform:none;">(Scroll to Zoom, Drag to Pan)</span>
+        <span style="font-size:11px;color:var(--text-muted);font-weight:normal; text-transform:none;">(Scroll to Zoom)</span>
       </div>
       
       <div class="plan-viewport" id="viewport">
         <div class="view-container active" id="view-plan">
           <div class="plan-canvas" id="plan"></div>
         </div>
-
         <div class="view-container" id="view-alt">
           <div id="alt-content" style="width:100%; height:100%; position:relative;">
               <div class="zoom-wrapper"></div>
           </div>
         </div>
-
         <div class="float-3d-btn" onclick="changeView('persp')">
           <span>🧊</span> <span>3D View</span>
         </div>
       </div>
     </div>
 
-    <!-- RIGHT: TOOLBAR -->
     <div class="right-col">
       <div class="panel toolbar-panel">
         <div class="panel-header">Toolbar</div>
         <div class="toolbar-content" id="toolbar-content"></div>
       </div>
-
       <div class="panel properties-panel">
         <div class="panel-header">
           <span id="prop-title">Details</span>
@@ -193,15 +155,9 @@
     </div>
   </div>
 
-  <div class="ctx-menu" id="ctx-menu">
-    <div onclick="ctxSelect('view')">Open in Main Canvas</div>
-    <div onclick="ctxSelect('edit')">Edit Room Settings</div>
-  </div>
-
 <script>
   const viewport = document.getElementById('viewport');
   const plan = document.getElementById('plan');
-  const ctxMenu = document.getElementById('ctx-menu');
   let ctxViewTarget = null;
 
   window.modules = [];
@@ -217,7 +173,6 @@
   let isDragging = false, dragType = '', startX, startY, startLeft, startTop;
   let isPanning = false, panStartX, panStartY;
   let currentZoom = 1, panX = 0, panY = 0;
-  const snapThreshold = 15; 
 
   // --- WALL DEFINITIONS ---
   function getWallSegments() {
@@ -251,25 +206,7 @@
     return walls;
   }
 
-  // --- RIGHT CLICK CONTEXT MENU ---
-  window.showElevationContext = function(e, viewName) {
-    e.preventDefault();
-    ctxViewTarget = viewName;
-    ctxMenu.style.display = 'block';
-    ctxMenu.style.left = e.clientX + 'px';
-    ctxMenu.style.top = e.clientY + 'px';
-  };
-
-  window.ctxSelect = function(action) {
-    ctxMenu.style.display = 'none';
-    if (!ctxViewTarget) return;
-    if (action === 'view') changeView(ctxViewTarget);
-    if (action === 'edit') updateRightPanel('Room Setting', document.querySelector('[onclick*="Room Setting"]'));
-  };
-
-  document.addEventListener('click', (e) => { if (!e.target.closest('.elevation-box')) ctxMenu.style.display = 'none'; });
-
-  // --- DATA LOADING & ROUTING ---
+  // --- DATA LOADING ---
   function loadRoomsDropdown() {
     const select = document.getElementById('active-room-select');
     select.innerHTML = '';
@@ -303,7 +240,7 @@
         window.modules = existingDS.map(r => ({
           id: r.fpId, type: r.n, mk: r.mk || '', wall: r.wl || 'A',
           x: (r.x || 0) / 10, y: (r.y || 0) / 10, z: (r.z || 0) / 10,
-          width: (r.l || 0) / 10, height: (r.w || 0) / 10, depth: (r.d || 600) / 10, rotation: 0
+          width: (r.l || 0) / 10, height: (r.w || 0) / 10, depth: (r.d || 600) / 10
         }));
         if (room.siteElements) window.siteElements = room.siteElements.map(el => ({...el}));
       }
@@ -343,7 +280,6 @@
     svg += `</svg>`;
 
     let itemsHtml = '';
-    
     window.siteElements.forEach(el => {
         if (el.type === 'pillar') {
             let xPos = el.x + 100;
@@ -356,13 +292,11 @@
         if (el.type === 'pillar') return;
         let w = walls.find(w => w.id === el.wall);
         if(!w) return;
-        
         const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
         const pct = (el.x + el.width/2) / wallLen;
         const cx = w.x1 + (w.x2 - w.x1) * pct + 100;
         const cy = w.y1 + (w.y2 - w.y1) * pct + 100;
         const isHorizontal = Math.abs(w.y1 - w.y2) < 1;
-        
         itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%);"></div>`;
     });
 
@@ -402,7 +336,7 @@
       });
 
       html += `
-        <div class="elevation-box" onclick="changeView('wall${w.id}')" oncontextmenu="showElevationContext(event, 'wall${w.id}')">
+        <div class="elevation-box" onclick="changeView('wall${w.id}')">
           <div class="panel-header">Wall ${w.name} Elevation</div>
           <div class="elev-canvas" data-wall="${w.id}"><div class="zoom-wrapper">${content}</div></div>
         </div>
@@ -413,7 +347,6 @@
   }
 
   function updateAllViews() {
-    window.modules.forEach(mod => { mod.x = Math.max(0, Math.min(wallDims.A - mod.width, mod.x)); });
     plan.style.width = (wallDims.A + 200) + 'px';
     plan.style.height = (wallDims.B + 200) + 'px';
     plan.innerHTML = renderPlanHTML();
@@ -455,8 +388,8 @@
 
   window.updateRightPanel = function(tabName, btnElement) {
     if (btnElement) {
-        document.querySelectorAll('.action-tabs button').forEach(b => b.classList.remove('active'));
-        btnElement.classList.add('active');
+      document.querySelectorAll('.action-tabs button').forEach(b => b.classList.remove('active'));
+      btnElement.classList.add('active');
     }
     const tc = document.getElementById('toolbar-content');
     
@@ -474,10 +407,6 @@
               <div><label>Overall Width</label><input type="number" value="${wallDims.B*10}" onchange="wallDims.B = +this.value/10; updateAllViews(); centerPlan();"></div>
               <div><label>Ceiling Height</label><input type="number" value="${wallDims.H*10}" onchange="wallDims.H = +this.value/10; updateAllViews();"></div>
             </div>
-          </div>`;
-    } else if (tabName === 'Add to Wall') {
-        tc.innerHTML = `<div class="tool-group"><span class="tool-group-title">Add Module To Wall</span>
-            <button onclick="openAddModuleModal()" style="width:100%; background:var(--accent-blue); color:white; padding:10px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">+ Select Module from List</button>
           </div>`;
     } else if (tabName === 'Site Structure') {
         tc.innerHTML = `
@@ -497,12 +426,6 @@
             </div>
             <div class="btn-row" style="margin-top:10px;"><button style="background:var(--accent-blue); color:white; border:none; padding:10px;">Generate Loft</button></div>
           </div>`;
-    } else if (tabName === 'Export') {
-        tc.innerHTML = `<div class="tool-group"><span class="tool-group-title">Export Drawing</span>
-            <div class="btn-row" style="flex-direction:column; gap:8px;">
-              <button style="background:#1F4E79; color:white; border:none; padding:10px;">Export as DXF</button>
-            </div>
-          </div>`;
     }
     renderRightPanelProperties();
   };
@@ -513,15 +436,12 @@
     let obj = null;
     if (selectedType === 'module') obj = window.modules.find(m => m.id === selectedId);
     else if (selectedType === 'site') obj = window.siteElements.find(m => m.id === selectedId);
-    
     if (!obj) {
         titleEl.innerText = 'Details';
         bodyEl.innerHTML = `<p style="color:var(--text-muted); font-size:13px;">Select an item on the plan to edit its dimensions.</p>`;
         return;
     }
-    
     titleEl.innerText = selectedType === 'module' ? 'Module: ' + obj.type : 'Element: ' + obj.type.toUpperCase();
-    
     if (selectedType === 'module') {
         bodyEl.innerHTML = `
           <div class="prop-form">
@@ -532,7 +452,6 @@
             <button onclick="deleteSelected()" style="background:#ef4444; color:white; border:none; padding:8px; border-radius:4px; margin-top:10px; cursor:pointer;">Delete Module</button>
           </div>`;
     } else {
-        // Shows which wall it's on and exact location
         bodyEl.innerHTML = `
           <div class="prop-form">
             <div><label>Mount on Wall</label>
@@ -612,7 +531,6 @@
         const parentCanvas = el.closest('.elev-canvas');
         dragType = parentCanvas ? 'elevation' : 'plan';
         if (dragType === 'elevation') {
-            dragType = 'elevation';
             activeWall = parentCanvas.getAttribute('data-wall');
             obj.wall = activeWall;
         }
@@ -656,13 +574,8 @@
             }
         }
     } else if (dragType === 'elevation') {
-        if (selectedType === 'module') {
-            obj.x = Math.max(0, startLeft + dx);
-            obj.z = Math.max(0, (obj.z || 0) - dy); 
-        } else {
-            obj.x = Math.max(0, startLeft + dx); 
-            obj.z = Math.max(0, (obj.z || 0) - dy); 
-        }
+        obj.x = Math.max(0, startLeft + dx); 
+        obj.z = Math.max(0, (obj.z || 0) - dy); 
     }
     updateAllViews();
   });
