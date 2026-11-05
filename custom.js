@@ -2724,28 +2724,27 @@ document.addEventListener('click', function(e) {
 // ==========================================
 (function() {
     // 1. Missing Enquiry Functions & Module Crash Protection
-    window.mcUpdateEnqStatus = function(id, newStatus, isQuotation) {
+        window.mcUpdateEnqStatus = function(id, newStatus, isQuotation) {
         if (isQuotation) {
             const q = S.q[id];
             if (!q) return;
-            if (newStatus === 'Lost') {
-                q.out = 'lost';
-            } else if (newStatus === 'Won') {
-                q.out = 'won';
-                q.st = 'shared';
-            } else if (newStatus === 'Quoted') {
-                q.st = 'shared';
-                q.out = '';
-            } else {
-                q.st = 'draft';
-                q.out = '';
-            }
+            if (newStatus === 'Lost') { q.out = 'lost'; } 
+            else if (newStatus === 'Won') { q.out = 'won'; q.st = 'shared'; } 
+            else if (newStatus === 'Quoted') { q.st = 'shared'; q.out = ''; } 
+            else { q.st = 'draft'; q.out = ''; }
             if (typeof save === 'function') save('q', id);
         } else {
             const e = window.ENQ[id];
             if (!e) return;
             e.status = newStatus;
             if (window.saveEnq) window.saveEnq();
+            
+            // NEW: Sync the status change to Google Sheets
+            fetch("https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec", {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'save', collection: 'enquiries', id: e.id, data: e, apiKey: "ModuCraft@2026" })
+            }).catch(err => console.log("Cloud status sync failed", err));
         }
         if (typeof render === 'function') render();
         if (typeof flash === 'function') flash('Status updated to ' + newStatus);
@@ -3181,15 +3180,16 @@ document.getElementById('wa_generate').style.display = 'none';
         };
     };
 
-    // 10. INJECT "WA GROUP" BUTTON INTO ENQUIRIES TAB
+        // 10. INJECT "WA GROUP" BUTTON INTO ENQUIRIES TAB
     const origVEnq_WA = window.vEnq;
     window.vEnq = function() {
         let html = origVEnq_WA.apply(this, arguments);
         
         Object.values(window.ENQ).forEach(e => {
-            const target = `<button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>`;
             const waBtn = `<button onclick="mcGenerateWAMsg('${e.id}')" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-right:4px;font-weight:bold;">💬 WA Group</button>`;
             
+            // Inject it before the Edit button
+            const target = `<button class="g" data-enq-act="edit" data-id="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>`;
             if (html.includes(target) && !html.includes(`mcGenerateWAMsg('${e.id}')`)) {
                 html = html.replace(target, waBtn + target);
             }
