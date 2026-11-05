@@ -1,11 +1,11 @@
 // ==========================================
-// SANDBOX PREVIEW UI - KANBAN & THEME LOGIC
+// SANDBOX PREVIEW UI — KANBAN, THEME, DESIGN STUDIO BRIDGE
 // ==========================================
 (function() {
-  if (window.__previewUILoaded) return;
-  window.__previewUILoaded = true;
+  if (window.__previewUILoaded_v2) return;
+  window.__previewUILoaded_v2 = true;
 
-  // Theme Toggle Logic
+  // ---------- THEME ----------
   window.toggleTheme = function() {
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
     const next = current === 'dark' ? 'light' : 'dark';
@@ -13,7 +13,6 @@
     localStorage.setItem('mc_theme', next);
     updateThemeButton();
   };
-
   function updateThemeButton() {
     const btn = document.getElementById('theme-toggle');
     if (btn) {
@@ -22,11 +21,12 @@
     }
   }
 
+  // ---------- NAV ----------
   function buildNav() {
     const nav = document.getElementById('nav');
     const userActions = document.getElementById('user-actions');
     if (!nav || !userActions) return;
-    
+
     nav.innerHTML = `
       <button class="${S.tab === 'h' ? 'active' : ''}" data-a="tab" data-v="h">Dashboard</button>
       <button class="${S.tab === 'q' ? 'active' : ''}" data-a="tab" data-v="q">Quotations</button>
@@ -45,7 +45,8 @@
           <button data-a="tab" data-v="p">Preview / Print</button>
           <button data-a="tab" data-v="a">Accessories</button>
           <button data-a="tab" data-v="m">Ply & Hardware</button>
-          <button data-a="tab" data-v="d">Design Studio</button>
+          <button data-ds-open="1" style="color:#3b82f6; font-weight:bold;">🎨 Design Studio (New)</button>
+          <button data-a="tab" data-v="d">Design (Old)</button>
           <button data-a="tab" data-v="s">Settings & Rates</button>
           <button data-a="tab" data-v="x">Access & Sharing</button>
         </div>
@@ -62,19 +63,17 @@
     updateThemeButton();
   }
 
+  // ---------- KPI STRIP ----------
   function buildKPIs() {
     const strip = document.getElementById('kpi-strip');
     if (!strip) return;
-
     let pipeline = 0;
     Object.values(S.q || {}).forEach(q => {
       if (q.st === 'shared' && q.out !== 'lost') {
         try { pipeline += gt(q); } catch(e){}
       }
     });
-    
     const activeProjects = Object.values(BZ?.pj || {}).filter(p => p.stage !== 'Closed').length;
-    
     let receivables = 0;
     Object.values(BZ?.pj || {}).forEach(p => {
       if (p.stage !== 'Closed') {
@@ -82,9 +81,7 @@
         receivables += Math.max(0, (p.val || 0) - rec);
       }
     });
-
     const pendingPOs = Object.values(BZ?.po || {}).filter(p => ['Draft', 'Sent', 'Part received'].includes(p.st)).length;
-
     strip.innerHTML = `
       <div class="kpi-card" style="border-bottom: 3px solid var(--accent-blue)">
         <span class="kpi-title">Sales Pipeline</span>
@@ -109,30 +106,24 @@
     `;
   }
 
+  // ---------- KANBAN ----------
   function buildKanban() {
     const app = document.getElementById('app');
     if (!app) return;
-
     const todayStr = new Date().toISOString().split('T')[0];
     let urgentCards = [], taskCards = [], quoteCards = [], projectCards = [];
 
-    // 1. Add Setup Incomplete Alert
     urgentCards.push(`
       <div class="k-card alert-card">
-        <div class="k-card-header">
-          <div class="k-card-title">⚠️ Setup Incomplete</div>
-        </div>
+        <div class="k-card-header"><div class="k-card-title">⚠️ Setup Incomplete</div></div>
         <div class="k-card-sub">1 critical item needs attention (Labour & fabrication).</div>
-        <button class="k-btn danger full">Open Setup Checklist</button>
-      </div>
-    `);
+        <button class="k-btn danger full" onclick="S.tab='s';render()">Open Setup Checklist</button>
+      </div>`);
 
-    // 2. Build Quotes
     Object.values(S.q || {}).forEach(q => {
       if (q.st === 'shared' && q.out !== 'lost') {
         const qNum = typeof qno === 'function' ? qno(q) : '';
         const date = typeof dmy === 'function' && q.due ? dmy(q.due) : (q.due || '');
-        
         quoteCards.push(`
           <div class="k-card quote">
             <div class="k-card-header">
@@ -142,36 +133,25 @@
             <div class="k-card-sub">Apartment - ${qNum}</div>
             <div class="k-btn-group">
               <button class="k-btn" data-a="pq" data-i="${q.id}">📞 Follow Up</button>
-              <button class="k-btn danger" onclick="alert('Mark as Lost')">✖ Lost</button>
+              <button class="k-btn danger" onclick="if(typeof mcUpdateEnqStatus==='function') mcUpdateEnqStatus('${q.id}','Lost',true)">✖ Lost</button>
             </div>
-          </div>
-        `);
+          </div>`);
       }
     });
 
-    // 3. Build Projects & Tasks
     Object.values(BZ?.pj || {}).forEach(p => {
       if (p.stage !== 'Closed') {
-        let qNum = (p.qid && S.q[p.qid]) ? (typeof qno === 'function' ? qno(S.q[p.qid]) : '') : '';
-        
-        // Project Card
         projectCards.push(`
           <div class="k-card project">
-            <div class="k-card-header">
-              <div class="k-card-title">${typeof esc === 'function' ? esc(p.name || p.client) : (p.name || p.client)}</div>
-            </div>
+            <div class="k-card-header"><div class="k-card-title">${typeof esc === 'function' ? esc(p.name || p.client) : (p.name || p.client)}</div></div>
             <div class="k-card-sub">Client: ${typeof esc === 'function' ? esc(p.client || 'N/A') : (p.client || 'N/A')}</div>
             <div class="k-pill">Stage: ${typeof esc === 'function' ? esc(p.stage) : p.stage}</div>
-          </div>
-        `);
-
-        // Tasks
+          </div>`);
         if (p.tasks) {
           p.tasks.forEach((t, idx) => {
             if (t.st !== 'Done' && t.due) {
               const isUrgent = t.due < todayStr;
               const date = typeof dmy === 'function' ? dmy(t.due) : t.due;
-              
               const card = `
                 <div class="k-card ${isUrgent ? 'urgent' : 'task'}">
                   <div class="k-card-header">
@@ -183,10 +163,8 @@
                     <button class="k-btn" onclick="alert('Follow up')">📞 Follow Up</button>
                     <button class="k-btn success" onclick="askDo('Mark complete?',()=>{p.tasks[${idx}].st='Done';p.tasks[${idx}].pct=100;bzSave('pj','${p.id}');render();})">✔ Complete</button>
                   </div>
-                </div>
-              `;
-              if (isUrgent) urgentCards.push(card);
-              else taskCards.push(card);
+                </div>`;
+              if (isUrgent) urgentCards.push(card); else taskCards.push(card);
             }
           });
         }
@@ -217,10 +195,8 @@
           <div class="kanban-col-header"><span>🏃 Running Projects</span> <span class="badge">${projectCards.length}</span></div>
           <div class="kanban-col-body">${projectCards.join('') || '<div style="padding:20px;text-align:center;color:var(--text-muted)">No active projects</div>'}</div>
         </div>
-      </div>
-    `;
+      </div>`;
 
-    // Mobile Tab Logic
     document.querySelectorAll('.mobile-tabs button').forEach(btn => {
       btn.onclick = () => {
         document.querySelectorAll('.mobile-tabs button').forEach(b => b.classList.remove('active'));
@@ -231,56 +207,81 @@
     });
   }
 
+  // ---------- DESIGN STUDIO BRIDGE ----------
+  window.openDesignStudio = function() {
+    const overlay = document.getElementById('design-studio-overlay');
+    const iframe = document.getElementById('ds-iframe');
+    if (!overlay || !iframe) { alert('Design Studio overlay not found.'); return; }
+
+    const quoteId = S.cur || Object.keys(S.q || {})[0] || '';
+    const roomIdx = 0;
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const params = new URLSearchParams({ q: quoteId, r: roomIdx, theme: theme });
+    
+    iframe.src = 'index61.html?' + params.toString();
+    overlay.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  };
+  
+  window.closeDesignStudio = function() {
+    const overlay = document.getElementById('design-studio-overlay');
+    const iframe = document.getElementById('ds-iframe');
+    if (overlay) overlay.style.display = 'none';
+    if (iframe) iframe.src = '';
+    document.body.style.overflow = '';
+  };
+
+  // Listen for messages from the design studio (save / close / dimensions changed)
+  window.addEventListener('message', function(e) {
+    if (!e.data || typeof e.data !== 'object') return;
+    if (e.data.type === 'ds-close') { closeDesignStudio(); }
+    if (e.data.type === 'ds-saved') {
+      const { quoteId, roomIdx, dim, modules } = e.data;
+      if (S.q && S.q[quoteId] && S.q[quoteId].rooms && S.q[quoteId].rooms[roomIdx]) {
+        const room = S.q[quoteId].rooms[roomIdx];
+        if (dim) room.dim = Object.assign(room.dim || {}, { L: dim.L, W: dim.W, H: dim.H });
+        if (Array.isArray(modules)) room.dsModules = modules;
+        if (typeof save === 'function') save('q', quoteId);
+        if (typeof flash === 'function') flash('Design saved to ' + (room.name || 'room'));
+      }
+    }
+  });
+
+  // Hook the buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('[data-ds-open]')) { e.preventDefault(); openDesignStudio(); return; }
+    if (e.target.id === 'ds-close-btn') { closeDesignStudio(); return; }
+    if (e.target.id === 'ds-save-btn') {
+      const iframe = document.getElementById('ds-iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'ds-request-save' }, '*');
+      }
+    }
+  }, true);
+
+  // ---------- RENDER OVERRIDE ----------
   const originalRender = window.render;
   window.render = function() {
     if (S.tab === 'h') {
       buildNav();
       buildKPIs();
       buildKanban();
-      document.getElementById('kpi-strip').style.display = 'flex';
+      const strip = document.getElementById('kpi-strip');
+      if (strip) strip.style.display = 'flex';
       return;
     }
-    
     originalRender.apply(this, arguments);
-    
-    document.getElementById('kpi-strip').style.display = 'none';
+    const strip = document.getElementById('kpi-strip');
+    if (strip) strip.style.display = 'none';
     const appDiv = document.getElementById('app');
     if (appDiv) appDiv.style.overflowY = 'auto';
-    
-    buildNav(); 
-
-    if (S.tab === 'd' || S.tab === 'f') {
-      setTimeout(() => {
-        const views = document.querySelectorAll('.card:has(.elc), #dsv, #fpsv');
-        
-        views.forEach(view => {
-          const box = view.closest('.card') || view.parentElement;
-          if (!box || box.querySelector('.vp-max-btn')) return; 
-
-          box.classList.add('viewport-box');
-          
-          const btn = document.createElement('button');
-          btn.className = 'vp-max-btn';
-          btn.innerHTML = '⛶'; 
-          btn.title = "Maximize / Restore Viewport";
-          
-          btn.onclick = () => {
-            box.classList.toggle('vp-maximized');
-            window.dispatchEvent(new Event('resize'));
-          };
-          
-          box.appendChild(btn);
-        });
-      }, 200); 
-    }
+    buildNav();
   };
 
+  // Initial load
   window.addEventListener('load', () => {
-    setTimeout(() => { 
-      if (typeof S !== 'undefined') {
-        S.tab = 'h';
-        window.render(); 
-      }
-    }, 1000);
+    setTimeout(() => {
+      if (typeof S !== 'undefined') { S.tab = 'h'; window.render(); }
+    }, 800);
   });
 })();
