@@ -658,7 +658,7 @@
 
   loadRoomsDropdown();
 
-  window.addEventListener('message', function(ev) {
+   window.addEventListener('message', function(ev) {
     if (!ev.data || ev.data.type !== 'ds-request-save') return;
     try {
       const payload = {
@@ -672,10 +672,34 @@
         siteElements: window.siteElements,
         roomName: document.getElementById('active-room-select').options[document.getElementById('active-room-select').selectedIndex].text
       };
+      
+      // 1. Send the message to the main app
       window.parent.postMessage(payload, '*');
-    } catch(e) {}
-  });
 
+      // 2. Fallback: Force save directly to browser memory
+      try {
+        const saved = JSON.parse(localStorage.getItem('msq_v2') || 'null');
+        if (saved && saved.q && saved.q[window.__dsParams.quoteId]) {
+          const room = saved.q[window.__dsParams.quoteId].rooms[activeRoomIndex];
+          if (room) {
+            room.rows = room.rows.filter(r => !r._fromDS);
+            payload.modules.forEach(m => {
+              room.rows.push({
+                n: m.type, mk: m.mk, 
+                l: Math.round(m.width * 10), w: Math.round(m.height * 10), d: Math.round(m.depth * 10),
+                u: 'mm', q: 1, b: 'sqft', x: Math.round(m.left * 10), y: Math.round(m.top * 10), z: Math.round(m.z * 10),
+                wl: m.wall, category: m.category, _fromDS: true, fpId: m.fpId
+              });
+            });
+            if (payload.siteElements) room.siteElements = payload.siteElements;
+            if (payload.roomName) room.name = payload.roomName;
+            localStorage.setItem('msq_v2', JSON.stringify(saved));
+          }
+        }
+      } catch(err) { console.warn('Direct backup save failed', err); }
+
+    } catch(e) { console.warn('Save error', e); }
+  });
 </script>
 </body>
 </html>
