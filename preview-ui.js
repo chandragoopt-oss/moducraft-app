@@ -235,42 +235,59 @@
   window.addEventListener('message', function(e) {
     if (!e.data || typeof e.data !== 'object') return;
     if (e.data.type === 'ds-close') { closeDesignStudio(); }
-    if (e.data.type === 'ds-saved') {
-      const { quoteId, roomIdx, dim, modules } = e.data;
-      if (S.q && S.q[quoteId] && S.q[quoteId].rooms && S.q[quoteId].rooms[roomIdx]) {
-        const room = S.q[quoteId].rooms[roomIdx];
-        if (dim) room.dim = Object.assign(room.dim || {}, { L: dim.L, W: dim.W, H: dim.H });
-               if (Array.isArray(modules) && modules.length > 0) {
-          room.dsModules = modules;
-          // Map design modules to actual BOQ rows
-          const newRows = modules.map(m => {
-            let mkId = '';
-            if (m.type.includes('Wardrobe')) mkId = 'wh2';
-            else if (m.type.includes('Base Unit')) mkId = 'kb2';
-            else if (m.type.includes('TV Unit')) mkId = 'tvb';
-            else if (m.type.includes('Dresser')) mkId = 'drs';
-
-            return {
-              n: m.type,
-              l: Math.round(m.width * 10), // Convert to mm
-              w: Math.round(m.height * 10),
-              u: 'mm',
-              q: 1,
-              b: 'sqft',
-              mk: mkId,
-              x: Math.round(m.left * 10),
-              y: Math.round(m.top * 10)
-            };
-          });
-          // Remove old design studio rows to avoid duplicates
-          room.rows = room.rows.filter(r => !r._fromDS); 
-          // Add the newly drawn modules
-          room.rows.push(...newRows.map(r => ({ ...r, _fromDS: true })));
-        }
-        if (typeof save === 'function') save('q', quoteId);
-        if (typeof flash === 'function') flash('Design saved to ' + (room.name || 'room'));
+        if (e.data.type === 'ds-saved') {
+      let qid = e.data.quoteId;
+      if (!qid || !S.q[qid]) {
+        // Create a new quotation on the fly if none exists
+        qid = 'q' + Date.now().toString(36);
+        S.q[qid] = { id: qid, ts: Date.now(), name: 'New Design Project', by: '', project: '', address: '', contact: '', date: new Date().toISOString().slice(0,10), rooms: [], ir: {}, grp: qid, rev: 0, seq: 1, st: 'draft', pay: [], notes: '' };
+        S.cur = qid;
       }
-    }
+      const q = S.q[qid];
+      let rIdx = e.data.roomIdx;
+      if (!q.rooms[rIdx]) {
+        q.rooms.push({ id: 'r' + Date.now().toString(36), t: 'DESIGN ROOM', name: 'DESIGN ROOM', w: 0, rate: '', rows: [], dim: { L: 3000, W: 3000, H: 2700 } });
+        rIdx = q.rooms.length - 1;
+      }
+      const room = q.rooms[rIdx];
+      
+      // Update room dimensions
+      if (e.data.dim) {
+        room.dim = { L: e.data.dim.L, W: e.data.dim.W, H: e.data.dim.H };
+      }
+      
+      // Map modules to BOQ rows
+      if (Array.isArray(e.data.modules) && e.data.modules.length > 0) {
+        room.rows = room.rows.filter(r => !r._fromDS); // Remove old DS rows to prevent duplicates
+        
+        const newRows = e.data.modules.map(m => {
+          let mkId = ''; 
+          if (m.type.includes('Wardrobe')) mkId = 'wh2';
+          else if (m.type.includes('Base Unit')) mkId = 'kb2';
+          else if (m.type.includes('TV Unit')) mkId = 'tvb';
+          else if (m.type.includes('Dresser')) mkId = 'drs';
+          else if (m.type.includes('Bed')) mkId = 'bdpl';
+          
+          return {
+            n: m.type || 'Custom Design Module',
+            l: Math.round(m.width * 10),
+            w: Math.round(m.height * 10),
+            u: 'mm',
+            q: 1,
+            b: 'sqft',
+            mk: mkId,
+            x: Math.round(m.left * 10),
+            y: Math.round(m.top * 10),
+            _fromDS: true
+          };
+        });
+        room.rows.push(...newRows);
+      }
+      
+      if (typeof save === 'function') save('q', qid);
+      if (typeof flash === 'function') flash('Design saved to: ' + (room.name || 'Room'));
+      if (typeof render === 'function') render(); // Force re-render
+        }
   });
 
   // Hook the buttons
