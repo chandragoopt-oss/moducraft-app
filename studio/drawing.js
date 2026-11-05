@@ -104,21 +104,22 @@ function renderPlanHTML() {
 
   let itemsHtml = '';
   window.siteElements.forEach(el => {
-      if (el.type === 'pillar') {
-          let xPos = el.x + 100, yPos = el.y + 100;
-          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${xPos}px; top:${yPos}px; width:${el.width}px; height:${el.width}px; transform:translate(-50%,-50%);"></div>`;
-      }
-  });
-
-  window.siteElements.forEach(el => {
-      if (el.type === 'pillar') return;
       let w = walls.find(w => w.id === el.wall);
       if(!w) return;
-      const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
-      const pct = (el.x + el.width/2) / wallLen;
-      const cx = w.x1 + (w.x2 - w.x1) * pct + 100, cy = w.y1 + (w.y2 - w.y1) * pct + 100;
-      const isHorizontal = Math.abs(w.y1 - w.y2) < 1;
-      itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%);"></div>`;
+      
+      // Lock doors and windows to the wall line
+      if (el.type === 'door' || el.type === 'window') {
+          const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+          const pct = (el.x + el.width/2) / wallLen;
+          const cx = w.x1 + (w.x2 - w.x1) * pct + 100;
+          const cy = w.y1 + (w.y2 - w.y1) * pct + 100;
+          const isHorizontal = Math.abs(w.y1 - w.y2) < 1;
+          itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%);"></div>`;
+      } else if (el.type === 'pillar') {
+          // Lock pillars to the wall start
+          let cx = w.x1 + 100, cy = w.y1 + 100;
+          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${el.width}px; height:${el.width}px; transform:translate(-50%,-50%);"></div>`;
+      }
   });
 
   window.modules.forEach(m => {
