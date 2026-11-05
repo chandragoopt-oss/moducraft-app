@@ -36,7 +36,8 @@
   
   /* LEFT COLUMN (Elevations) */
   .left-col { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
-  .elevation-box { height: 160px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; position: relative; }
+  .elevation-box { height: 160px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; position: relative; cursor: pointer; transition: 0.2s; }
+  .elevation-box:hover { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
   .elev-canvas { flex: 1; position: relative; background: #fdfdfd; overflow: hidden; }
   .env-floor { position: absolute; bottom: 0; width: 100%; height: 4px; background: #374151; z-index: 10; }
   .env-ceiling { position: absolute; top: 0; width: 100%; height: 4px; background: #9ca3af; z-index: 10; }
@@ -116,7 +117,6 @@
     <div class="logo-area">
       <h1>ModuCraft ERP</h1>
       <div style="display:flex; gap:10px; align-items:center; margin-left:20px;">
-        <!-- ROOM DROPDOWN -->
         <select id="active-room-select" onchange="switchRoom(this.value)" style="padding:8px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); font-weight:bold; max-width:200px;">
           <option value="0">Loading rooms...</option>
         </select>
@@ -134,7 +134,9 @@
     <div class="action-tabs">
       <button class="active" onclick="updateRightPanel('View & Tools', this)">View & Tools</button>
       <button onclick="updateRightPanel('Room Setting', this)">Room Setting</button>
+      <button onclick="updateRightPanel('Add to Wall', this)">Add to Wall</button>
       <button onclick="updateRightPanel('Site Structure', this)">Site Structure</button>
+      <button onclick="updateRightPanel('Auto Loft', this)">Auto Loft</button>
       <button onclick="updateRightPanel('Export', this)">Export Drawing</button>
     </div>
   </div>
@@ -220,7 +222,6 @@
   window.siteElements = [];
   window.wallDims = { A: 800, B: 600, H: 240 };
   window.CURRENT_SHAPE = 'rectangle';
-  window.CURRENT_ROOM_TYPE = 'bedroom';
   let activeRoomIndex = window.__dsParams.roomIdx || 0;
   
   let selectedId = null;
@@ -267,7 +268,6 @@
           wallDims.H = (room.dim.H || 2700) / 10; 
         }
         
-        // Load Modules
         const existingDS = (room.rows || []).filter(r => r._fromDS && r.fpId);
         window.modules = existingDS.map(r => ({
           id: r.fpId, type: r.n, mk: r.mk || '', wall: r.wl || 'A',
@@ -275,7 +275,6 @@
           width: (r.l || 0) / 10, height: (r.w || 0) / 10, depth: (r.d || 600) / 10, rotation: 0
         }));
         
-        // Load Site Elements
         if (room.siteElements) {
             window.siteElements = room.siteElements.map(el => ({...el}));
         }
@@ -313,7 +312,6 @@
 
     let itemsHtml = '';
     
-    // Draw Site Elements (Pillars first, then Doors/Windows)
     window.siteElements.forEach(el => {
         if (el.type === 'pillar') {
             let xPos = el.x + 100;
@@ -336,7 +334,6 @@
         itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${xPos}px; top:${yPos}px; width:${w}px; height:${h}px; transform:translate(-50%,-50%);"></div>`;
     });
 
-    // Draw Modules
     window.modules.forEach(m => {
         itemsHtml += `<div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}" style="left:${m.x+100}px; top:${m.y+100}px; width:${m.width}px; height:${m.depth || m.width}px;">${m.type}</div>`;
     });
@@ -425,6 +422,12 @@
               <div><label>Ceiling Height</label><input type="number" value="${wallDims.H*10}" onchange="wallDims.H = +this.value/10; updateAllViews();"></div>
             </div>
           </div>`;
+    } else if (tabName === 'Add to Wall') {
+        tc.innerHTML = `
+          <div class="tool-group">
+            <span class="tool-group-title">Add Module To Wall</span>
+            <button onclick="openAddModuleModal()" style="width:100%; background:var(--accent-blue); color:white; padding:10px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">+ Select Module from List</button>
+          </div>`;
     } else if (tabName === 'Site Structure') {
         tc.innerHTML = `
           <div class="tool-group">
@@ -434,6 +437,16 @@
               <button onclick="addSiteElement('window')">+ Add Window</button>
               <button onclick="addSiteElement('pillar')">+ Add Pillar / Column</button>
             </div>
+          </div>`;
+    } else if (tabName === 'Auto Loft') {
+        tc.innerHTML = `
+          <div class="tool-group">
+            <span class="tool-group-title">Generate Loft</span>
+            <div class="prop-form">
+              <div><label>Loft Height (mm)</label><input type="number" value="450"></div>
+              <div><label>Loft Depth (mm)</label><input type="number" value="320"></div>
+            </div>
+            <div class="btn-row" style="margin-top:10px;"><button style="background:var(--accent-blue); color:white; border:none; padding:10px;">Generate Loft</button></div>
           </div>`;
     } else if (tabName === 'Export') {
         tc.innerHTML = `
@@ -518,7 +531,6 @@
   };
 
   window.addSiteElement = function(type) {
-    // When adding, snap it to the center of the active wall
     const wallLen = (activeWall === 'A' || activeWall === 'C') ? wallDims.A : wallDims.B;
     const newEl = {
         id: 'el-' + Date.now(), type: type,
@@ -527,7 +539,6 @@
     };
     if (type === 'window') { newEl.width = 120; newEl.height = 120; }
     
-    // If it's a pillar, we need to set its x/y coordinates so it sits on the wall line
     if (type === 'pillar') {
         if (activeWall === 'A') { newEl.x = wallLen / 2; newEl.y = 0; }
         else if (activeWall === 'C') { newEl.x = wallLen / 2; newEl.y = wallDims.B; }
@@ -594,20 +605,17 @@
     if (dragType === 'module') {
         obj.x = startLeft + dx; 
         obj.y = startTop + dy;
-        // Auto-detect wall
         if (obj.y < 20) obj.wall = 'A';
         else if (obj.y + (obj.depth || obj.width) > wallDims.B - 20) obj.wall = 'C';
         else if (obj.x < 20) obj.wall = 'D';
         else if (obj.x + obj.width > wallDims.A - 20) obj.wall = 'B';
     } else if (dragType === 'site') {
         if (obj.type === 'pillar') {
-            // Pillars snap to walls
             if (obj.wall === 'A') { obj.x = startLeft + dx; obj.y = 0; }
             else if (obj.wall === 'C') { obj.x = startLeft + dx; obj.y = wallDims.B; }
             else if (obj.wall === 'B') { obj.x = wallDims.A; obj.y = startTop + dy; }
             else if (obj.wall === 'D') { obj.x = 0; obj.y = startTop + dy; }
         } else {
-            // Doors/windows slide along the wall
             obj.x = startLeft + dx; 
             const wallLen = (obj.wall === 'A' || obj.wall === 'C') ? wallDims.A : wallDims.B;
             obj.x = Math.max(0, Math.min(wallLen - obj.width, obj.x));
