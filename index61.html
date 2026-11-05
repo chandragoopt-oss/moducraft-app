@@ -23,36 +23,46 @@
   .logo-area { display: flex; align-items: center; gap: 15px; }
   .logo-area h1 { margin: 0; font-size: 18px; }
   
-  .sub-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); flex-shrink: 0; gap: 15px; flex-wrap: wrap; }
-  .action-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px; flex: 1; min-width: 0; white-space: nowrap; }
-  .action-tabs button { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
-  .action-tabs button.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+  .sub-header { display: flex; align-items: center; padding: 0 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); flex-shrink: 0; gap: 15px; overflow-x: auto; }
+  .action-tabs { display: flex; gap: 2px; padding: 0; white-space: nowrap; }
+  .action-tabs button { background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); padding: 12px 16px; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .action-tabs button.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); background: var(--bg-main); }
+  .action-tabs button:hover { color: var(--text-main); }
 
   /* WORKSPACE GRID */
-  .workspace-grid { display: grid; grid-template-columns: minmax(240px, 280px) minmax(400px, 1fr) minmax(260px, 320px); gap: 15px; padding: 15px 20px; flex: 1; overflow: hidden; }
+  .workspace-grid { display: grid; grid-template-columns: minmax(220px, 260px) minmax(400px, 1fr) minmax(280px, 320px); gap: 15px; padding: 15px 20px; flex: 1; overflow: hidden; }
   .panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
-  .panel-header { padding: 10px 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-main); font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+  .panel-header { padding: 10px 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-main); font-weight: bold; font-size: 12px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.5px; }
   
   /* LEFT COLUMN (Elevations) */
   .left-col { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
-  .elevation-box { height: 180px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+  .elevation-box { height: 180px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; position: relative; }
   .elev-canvas { flex: 1; position: relative; background: #fdfdfd; overflow: hidden; }
   .env-floor { position: absolute; bottom: 0; width: 100%; height: 4px; background: #374151; z-index: 10; }
   .env-ceiling { position: absolute; top: 0; width: 100%; height: 4px; background: #9ca3af; z-index: 10; }
-  .elev-module { position: absolute; background: var(--accent-green); border: 1px solid #047857; opacity: 0.9; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: bold; cursor: move; touch-action: none; }
-  .elev-module.selected { outline: 2px solid var(--accent-yellow); z-index: 50; }
+  
+  .elev-module { position: absolute; background: var(--accent-green); border: 1px solid #047857; opacity: 0.9; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: bold; cursor: move; touch-action: none; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .elev-module.selected { outline: 2px solid var(--accent-yellow); outline-offset: 1px; z-index: 50; }
+  .elev-door { position: absolute; bottom: 0; border: 2px solid #8b5a2b; background: repeating-linear-gradient(45deg, #f5deb3, #f5deb3 5px, #deb887 5px, #deb887 10px); display: flex; align-items: center; justify-content: center; font-size: 9px; color: #5a3a1b; font-weight: bold; z-index: 5; }
+  .elev-window { position: absolute; border: 3px solid #3b82f6; background: #bfdbfe; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #1e40af; font-weight: bold; z-index: 5; }
+  .elev-pillar { position: absolute; bottom: 0; background: #9ca3af; border: 1px solid #4b5563; z-index: 6; }
 
   /* CENTER PLAN */
   .center-col { background: #e5e7eb; position: relative; }
-  .plan-viewport { flex: 1; overflow: hidden; margin: 15px; position: relative; border: 1px solid #888; background: #fff; box-shadow: inset 0 0 20px rgba(0,0,0,0.05); touch-action: none; }
+  .plan-viewport { flex: 1; overflow: hidden; margin: 10px; position: relative; border: 1px solid #888; background: #fff; box-shadow: inset 0 0 20px rgba(0,0,0,0.05); touch-action: none; }
   .view-container { position: absolute; inset: 0; display: none; overflow: hidden; }
   .view-container.active { display: block; }
   .zoom-wrapper { width: 100%; height: 100%; position: relative; transform-origin: 0 0; transition: transform 0.1s; }
 
   /* PLAN SHAPES & MODULES */
   .plan-canvas { position: absolute; transform-origin: 0 0; transition: transform 0.1s; }
-  .module { position: absolute; background: var(--accent-blue); color: white; border: 2px solid #1d4ed8; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-align: center; line-height: 1.1; cursor: move; box-shadow: 0 4px 6px rgba(0,0,0,0.1); touch-action: none; z-index: 10; }
+  
+  .module { position: absolute; background: var(--accent-blue); color: white; border: 2px solid #1d4ed8; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; text-align: center; line-height: 1.1; cursor: move; box-shadow: 0 4px 6px rgba(0,0,0,0.1); touch-action: none; z-index: 10; }
   .module.selected { outline: 3px solid var(--accent-yellow); outline-offset: 2px; z-index: 50; }
+  
+  .plan-door { position: absolute; border: 2px solid #8b5a2b; background: #f5deb3; z-index: 5; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #5a3a1b; font-size: 10px; font-weight: bold; }
+  .plan-window { position: absolute; border: 2px solid #3b82f6; background: #bfdbfe; z-index: 5; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1e40af; font-size: 10px; font-weight: bold; }
+  .plan-pillar { position: absolute; background: #9ca3af; border: 1px solid #4b5563; z-index: 6; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #333; font-size: 9px; font-weight: bold; }
 
   /* GUIDES & TAGS */
   .dim-tag { position: absolute; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 95; display: none; }
@@ -60,22 +70,24 @@
 
   /* RIGHT COLUMN (Toolbar) */
   .right-col { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
-  .toolbar-content { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-  .tool-group { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-  .tool-group-title { font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: block; font-weight: bold; }
-  .btn-row { display: flex; gap: 5px; flex-wrap: wrap; }
-  .btn-row button { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 4px; font-size: 12px; cursor: pointer; flex: 1; text-align: center; }
+  .toolbar-content { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+  .tool-group { border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 4px; }
+  .tool-group:last-child { border: none; margin-bottom: 0; }
+  .tool-group-title { font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; display: block; font-weight: bold; }
+  .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn-row button { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; flex: 1; text-align: center; }
   .btn-row button:hover { background: var(--border-color); }
   
   .properties-panel { flex: 1; overflow-y: auto; }
-  .properties-content { padding: 15px; font-size: 13px; }
-  .prop-form { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-  .prop-form label { font-size: 12px; color: var(--text-muted); }
-  .prop-form input { width: 100%; padding: 8px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 13px; margin-top: 4px; }
+  .properties-content { padding: 15px; }
+  .prop-form { display: flex; flex-direction: column; gap: 10px; }
+  .prop-form label { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 2px; display: block; }
+  .prop-form input, .prop-form select { width: 100%; padding: 8px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 14px; font-weight: bold; }
+  .prop-form input:focus { outline: 2px solid var(--accent-blue); }
 
   /* MODALS */
-  .quick-add-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-start; justify-content: center; z-index: 10000; padding-top: 15vh; }
-  .quick-add-box { background: var(--bg-panel); width: 90%; max-width: 500px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: hidden; border: 1px solid var(--border-color); display: flex; flex-direction: column; max-height: 70vh; }
+  .quick-add-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-start; justify-content: center; z-index: 10000; padding-top: 10vh; }
+  .quick-add-box { background: var(--bg-panel); width: 90%; max-width: 500px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: hidden; border: 1px solid var(--border-color); display: flex; flex-direction: column; max-height: 80vh; }
   .quick-add-box input { width: 100%; padding: 16px 20px; font-size: 18px; border: none; border-bottom: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); outline: none; flex-shrink: 0; }
   .quick-add-list { overflow-y: auto; flex: 1; padding-bottom: 10px; }
   .quick-add-cat { padding: 8px 20px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: var(--text-muted); background: var(--bg-main); position: sticky; top: 0; }
@@ -122,6 +134,7 @@
     <div class="action-tabs">
       <button class="active" onclick="updateRightPanel('View & Tools', this)">View & Tools</button>
       <button onclick="updateRightPanel('Room Setting', this)">Room Setting</button>
+      <button onclick="updateRightPanel('Site Structure', this)">Site Structure</button>
     </div>
   </div>
 
@@ -150,7 +163,7 @@
     <div class="panel center-col" id="box-center" data-view="plan">
       <div class="panel-header" onclick="showContextMenu(event, this.parentElement)">
         <span id="center-title">Plan View</span> 
-        <span style="font-size:11px;color:var(--text-muted);font-weight:normal">(Scroll to Zoom)</span>
+        <span style="font-size:11px;color:var(--text-muted);font-weight:normal; text-transform:none;">(Scroll to Zoom, Drag to move)</span>
       </div>
       
       <div class="plan-viewport" id="viewport">
@@ -180,40 +193,18 @@
     <div class="right-col">
       <div class="panel toolbar-panel">
         <div class="panel-header">Toolbar</div>
-        <div class="toolbar-content">
-          <div class="tool-group">
-            <button onclick="openAddModuleModal()" style="width:100%; background:var(--accent-blue); color:white; padding:10px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">+ Add Module</button>
-          </div>
-          <div class="tool-group">
-            <span class="tool-group-title">Snap Options</span>
-            <label style="font-size:12px; display:flex; align-items:center; gap:5px;"><input type="checkbox" id="snap-wall" checked> Snap to Wall / Edges</label>
-          </div>
-          <div class="tool-group">
-            <span class="tool-group-title">Transform</span>
-            <div class="btn-row">
-              <button onclick="zoomCanvas(1.1)">Zoom +</button>
-              <button onclick="zoomCanvas(0.9)">Zoom -</button>
-            </div>
-            <div class="btn-row" style="margin-top:5px;">
-              <button onclick="rotateModule(-1)">↺</button>
-              <select id="rot-step" style="flex:1; border: 1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); border-radius:4px; padding:4px;">
-                <option value="90">90°</option>
-                <option value="45">45°</option>
-                <option value="15">15°</option>
-              </select>
-              <button onclick="rotateModule(1)">↻</button>
-            </div>
-          </div>
+        <div class="toolbar-content" id="toolbar-content">
+          <!-- Rendered by JS based on active tab -->
         </div>
       </div>
 
       <div class="panel properties-panel">
         <div class="panel-header">
-          <span id="prop-title">Module Details</span>
-          <button onclick="updateRightPanel('View & Tools', document.querySelector('.action-tabs button'))" style="background:none; border:none; color:var(--text-main); cursor:pointer;">&times;</button>
+          <span id="prop-title">Details</span>
+          <button onclick="selectedId=null; updateAllViews();" style="background:none; border:none; color:var(--text-main); cursor:pointer;">&times;</button>
         </div>
         <div class="properties-content" id="prop-body">
-          <p style="color:var(--text-muted);">Select a module on the plan to edit its dimensions.</p>
+          <p style="color:var(--text-muted); font-size:13px;">Select an item on the plan to edit its dimensions.</p>
         </div>
       </div>
     </div>
@@ -238,183 +229,250 @@
 <script>
   const viewport = document.getElementById('viewport');
   const plan = document.getElementById('plan');
-  const dimTag = document.getElementById('dim-tag');
   const ctxMenu = document.getElementById('ctx-menu');
 
+  // Data state
   window.modules = [];
+  window.siteElements = []; // Doors, windows, pillars
+  window.wallDims = { A: 800, B: 600, C: 800, D: 600, H: 240 };
+  window.CURRENT_SHAPE = 'rectangle';
+  
   let selectedId = null;
+  let selectedType = null; // 'module', 'site', 'wall'
   let isDragging = false, dragType = '', startX, startY, startLeft, startTop;
   let currentZoom = 1, panX = 0, panY = 0;
   const snapThreshold = 15; 
 
-  window.ROOM_WIDTH = 800;  
-  window.ROOM_HEIGHT = 600; 
-  window.CEILING_HEIGHT = 240;
-  window.CURRENT_SHAPE = 'rectangle';
-
-  // Fetch actual modules from the parent app (app.js has MODS)
+  // --- DATA FETCHING ---
   function getBackendModules() {
     let list = [];
-    // If MODS exists (pulled from parent), use it
     if (typeof MODS !== 'undefined') {
       Object.values(MODS).forEach(m => {
-        if (!m.au) { // skip auto-generated parts
+        if (!m.au) {
           let cat = 'Base / Floor';
           if (m.ty === 'wall') cat = 'Wall Units';
           else if (m.ty === 'loft') cat = 'Loft Units';
           else if (m.ty === 'tall') cat = 'Tall Units';
-          
-          list.push({ id: m.id, n: m.n, cat: cat, w: m.w0 || 60, h: m.h || 80 });
+          else if (m.ty === 'ward') cat = 'Wardrobes';
+          list.push({ id: m.id, n: m.n, cat: cat, w: m.w0 || 60, h: m.h || 80, d: m.d || 60 });
         }
       });
     } else {
-      // Fallback if opened standalone
-      list = [
-        { id: 'wh3', n: 'Wardrobe (3 Door)', cat: 'Base / Floor', w: 120, h: 220 },
-        { id: 'kb2', n: 'Kitchen Base (2 Door)', cat: 'Base / Floor', w: 60, h: 86 }
-      ];
+      list = [ { id: 'wh3', n: 'Wardrobe (3 Door)', cat: 'Wardrobes', w: 120, h: 220, d: 60 } ];
     }
     return list.sort((a,b) => a.cat.localeCompare(b.cat) || a.n.localeCompare(b.n));
   }
 
-  // --- SHAPE ENGINE ---
-  window.changeRoomShape = function(shape) {
-    CURRENT_SHAPE = shape;
-    if (shape === 'l-shape') {
-      ROOM_WIDTH = 1000; ROOM_HEIGHT = 800;
-    } else if (shape === 'u-shape') {
-      ROOM_WIDTH = 1200; ROOM_HEIGHT = 900;
-    } else {
-      ROOM_WIDTH = 800; ROOM_HEIGHT = 600;
-    }
-    initializeViews();
-    centerPlan();
-    saveState();
-  };
+  // --- INITIALIZATION ---
+  function initializeViews() {
+    plan.style.width = wallDims.A + 'px';
+    plan.style.height = wallDims.B + 'px';
+    updateAllViews();
+  }
 
-  // --- RENDER PLAN ---
+  // --- RENDER ENGINE ---
   function renderPlanHTML() {
-    let modulesHtml = '';
-    window.modules.forEach(m => {
-        modulesHtml += `
-          <div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}"
-               style="left: ${m.left}px; top: ${m.top}px; width: ${m.width}px; height: ${m.height}px; transform: rotate(${m.rotation}deg);">
-               ${m.type}
-          </div>`;
-    });
-
-    // Using SVG for perfect room shapes
+    const W = wallDims.A, H = wallDims.B;
+    
     let shapeSvg = '';
     if (CURRENT_SHAPE === 'l-shape') {
         shapeSvg = `<svg width="100%" height="100%" style="position:absolute; inset:0; pointer-events:none;">
-          <path d="M 8,8 L ${ROOM_WIDTH-8},8 L ${ROOM_WIDTH-8},${ROOM_HEIGHT*0.6} L ${ROOM_WIDTH*0.6},${ROOM_HEIGHT*0.6} L ${ROOM_WIDTH*0.6},${ROOM_HEIGHT-8} L 8,${ROOM_HEIGHT-8} Z" 
-                fill="#fdfdfd" stroke="#9ca3af" stroke-width="8" stroke-linejoin="round" />
+          <path d="M 8,8 L ${W-8},8 L ${W-8},${H*0.6} L ${W*0.6},${H*0.6} L ${W*0.6},${H-8} L 8,${H-8} Z" fill="#fdfdfd" stroke="#9ca3af" stroke-width="8" stroke-linejoin="round" />
         </svg>`;
     } else if (CURRENT_SHAPE === 'u-shape') {
         shapeSvg = `<svg width="100%" height="100%" style="position:absolute; inset:0; pointer-events:none;">
-          <path d="M 8,8 L ${ROOM_WIDTH-8},8 L ${ROOM_WIDTH-8},${ROOM_HEIGHT-8} L ${ROOM_WIDTH*0.7},${ROOM_HEIGHT-8} L ${ROOM_WIDTH*0.7},${ROOM_HEIGHT*0.5} L ${ROOM_WIDTH*0.3},${ROOM_HEIGHT*0.5} L ${ROOM_WIDTH*0.3},${ROOM_HEIGHT-8} L 8,${ROOM_HEIGHT-8} Z" 
-                fill="#fdfdfd" stroke="#9ca3af" stroke-width="8" stroke-linejoin="round" />
+          <path d="M 8,8 L ${W-8},8 L ${W-8},${H-8} L ${W*0.7},${H-8} L ${W*0.7},${H*0.5} L ${W*0.3},${H*0.5} L ${W*0.3},${H-8} L 8,${H-8} Z" fill="#fdfdfd" stroke="#9ca3af" stroke-width="8" stroke-linejoin="round" />
         </svg>`;
     } else {
         shapeSvg = `<svg width="100%" height="100%" style="position:absolute; inset:0; pointer-events:none;">
-          <rect x="8" y="8" width="${ROOM_WIDTH-16}" height="${ROOM_HEIGHT-16}" fill="#fdfdfd" stroke="#9ca3af" stroke-width="8" />
+          <rect x="8" y="8" width="${W-16}" height="${H-16}" fill="#fdfdfd" stroke="#9ca3af" stroke-width="8" />
         </svg>`;
     }
 
-    return shapeSvg + modulesHtml;
+    let itemsHtml = '';
+    
+    // Render site elements first (so modules sit on top)
+    window.siteElements.forEach(el => {
+        if (el.type === 'door' || el.type === 'window') {
+            itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left: ${el.left}px; top: ${el.top}px; width: ${el.width}px; height: ${el.height}px; transform: rotate(${el.rotation}deg);">${el.type === 'door' ? 'Door' : 'Window'}</div>`;
+        } else if (el.type === 'pillar') {
+            itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left: ${el.left}px; top: ${el.top}px; width: ${el.width}px; height: ${el.height}px;">Pillar</div>`;
+        }
+    });
+
+    // Render modules
+    window.modules.forEach(m => {
+        itemsHtml += `<div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}" style="left: ${m.left}px; top: ${m.top}px; width: ${m.width}px; height: ${m.height}px; transform: rotate(${m.rotation}deg);">${m.type}</div>`;
+    });
+
+    return shapeSvg + itemsHtml;
   }
 
-  // --- RENDER ELEVATIONS ---
   function renderElevationHTML(wall) {
     let html = `<div class="env-floor"></div><div class="env-ceiling"></div>`;
-    
+    const W = (wall === 'A' || wall === 'C') ? wallDims.A : wallDims.B;
+    const H = wallDims.H;
+
+    // Render site elements
+    window.siteElements.forEach(el => {
+        if (el.wall !== wall) return;
+        const leftPct = (el.x / W) * 100;
+        const widthPct = (el.w / W) * 100;
+        const heightPct = (el.h / H) * 100;
+        const bottomPct = (el.z / H) * 100;
+        
+        if (el.type === 'door') {
+            html += `<div class="elev-door" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
+        } else if (el.type === 'window') {
+            html += `<div class="elev-window" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
+        } else if (el.type === 'pillar') {
+            html += `<div class="elev-pillar" style="left:${leftPct}%; width:${widthPct}%; height:100%;"></div>`;
+        }
+    });
+
+    // Render modules
     window.modules.forEach(mod => {
         if (mod.wall !== wall) return;
-        const leftPct = (mod.left / ROOM_WIDTH) * 100;
-        const widthPct = (mod.width / ROOM_WIDTH) * 100;
-        const heightPct = (mod.height / CEILING_HEIGHT) * 100;
-        const bottomPct = ((mod.z || 0) / CEILING_HEIGHT) * 100;
+        const leftPct = (mod.x / W) * 100;
+        const widthPct = (mod.width / W) * 100;
+        const heightPct = (mod.height / H) * 100;
+        const bottomPct = ((mod.z || 0) / H) * 100;
         
-        html += `
-          <div class="elev-module ${mod.id === selectedId ? 'selected' : ''}" data-wall="${wall}" data-id="${mod.id}"
-               style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%; display: flex;">
-               ${mod.type}
-          </div>`;
+        html += `<div class="elev-module ${mod.id === selectedId ? 'selected' : ''}" data-id="${mod.id}" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
     });
     return html;
   }
 
-  // --- UPDATE ALL VIEWS ---
+  // --- UPDATE LOOP ---
   function updateAllViews() {
+    // 1. Clamp positions
     window.modules.forEach(mod => {
-        mod.left = Math.max(0, Math.min(ROOM_WIDTH - mod.width, mod.left));
-        mod.top = Math.max(0, Math.min(ROOM_HEIGHT - mod.height, mod.top));
+        mod.left = Math.max(0, Math.min(wallDims.A - mod.width, mod.left));
+        mod.top = Math.max(0, Math.min(wallDims.B - mod.height, mod.top));
     });
-    
-    plan.style.width = ROOM_WIDTH + 'px';
-    plan.style.height = ROOM_HEIGHT + 'px';
+
+    // 2. Render Plan
+    plan.style.width = wallDims.A + 'px';
+    plan.style.height = wallDims.B + 'px';
     plan.innerHTML = renderPlanHTML();
 
+    // 3. Render Elevations
     document.querySelectorAll('.elevation-box').forEach(box => {
         const wall = box.getAttribute('data-view').replace('wall', '');
         const wrapper = box.querySelector('.zoom-wrapper');
         if (wrapper) wrapper.innerHTML = renderElevationHTML(wall);
     });
     
+    // 4. Render Center Alt View
     const centerPanel = document.getElementById('box-center');
-    if (centerPanel && centerPanel.getAttribute('data-view').startsWith('wall')) {
-        const wall = centerPanel.getAttribute('data-view').replace('wall', '');
+    const activeView = centerPanel.getAttribute('data-view');
+    if (activeView !== 'plan') {
         const altWrapper = document.querySelector('#alt-content .zoom-wrapper');
-        if (altWrapper) altWrapper.innerHTML = renderElevationHTML(wall);
+        if (altWrapper) {
+            if (activeView === 'persp') {
+                altWrapper.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; color:#999; flex-direction:column; background:#f5f1ea;"><h2>3D Render View</h2><p>(Isometric projection coming in next update)</p></div>`;
+            } else {
+                altWrapper.innerHTML = renderElevationHTML(activeView.replace('wall', ''));
+            }
+        }
     }
-    
-    // Refresh right panel
-    window.updateRightPanel(null, null);
+
+    // 5. Update Right Panel
+    renderRightPanelProperties();
   }
 
-  // --- VIEW SWITCHING ---
-  window.changeView = function(viewType, targetBox) {
-    if (!targetBox) targetBox = document.getElementById('box-center');
-    targetBox.setAttribute('data-view', viewType);
-    
-    if (viewType === 'plan') {
-        document.getElementById('view-plan').classList.add('active');
-        document.getElementById('view-alt').classList.remove('active');
-        document.getElementById('view-tab').classList.remove('active');
-        document.getElementById('center-title').innerText = 'Plan View';
-        applyTransform();
-    } else if (viewType === 'persp') {
-        document.getElementById('view-plan').classList.remove('active');
-        document.getElementById('view-alt').classList.add('active');
-        document.getElementById('view-tab').classList.remove('active');
-        document.getElementById('center-title').innerText = '3D Perspective';
-        document.querySelector('#alt-content .zoom-wrapper').innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; color:#999; flex-direction:column;"><h2>3D Render Loading...</h2></div>`;
-    } else if (viewType.startsWith('wall')) {
-        document.getElementById('view-plan').classList.remove('active');
-        document.getElementById('view-alt').classList.add('active');
-        document.getElementById('view-tab').classList.remove('active');
-        document.getElementById('center-title').innerText = 'Elevation: Wall ' + viewType.replace('wall', '');
-        document.querySelector('#alt-content .zoom-wrapper').innerHTML = renderElevationHTML(viewType.replace('wall', ''));
+  // --- UI: SIDE PANELS ---
+  window.updateRightPanel = function(tabName, btnElement) {
+    if (btnElement) {
+        document.querySelectorAll('.action-tabs button').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
     }
-    ctxMenu.style.display = 'none';
+    
+    const tc = document.getElementById('toolbar-content');
+    
+    if (tabName === 'View & Tools') {
+        tc.innerHTML = `
+          <div class="tool-group"><button onclick="openAddModuleModal()" style="width:100%; background:var(--accent-blue); color:white; padding:10px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">+ Add Module</button></div>
+          <div class="tool-group">
+            <span class="tool-group-title">Transform</span>
+            <div class="btn-row"><button onclick="zoomCanvas(1.1)">Zoom +</button><button onclick="zoomCanvas(0.9)">Zoom -</button></div>
+            <div class="btn-row" style="margin-top:6px;"><button onclick="rotateSelected(-1)">↺</button><select id="rot-step" style="flex:1; border: 1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); border-radius:4px; padding:4px;"><option value="90">90°</option><option value="45">45°</option><option value="15">15°</option></select><button onclick="rotateSelected(1)">↻</button></div>
+          </div>`;
+    } else if (tabName === 'Room Setting') {
+        tc.innerHTML = `
+          <div class="tool-group">
+            <span class="tool-group-title">Wall Dimensions (mm)</span>
+            <div class="prop-form">
+              <div><label>Wall A (Top)</label><input type="number" value="${wallDims.A*10}" onchange="wallDims.A = +this.value/10; initializeViews(); centerPlan();"></div>
+              <div><label>Wall B (Right)</label><input type="number" value="${wallDims.B*10}" onchange="wallDims.B = +this.value/10; initializeViews(); centerPlan();"></div>
+              <div><label>Wall C (Bottom)</label><input type="number" value="${wallDims.A*10}" disabled title="Matches Wall A"></div>
+              <div><label>Wall D (Left)</label><input type="number" value="${wallDims.B*10}" disabled title="Matches Wall B"></div>
+              <div style="margin-top:10px;"><label>Ceiling Height</label><input type="number" value="${wallDims.H*10}" onchange="wallDims.H = +this.value/10; updateAllViews();"></div>
+            </div>
+          </div>`;
+    } else if (tabName === 'Site Structure') {
+        tc.innerHTML = `
+          <div class="tool-group">
+            <span class="tool-group-title">Add Elements</span>
+            <div class="btn-row" style="flex-direction:column; gap:8px;">
+              <button onclick="addSiteElement('door')">+ Add Door</button>
+              <button onclick="addSiteElement('window')">+ Add Window</button>
+              <button onclick="addSiteElement('pillar')">+ Add Pillar / Column</button>
+            </div>
+          </div>`;
+    }
+    
+    renderRightPanelProperties();
   };
 
-  // --- MODULE ADDING ---
+  function renderRightPanelProperties() {
+    const titleEl = document.getElementById('prop-title');
+    const bodyEl = document.getElementById('prop-body');
+    
+    let obj = null;
+    if (selectedType === 'module') obj = window.modules.find(m => m.id === selectedId);
+    else if (selectedType === 'site') obj = window.siteElements.find(m => m.id === selectedId);
+
+    if (!obj) {
+        titleEl.innerText = 'Details';
+        bodyEl.innerHTML = `<p style="color:var(--text-muted); font-size:13px;">Select an item on the plan to edit its dimensions.</p>`;
+        return;
+    }
+
+    titleEl.innerText = selectedType === 'module' ? 'Module: ' + obj.type : 'Element: ' + obj.type.toUpperCase();
+    
+    if (selectedType === 'module') {
+        bodyEl.innerHTML = `
+          <div class="prop-form">
+            <div><label>Width (mm)</label><input type="number" value="${Math.round(obj.width * 10)}" onchange="const m=window.modules.find(x=>x.id==='${obj.id}'); m.width=+this.value/10; updateAllViews();"></div>
+            <div><label>Height (mm)</label><input type="number" value="${Math.round(obj.height * 10)}" onchange="const m=window.modules.find(x=>x.id==='${obj.id}'); m.height=+this.value/10; updateAllViews();"></div>
+            <div><label>Depth (mm)</label><input type="number" value="${obj.depth ? Math.round(obj.depth * 10) : 600}" onchange="const m=window.modules.find(x=>x.id==='${obj.id}'); m.depth=+this.value/10; updateAllViews();"></div>
+            <div style="margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px;"><label>Height from Floor (mm)</label><input type="number" value="${Math.round((obj.z||0) * 10)}" onchange="const m=window.modules.find(x=>x.id==='${obj.id}'); m.z=+this.value/10; updateAllViews();"></div>
+            <div><label>Mount on Wall</label><select onchange="const m=window.modules.find(x=>x.id==='${obj.id}'); m.wall=this.value; updateAllViews();"><option value="A" ${obj.wall==='A'?'selected':''}>Wall A (Top)</option><option value="B" ${obj.wall==='B'?'selected':''}>Wall B (Right)</option><option value="C" ${obj.wall==='C'?'selected':''}>Wall C (Bottom)</option><option value="D" ${obj.wall==='D'?'selected':''}>Wall D (Left)</option></select></div>
+            <button onclick="deleteSelected()" style="background:#ef4444; color:white; border:none; padding:8px; border-radius:4px; margin-top:10px; cursor:pointer;">Delete Module</button>
+          </div>`;
+    } else {
+        // Site Element
+        bodyEl.innerHTML = `
+          <div class="prop-form">
+            <div><label>Width (mm)</label><input type="number" value="${Math.round(obj.width * 10)}" onchange="const m=window.siteElements.find(x=>x.id==='${obj.id}'); m.width=+this.value/10; updateAllViews();"></div>
+            <div><label>Height (mm)</label><input type="number" value="${Math.round(obj.height * 10)}" onchange="const m=window.siteElements.find(x=>x.id==='${obj.id}'); m.height=+this.value/10; updateAllViews();"></div>
+            <div style="margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px;"><label>Height from Floor (mm)</label><input type="number" value="${Math.round((obj.z||0) * 10)}" onchange="const m=window.siteElements.find(x=>x.id==='${obj.id}'); m.z=+this.value/10; updateAllViews();"></div>
+            <div><label>Mount on Wall</label><select onchange="const m=window.siteElements.find(x=>x.id==='${obj.id}'); m.wall=this.value; updateAllViews();"><option value="A" ${obj.wall==='A'?'selected':''}>Wall A (Top)</option><option value="B" ${obj.wall==='B'?'selected':''}>Wall B (Right)</option><option value="C" ${obj.wall==='C'?'selected':''}>Wall C (Bottom)</option><option value="D" ${obj.wall==='D'?'selected':''}>Wall D (Left)</option></select></div>
+            <button onclick="deleteSelected()" style="background:#ef4444; color:white; border:none; padding:8px; border-radius:4px; margin-top:10px; cursor:pointer;">Delete Element</button>
+          </div>`;
+    }
+  }
+
+  // --- INTERACTION: MODULES & ELEMENTS ---
   window.openAddModuleModal = function() {
     const list = document.getElementById('quick-add-list');
     const bMods = getBackendModules();
-    let html = '';
-    let currentCat = '';
+    let html = '', currentCat = '';
     
     bMods.forEach(m => {
-      if (m.cat !== currentCat) {
-        html += `<div class="quick-add-cat">${m.cat}</div>`;
-        currentCat = m.cat;
-      }
-      html += `<div class="quick-add-item" data-search="${m.n.toLowerCase()}" onclick="addModule('${m.n.replace(/'/g,"\\'")}', '${m.id}', '${m.cat.includes('Loft') ? 200 : 0}')">
-                 <span>${m.n}</span>
-                 <span style="font-size:11px; opacity:0.6">${m.w}cm</span>
-               </div>`;
+      if (m.cat !== currentCat) { html += `<div class="quick-add-cat">${m.cat}</div>`; currentCat = m.cat; }
+      html += `<div class="quick-add-item" data-search="${m.n.toLowerCase()}" onclick="addModule('${m.n.replace(/'/g,"\\'")}', '${m.id}', '${m.cat.includes('Loft') ? 200 : 0}')"><span>${m.n}</span><span style="font-size:11px; opacity:0.6">${m.w}cm</span></div>`;
     });
     
     list.innerHTML = html;
@@ -425,62 +483,74 @@
 
   window.filterQuickAdd = function() {
     const q = document.getElementById('quick-add-input').value.toLowerCase();
-    document.querySelectorAll('.quick-add-item').forEach(el => { 
-      el.style.display = el.dataset.search.includes(q) ? 'flex' : 'none'; 
-    });
+    document.querySelectorAll('.quick-add-item').forEach(el => { el.style.display = el.dataset.search.includes(q) ? 'flex' : 'none'; });
   };
 
   window.addModule = function(type, mk, zHeight) { 
     document.getElementById('quick-add-modal').style.display = 'none'; 
     const newMod = {
-        id: 'mod-' + Date.now(),
-        type: type,
-        mk: mk,
-        left: Math.round(ROOM_WIDTH / 2 - 40),
-        top: Math.round(ROOM_HEIGHT / 2 - 40),
-        z: parseInt(zHeight),
-        width: 80,
-        height: 80,
-        rotation: 0,
-        wall: 'A'
+        id: 'mod-' + Date.now(), type: type, mk: mk,
+        left: Math.round(wallDims.A / 2 - 40), top: Math.round(wallDims.B / 2 - 40), z: parseInt(zHeight),
+        x: 400, // Default X for elevation
+        width: 80, height: 80, depth: 60, rotation: 0, wall: 'A'
     };
     window.modules.push(newMod);
-    selectedId = newMod.id;
-    saveState();
+    selectedId = newMod.id; selectedType = 'module';
+    saveState(); updateAllViews();
+  };
+
+  window.addSiteElement = function(type) {
+    const newEl = {
+        id: 'el-' + Date.now(), type: type,
+        left: Math.round(wallDims.A / 2 - 40), top: Math.round(wallDims.B / 2 - 40), z: type === 'window' ? 90 : 0,
+        x: 400, // Default X for elevation
+        width: type === 'pillar' ? 30 : 90, height: type === 'pillar' ? 30 : 210, rotation: 0, wall: 'A'
+    };
+    if (type === 'window') { newEl.width = 120; newEl.height = 120; }
+    window.siteElements.push(newEl);
+    selectedId = newEl.id; selectedType = 'site';
+    saveState(); updateAllViews();
+  };
+
+  window.deleteSelected = function() {
+    if (selectedType === 'module') window.modules = window.modules.filter(m => m.id !== selectedId);
+    if (selectedType === 'site') window.siteElements = window.siteElements.filter(m => m.id !== selectedId);
+    selectedId = null; selectedType = null;
     updateAllViews();
   };
 
-  // --- DRAGGING & SELECTION ---
+  // --- DRAG LOGIC ---
   document.addEventListener('mousedown', (e) => {
-    const modEl = e.target.closest('.module, .elev-module');
-    if (modEl) {
-        selectedId = modEl.getAttribute('data-id');
-        const mod = window.modules.find(m => m.id === selectedId);
-        if (!mod) return;
+    const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .elev-module');
+    if (el) {
+        selectedId = el.getAttribute('data-id');
+        selectedType = el.classList.contains('module') || el.classList.contains('elev-module') ? 'module' : 'site';
+        
+        let obj = selectedType === 'module' ? window.modules.find(m => m.id === selectedId) : window.siteElements.find(m => m.id === selectedId);
+        if (!obj) return;
 
         isDragging = true;
         startX = e.clientX; startY = e.clientY;
-        startLeft = mod.left; startTop = mod.top;
+        startLeft = obj.left; startTop = obj.top;
         
-        if (modEl.classList.contains('elev-module')) {
+        if (el.classList.contains('elev-module')) {
             dragType = 'elev';
-            const box = e.target.closest('.elevation-box');
-            if (box) mod.wall = box.getAttribute('data-view').replace('wall', '');
+            if (e.target.closest('.elevation-box')) obj.wall = e.target.closest('.elevation-box').getAttribute('data-view').replace('wall', '');
         } else {
             dragType = 'plan';
         }
         
         updateAllViews();
-    } else {
-        selectedId = null;
+    } else if (!e.target.closest('.panel') && !e.target.closest('.sub-header') && !e.target.closest('.top-nav')) {
+        selectedId = null; selectedType = null;
         updateAllViews();
     }
   });
 
   document.addEventListener('mousemove', (e) => {
     if (!isDragging || !selectedId) return;
-    const mod = window.modules.find(m => m.id === selectedId);
-    if (!mod) return;
+    let obj = selectedType === 'module' ? window.modules.find(m => m.id === selectedId) : window.siteElements.find(m => m.id === selectedId);
+    if (!obj) return;
 
     const dx = (e.clientX - startX) / currentZoom;
     const dy = (e.clientY - startY) / currentZoom;
@@ -489,175 +559,134 @@
         let newLeft = startLeft + dx;
         let newTop = startTop + dy;
         
-        // Snapping
+        // Snap to nearest module logic (simplified to boundaries here)
         if (document.getElementById('snap-wall').checked) {
             if (Math.abs(newLeft) < snapThreshold) newLeft = 0;
             if (Math.abs(newTop) < snapThreshold) newTop = 0;
-            if (Math.abs(newLeft + mod.width - ROOM_WIDTH) < snapThreshold) newLeft = ROOM_WIDTH - mod.width;
-            if (Math.abs(newTop + mod.height - ROOM_HEIGHT) < snapThreshold) newTop = ROOM_HEIGHT - mod.height;
+            if (Math.abs(newLeft + obj.width - wallDims.A) < snapThreshold) newLeft = wallDims.A - obj.width;
+            if (Math.abs(newTop + obj.height - wallDims.B) < snapThreshold) newTop = wallDims.B - obj.height;
         }
         
-        mod.left = newLeft;
-        mod.top = newTop;
+        obj.left = newLeft; obj.top = newTop;
+        obj.x = newLeft; // Keep X synced for elevations
         
-        // Auto-detect which wall it's closest to based on position
-        if (mod.top < 20) mod.wall = 'A';
-        else if (mod.top + mod.height > ROOM_HEIGHT - 20) mod.wall = 'C';
-        else if (mod.left < 20) mod.wall = 'D';
-        else if (mod.left + mod.width > ROOM_WIDTH - 20) mod.wall = 'B';
+        // Auto-detect wall
+        if (obj.top < 20) obj.wall = 'A';
+        else if (obj.top + obj.height > wallDims.B - 20) obj.wall = 'C';
+        else if (obj.left < 20) obj.wall = 'D';
+        else if (obj.left + obj.width > wallDims.A - 20) obj.wall = 'B';
         
     } else if (dragType === 'elev') {
-        mod.left = startLeft + dx;
-        mod.z = Math.max(0, (mod.z || 0) - dy);
+        obj.x = startLeft + dx;
+        obj.z = Math.max(0, (obj.z || 0) - dy);
     }
     
     updateAllViews();
   });
 
   document.addEventListener('mouseup', () => {
-    if (isDragging) {
-        isDragging = false;
-        saveState();
-    }
+    if (isDragging) { isDragging = false; saveState(); }
   });
 
-  // --- ZOOM & PAN ---
-  function applyTransform() {
-      if (plan) plan.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
-  }
+  // --- UTILS ---
+  window.changeRoomShape = function(shape) {
+    CURRENT_SHAPE = shape;
+    if (shape === 'l-shape') { wallDims.A = 1000; wallDims.B = 800; }
+    else if (shape === 'u-shape') { wallDims.A = 1200; wallDims.B = 900; }
+    else { wallDims.A = 800; wallDims.B = 600; }
+    initializeViews(); centerPlan(); saveState();
+  };
+
+  function applyTransform() { if (plan) plan.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; }
 
   viewport.addEventListener('wheel', (e) => {
       if (!document.getElementById('view-plan').classList.contains('active')) return; 
       e.preventDefault();
       const rect = viewport.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+      const mx = e.clientX - rect.left; const my = e.clientY - rect.top;
       const factor = e.deltaY < 0 ? 1.1 : 0.9;
       const newZoom = Math.max(0.2, Math.min(3, currentZoom * factor));
       const scale = newZoom / currentZoom;
-      panX = mx - scale * (mx - panX);
-      panY = my - scale * (my - panY);
-      currentZoom = newZoom;
-      applyTransform();
+      panX = mx - scale * (mx - panX); panY = my - scale * (my - panY);
+      currentZoom = newZoom; applyTransform();
   }, { passive: false });
 
   function centerPlan() {
       const border = 16; 
-      const scaleW = (viewport.clientWidth - border) / (ROOM_WIDTH + border);
-      const scaleH = (viewport.clientHeight - border) / (ROOM_HEIGHT + border);
+      const scaleW = (viewport.clientWidth - border) / (wallDims.A + border);
+      const scaleH = (viewport.clientHeight - border) / (wallDims.B + border);
       currentZoom = Math.min(scaleW, scaleH) * 0.9;
-      panX = (viewport.clientWidth - (ROOM_WIDTH + border) * currentZoom) / 2;
-      panY = (viewport.clientHeight - (ROOM_HEIGHT + border) * currentZoom) / 2;
+      panX = (viewport.clientWidth - (wallDims.A + border) * currentZoom) / 2;
+      panY = (viewport.clientHeight - (wallDims.B + border) * currentZoom) / 2;
       applyTransform();
   }
 
   window.zoomCanvas = function(factor) { currentZoom *= factor; applyTransform(); };
-  window.rotateModule = function(dir) {
-    const mod = window.modules.find(m => m.id === selectedId);
-    if (mod) { mod.rotation += dir * (parseInt(document.getElementById('rot-step').value) || 90); updateAllViews(); }
-  };
-
-  // --- UI HELPERS ---
-  function initializeViews() {
-    plan.style.width = ROOM_WIDTH + 'px';
-    plan.style.height = ROOM_HEIGHT + 'px';
-    updateAllViews();
-  }
-
-  window.updateRightPanel = function(tabName, btnElement) {
-    if (btnElement) {
-        document.querySelectorAll('.action-tabs button').forEach(b => b.classList.remove('active'));
-        btnElement.classList.add('active');
-    }
-    
-    const titleEl = document.getElementById('prop-title');
-    const bodyEl = document.getElementById('prop-body');
-    const mod = window.modules.find(m => m.id === selectedId);
-
-    if (!mod) {
-        titleEl.innerText = 'Module Details';
-        bodyEl.innerHTML = `<p style="color:var(--text-muted);">Select a module on the plan to edit its dimensions.</p>`;
-        return;
-    }
-
-    titleEl.innerText = 'Selected: ' + mod.type;
-    bodyEl.innerHTML = `
-      <div class="prop-form">
-        <div><label>Width (mm)</label><input type="number" value="${Math.round(mod.width * 10)}" onchange="const m=window.modules.find(x=>x.id==='${mod.id}'); m.width=+this.value/10; updateAllViews();"></div>
-        <div><label>Height (mm)</label><input type="number" value="${Math.round(mod.height * 10)}" onchange="const m=window.modules.find(x=>x.id==='${mod.id}'); m.height=+this.value/10; updateAllViews();"></div>
-        <div><label>Height from Floor (mm)</label><input type="number" value="${Math.round((mod.z||0) * 10)}" onchange="const m=window.modules.find(x=>x.id==='${mod.id}'); m.z=+this.value/10; updateAllViews();"></div>
-      </div>`;
+  window.rotateSelected = function(dir) {
+    let obj = selectedType === 'module' ? window.modules.find(m => m.id === selectedId) : window.siteElements.find(m => m.id === selectedId);
+    if (obj) { obj.rotation += dir * (parseInt(document.getElementById('rot-step').value) || 90); updateAllViews(); }
   };
 
   window.showContextMenu = function(e, box) {
-    e.preventDefault();
-    ctxMenu.style.display = 'block';
+    e.preventDefault(); ctxMenu.style.display = 'block';
     ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
     ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - 200) + 'px';
   };
-
   document.addEventListener('click', (e) => { if (!e.target.closest('.panel-header')) ctxMenu.style.display = 'none'; });
 
-  // --- HISTORY (Simplified) ---
+  window.changeView = function(viewType) {
+    document.getElementById('box-center').setAttribute('data-view', viewType);
+    if (viewType === 'plan') {
+        document.getElementById('view-plan').classList.add('active'); document.getElementById('view-alt').classList.remove('active');
+        document.getElementById('center-title').innerText = 'Plan View'; applyTransform();
+    } else {
+        document.getElementById('view-plan').classList.remove('active'); document.getElementById('view-alt').classList.add('active');
+        document.getElementById('center-title').innerText = viewType === 'persp' ? '3D Perspective' : 'Elevation: Wall ' + viewType.replace('wall', '');
+        updateAllViews();
+    }
+    ctxMenu.style.display = 'none';
+  };
+
   function saveState() { }
   window.undoAction = function() { alert('Undo coming soon!'); };
   window.redoAction = function() { alert('Redo coming soon!'); };
 
-  // --- INITIALIZE ---
-  initializeViews();
-  centerPlan();
-
-  /* -------- PREVIEW BRIDGE -------- */
+  // --- PREVIEW BRIDGE ---
   const { quoteId, roomIdx } = window.__dsParams;
-  
   try {
     const saved = JSON.parse(localStorage.getItem('msq_v2') || 'null');
     if (saved && saved.q && saved.q[quoteId] && saved.q[quoteId].rooms && saved.q[quoteId].rooms[roomIdx]) {
       const room = saved.q[quoteId].rooms[roomIdx];
-      if (room.dim) {
-        ROOM_WIDTH = room.dim.L / 10;
-        ROOM_HEIGHT = room.dim.W / 10;
-        CEILING_HEIGHT = (room.dim.H || 2700) / 10;
-      }
+      if (room.dim) { wallDims.A = room.dim.L / 10; wallDims.B = room.dim.W / 10; wallDims.H = (room.dim.H || 2700) / 10; }
       if (room.name) document.getElementById('room-name-input').value = room.name;
       
       const existingDS = (room.rows || []).filter(r => r._fromDS && r.fpId);
       if (existingDS.length) {
         window.modules = existingDS.map(r => ({
           id: r.fpId, type: r.n, mk: r.mk || '', wall: r.wl || 'A',
-          left: (r.x || 0) / 10, top: (r.y || 0) / 10, z: (r.y || 0) / 10,
-          width: (r.l || 0) / 10, height: (r.w || 0) / 10, rotation: 0
+          left: (r.x || 0) / 10, top: (r.y || 0) / 10, x: (r.x || 0) / 10, z: (r.z || 0) / 10,
+          width: (r.l || 0) / 10, height: (r.w || 0) / 10, depth: (r.d || 600) / 10, rotation: 0
         }));
-        selectedId = window.modules[0].id;
       }
-      initializeViews();
-      centerPlan();
     }
   } catch(e) {}
+  initializeViews(); centerPlan();
 
   window.addEventListener('message', function(ev) {
     if (!ev.data || ev.data.type !== 'ds-request-save') return;
     try {
       const payload = {
-        type: 'ds-saved',
-        quoteId: quoteId,
-        roomIdx: roomIdx,
-        dimChanged: true,
-        dim: { L: ROOM_WIDTH * 10, W: ROOM_HEIGHT * 10, H: CEILING_HEIGHT * 10 },
-        modules: (window.modules || []).map(m => {
-          let cat = 'base';
+        type: 'ds-saved', quoteId: quoteId, roomIdx: roomIdx, dimChanged: true,
+        dim: { L: wallDims.A * 10, W: wallDims.B * 10, H: wallDims.H * 10 },
+        modules: window.modules.map(m => {
+          let cat = m.z > 100 ? 'wall' : 'base';
           if (m.type.toLowerCase().includes('loft')) cat = 'loft';
-          else if (m.z > 100) cat = 'wall';
-
-          return {
-            fpId: m.id, type: m.type, category: cat, wall: m.wall,
-            left: m.left, top: m.top, z: m.z, width: m.width, height: m.height, mk: m.mk || ''
-          };
+          return { fpId: m.id, type: m.type, category: cat, wall: m.wall, left: m.left, top: m.top, z: m.z || 0, width: m.width, height: m.height, depth: m.depth || 60, mk: m.mk || '' };
         }),
         roomName: document.getElementById('room-name-input').value || 'New Room'
       };
       window.parent.postMessage(payload, '*');
-    } catch(e) { console.warn('Save failed', e); }
+    } catch(e) {}
   });
 
 </script>
