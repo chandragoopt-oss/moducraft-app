@@ -24,15 +24,14 @@ window.CURRENT_SHAPE = 'rectangle';
 let activeRoomIndex = window.__dsParams.roomIdx || 0;
 let selectedId = null, selectedType = null; 
 let activeWall = 'A';
-
 let isDragging = false, dragType = '', startX, startY, startLeft, startTop;
 let isPanning = false, panStartX, panStartY;
 let currentZoom = 1, panX = 0, panY = 0;
-
+let CURRENT_UNIT = 'mm';
 window.SHAPE_CUT = 0.4;   
 window.SHAPE_CUT_Y = 0.4;
 
-// --- WALL DEFINITIONS ---
+// --- 1. WALL DEFINITIONS ---
 function getWallSegments() {
   const W = wallDims.A, H = wallDims.B;
   const walls = [];
@@ -44,17 +43,6 @@ function getWallSegments() {
     walls.push({ id: 'E', name: 'E', x1: W*SHAPE_CUT, y1: H*(1-SHAPE_CUT_Y), x2: W*SHAPE_CUT, y2: H });
     walls.push({ id: 'F', name: 'F', x1: W*SHAPE_CUT, y1: H, x2: 0, y2: H });
     walls.push({ id: 'G', name: 'G', x1: 0, y1: H, x2: 0, y2: 0 });
-  } else if (CURRENT_SHAPE === 'u-shape') {
-    walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W*0.3, y2: 0 });
-    walls.push({ id: 'B', name: 'B', x1: W*0.3, y1: 0, x2: W*0.7, y2: 0 });
-    walls.push({ id: 'C', name: 'C', x1: W*0.7, y1: 0, x2: W, y2: 0 });
-    walls.push({ id: 'D', name: 'D', x1: W, y1: 0, x2: W, y2: H });
-    walls.push({ id: 'E', name: 'E', x1: W, y1: H, x2: W*0.7, y2: H });
-    walls.push({ id: 'F', name: 'F', x1: W*0.7, y1: H, x2: W*0.7, y2: H*0.5 });
-    walls.push({ id: 'G', name: 'G', x1: W*0.7, y1: H*0.5, x2: W*0.3, y2: H*0.5 });
-    walls.push({ id: 'H', name: 'H', x1: W*0.3, y1: H*0.5, x2: W*0.3, y2: H });
-    walls.push({ id: 'I', name: 'I', x1: W*0.3, y1: H, x2: 0, y2: H });
-    walls.push({ id: 'J', name: 'J', x1: 0, y1: H, x2: 0, y2: 0 });
   } else {
     walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W, y2: 0 });
     walls.push({ id: 'B', name: 'B', x1: W, y1: 0, x2: W, y2: H });
@@ -64,17 +52,28 @@ function getWallSegments() {
   return walls;
 }
 
-// --- LOAD DATA ---
+// --- 2. LOAD DATA ---
 function loadRoomsDropdown() {
   const select = document.getElementById('active-room-select');
-  if (window.__dsParams.room && window.__dsParams.room.name) {
-      select.innerHTML = `<option value="0" selected>${window.__dsParams.room.name}</option>`;
-      if (window.__dsParams.room.dim) {
-          wallDims.A = window.__dsParams.room.dim.L / 10 || 800;
-          wallDims.B = window.__dsParams.room.dim.W / 10 || 600;
-          wallDims.H = (window.__dsParams.room.dim.H || 2700) / 10;
+  
+  // Try to load from LocalStorage if we don't have a passed list
+  let allRooms = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem('msq_v2') || 'null');
+    if (saved && saved.q && saved.q[window.__dsParams.quoteId] && saved.q[window.__dsParams.quoteId].rooms) {
+       allRooms = saved.q[window.__dsParams.quoteId].rooms;
+    }
+  } catch(e) {}
+
+  if (allRooms.length > 0) {
+      select.innerHTML = allRooms.map((r, i) => `<option value="${i}" ${i === activeRoomIndex ? 'selected' : ''}>${r.name || 'Room '+(i+1)}</option>`).join('');
+      // Load initial room
+      const room = allRooms[activeRoomIndex];
+      if (room.dim) {
+          wallDims.A = room.dim.L / 10 || 800;
+          wallDims.B = room.dim.W / 10 || 600;
+          wallDims.H = (room.dim.H || 2700) / 10;
       }
-      const room = window.__dsParams.room;
       const existingDS = (room.rows || []).filter(r => r._fromDS && r.fpId);
       window.modules = existingDS.map(r => ({
         id: r.fpId, type: r.n, mk: r.mk || '', wall: r.wl || 'A',
@@ -82,11 +81,16 @@ function loadRoomsDropdown() {
         width: (r.l || 0) / 10, height: (r.w || 0) / 10, depth: (r.d || 600) / 10
       }));
       if (room.siteElements) window.siteElements = room.siteElements.map(el => ({...el}));
+  } else if (window.__dsParams.room && window.__dsParams.room.name) {
+      select.innerHTML = `<option value="0" selected>${window.__dsParams.room.name}</option>`;
+  } else {
+      select.innerHTML = `<option value="0">Living Room</option>`;
   }
+  
   initializeViews(); 
 }
 
-// --- RENDER PLAN ---
+// --- 3. RENDER PLAN ---
 function renderPlanHTML() {
   const W = wallDims.A, H = wallDims.B;
   const walls = getWallSegments();
@@ -108,25 +112,35 @@ function renderPlanHTML() {
 
   let itemsHtml = '';
   
-  // RENDER SITE ELEMENTS
+  // Render Beams & Slabs
   window.siteElements.forEach(el => {
-      let w = walls.find(w => w.id === el.wall);
-      if(!w && el.type !== 'pillar') return;
-      
-      if (el.type === 'door' || el.type === 'window') {
+      if (el.type === 'beam' || el.type === 'slab') {
+          let xPos = el.x + 100, yPos = el.y + 100;
+          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${xPos}px; top:${yPos}px; width:${el.width}px; height:${el.height||20}px; transform:translate(-50%,-50%); background:rgba(200,200,200,0.5); border:1px dashed #666; z-index:2;"></div>`;
+      }
+  });
+
+  // Render Site Elements
+  window.siteElements.forEach(el => {
+      if (el.type === 'pillar') {
+          let cx = el.x + 100, cy = el.y + 100;
+          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${el.width}px; height:${el.width}px; transform:translate(-50%,-50%);"></div>`;
+      } else if (el.type === 'niche') {
+          let cx = el.x + 100, cy = el.y + 100;
+          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${el.width}px; height:${el.height}px; transform:translate(-50%,-50%); background:#ffebee; border:2px dashed red; color:#b00020; display:flex; align-items:center; justify-content:center; font-size:10px;">Niche</div>`;
+      } else {
+          let w = walls.find(w => w.id === el.wall);
+          if(!w) return;
           const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
           const pct = (el.x + el.width/2) / wallLen;
           const cx = w.x1 + (w.x2 - w.x1) * pct + 100;
           const cy = w.y1 + (w.y2 - w.y1) * pct + 100;
           const isHorizontal = Math.abs(w.y1 - w.y2) < 1;
-          itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%);"></div>`;
-      } else if (el.type === 'pillar') {
-          let cx = el.x + 100, cy = el.y + 100;
-          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${el.width}px; height:${el.width}px; transform:translate(-50%,-50%);"></div>`;
+          let color = el.type === 'door' ? 'plan-door' : 'plan-window';
+          itemsHtml += `<div class="${color} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%);"></div>`;
       }
   });
 
-  // RENDER MODULES
   window.modules.forEach(m => {
       itemsHtml += `<div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}" style="left:${m.x+100}px; top:${m.y+100}px; width:${m.width}px; height:${m.depth || m.width}px;">${m.type}</div>`;
   });
@@ -134,7 +148,7 @@ function renderPlanHTML() {
   return svg + itemsHtml;
 }
 
-// --- RENDER ELEVATIONS ---
+// --- 4. RENDER ELEVATIONS ---
 function renderElevations() {
   const container = document.getElementById('elevations-container');
   const walls = getWallSegments();
@@ -167,7 +181,7 @@ function renderElevations() {
   container.innerHTML = html;
 }
 
-// --- MAIN UPDATE ---
+// --- 5. UPDATE ALL VIEWS ---
 function updateAllViews() {
   plan.style.width = (wallDims.A + 200) + 'px';
   plan.style.height = (wallDims.B + 200) + 'px';
@@ -200,7 +214,7 @@ function updateAllViews() {
   renderRightPanelProperties();
 }
 
-// --- DRAG & DROP LOGIC ---
+// --- 6. INTERACTION & DRAG ---
 document.addEventListener('mousedown', (e) => {
   const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .elev-module, .elev-door, .elev-window');
   
@@ -213,21 +227,9 @@ document.addEventListener('mousedown', (e) => {
       isDragging = true;
       startX = e.clientX; 
       startY = e.clientY;
-      
-      // Determine what axis to drag based on the object type
-      if (obj.type === 'pillar') {
-          startLeft = obj.x;
-          startTop = obj.y;
-          dragType = 'pillar';
-      } else if (obj.type === 'door' || obj.type === 'window') {
-          startLeft = obj.x;
-          startTop = obj.z || 0;
-          dragType = 'site';
-      } else {
-          startLeft = obj.x;
-          startTop = obj.y;
-          dragType = 'module';
-      }
+      startLeft = obj.x;
+      startTop = obj.y;
+      dragType = obj.type === 'pillar' ? 'pillar' : (selectedType === 'site' && obj.type !== 'niche' && obj.type !== 'beam' && obj.type !== 'slab' ? 'site' : 'module');
       
       const parentCanvas = el.closest('.elev-canvas');
       if (parentCanvas) {
@@ -262,10 +264,7 @@ document.addEventListener('mousemove', (e) => {
   const dx = (e.clientX - startX) / currentZoom;
   const dy = (e.clientY - startY) / currentZoom;
 
-  if (dragType === 'pillar') {
-      obj.x = startLeft + dx;
-      obj.y = startTop + dy;
-  } else if (dragType === 'module') {
+  if (dragType === 'pillar' || dragType === 'module') {
       obj.x = startLeft + dx;
       obj.y = startTop + dy;
   } else if (dragType === 'site') {
@@ -283,7 +282,7 @@ document.addEventListener('mouseup', () => {
   isDragging = false; isPanning = false; viewport.style.cursor = 'grab';
 });
 
-// --- INITIALIZE ---
+// --- 7. INITIALIZE ---
 function initializeViews() {
   plan.style.width = (wallDims.A + 200) + 'px';
   plan.style.height = (wallDims.B + 200) + 'px';
@@ -302,11 +301,9 @@ function centerPlan() {
 }
 
 window.zoomCanvas = function(factor) { currentZoom *= factor; applyTransform(); };
-
 window.switchRoom = function(idx) { activeRoomIndex = parseInt(idx); };
 function applyTransform() { if (plan) plan.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; }
 
-// Wheel Zoom Logic
 viewport.addEventListener('wheel', (e) => {
     if (!document.getElementById('view-plan').classList.contains('active') && !document.getElementById('view-alt').classList.contains('active')) return; 
     e.preventDefault();
@@ -322,5 +319,4 @@ viewport.addEventListener('wheel', (e) => {
     applyTransform();
 }, { passive: false });
 
-// Initialize on load
 setTimeout(loadRoomsDropdown, 100);
