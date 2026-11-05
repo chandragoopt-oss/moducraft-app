@@ -994,6 +994,19 @@ document.addEventListener('change', e => {
       }
     }
   });
+      const _render = window.render;
+  window.render = function() {
+    if (S.tab === 'enq') { 
+        document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === 'enq')); 
+        document.getElementById('app').innerHTML = window.vEnq(); 
+        const btn = document.querySelector('#nav button[data-v="enq"]'); 
+        if (btn) btn.classList.add('on'); 
+        return; 
+    }
+    const btn = document.querySelector('#nav button[data-v="enq"]'); 
+    if (btn) btn.classList.remove('on'); 
+    _render.apply(this, arguments);
+  };
 })();
 // ==========================================
 // STEP 5: PROJECT EXPENSES & CASH-FLOW FORECAST
