@@ -994,20 +994,8 @@ document.addEventListener('change', e => {
       }
     }
   });
-      const _render = window.render;
-  window.render = function() {
-    if (S.tab === 'enq') { 
-        document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === 'enq')); 
-        document.getElementById('app').innerHTML = window.vEnq(); 
-        const btn = document.querySelector('#nav button[data-v="enq"]'); 
-        if (btn) btn.classList.add('on'); 
-        return; 
-    }
-    const btn = document.querySelector('#nav button[data-v="enq"]'); 
-    if (btn) btn.classList.remove('on'); 
-    _render.apply(this, arguments);
-  };
 })();
+
 // ==========================================
 // STEP 5: PROJECT EXPENSES & CASH-FLOW FORECAST
 // ==========================================
@@ -2438,15 +2426,6 @@ const IO = srt(items,i=>i.n).map(i=>`<option>${esc(i.n)}</option>`).join('');
       render();
     }
   });
-      // 4. Handle Filter Clicks
-  document.addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-enq-filter]');
-    if (btn) {
-      e.preventDefault();
-      S.enqFilter = btn.dataset.enqFilter;
-      render();
-    }
-  });
 
   // 5. Sync Button & Auto-Load
   document.addEventListener('click', function(e) {
@@ -2458,7 +2437,6 @@ const IO = srt(items,i=>i.n).map(i=>`<option>${esc(i.n)}</option>`).join('');
     }
   });
   setTimeout(fetchEnquiries, 1500);
-})();
 })();
 
 // ==========================================
@@ -3241,6 +3219,7 @@ document.addEventListener('click', function(e) {
             const fTime = `${hours}:${minutes} ${ampm}`;
 
                         const groupName = `${firstName} ${pType} Interior / ModuleStudio`;
+                        const meetingNote = `\n\n[Meeting Scheduled via WA]\nDate: ${fDate}\nTime: ${fTime}\nVenue: ${mVenue}`;
 
             const msgWelcome = `Hello *${firstName}*! 👋\n\nWarm greetings from *MODULE STUDIO!*\n\nThank you for connecting with us and considering us for your interior design requirements.\n\nI'm *Nirmalya, Interior Designer at MODULE STUDIO.* I'll be coordinating with you regarding your interior design requirements and helping you throughout your design journey.\n\nWe are delighted to be a part of your journey towards creating a beautiful, comfortable and functional space.\n\nAt Module Studio, we specialise in interior design and fabrication for residential, commercial and office spaces, combining creative design, quality craftsmanship and personalised solutions.\n\nWe would love to understand your ideas, requirements and preferences and help transform your vision into reality.\n\n📅 *MEETING DETAILS*\n\n*Date:* ${fDate}\n*Time:* ${fTime}\n*Venue:* ${mVenue}\n\nKindly reply *"CONFIRMED"* if the above schedule is convenient for you. If you would prefer a different date, time or meeting location, please let me know so that I can coordinate accordingly.\n\nIn the meantime, feel free to explore our work and services:\n\n🌐 *Our Website:*\nhttps://www.modulestudio.in\n\n📖 *Our Previous Projects & Online Brochure:*\nhttps://moducraft-app.pages.dev/brochure.html\n\nLooking forward to meeting you, understanding your vision and helping you create a space that truly reflects your lifestyle!\n\n*Warm Regards,*\n*Nirmalya*\nInterior Designer | MODULE STUDIO\n\n_Designing Spaces. Defining Lifestyles._`;
 
