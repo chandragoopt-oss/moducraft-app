@@ -1,4 +1,4 @@
-// --- READ URL PARAMS FROM MAIN APP ---
+// --- READ URL PARAMS ---
 (function() {
   const params = new URLSearchParams(location.search);
   const t = params.get('theme');
@@ -27,11 +27,10 @@ let activeWall = 'A';
 let isDragging = false, dragType = '', startX, startY, startLeft, startTop;
 let isPanning = false, panStartX, panStartY;
 let currentZoom = 1, panX = 0, panY = 0;
-let CURRENT_UNIT = 'mm';
 window.SHAPE_CUT = 0.4;   
 window.SHAPE_CUT_Y = 0.4;
 
-// --- 1. WALL DEFINITIONS ---
+// --- 1. GET WALLS ---
 function getWallSegments() {
   const W = wallDims.A, H = wallDims.B;
   const walls = [];
@@ -52,11 +51,39 @@ function getWallSegments() {
   return walls;
 }
 
-// --- 2. LOAD DATA ---
+// --- 2. FIND CLOSEST WALL ---
+function findClosestWall(x, y) {
+  const walls = getWallSegments();
+  let closest = walls[0];
+  let minDist = 999999;
+  walls.forEach(w => {
+    // Distance from point to line segment
+    const A = x - w.x1;
+    const B = y - w.y1;
+    const C = w.x2 - w.x1;
+    const D = w.y2 - w.y1;
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    let param = -1;
+    if (len_sq != 0) param = dot / len_sq;
+    let xx, yy;
+    if (param < 0) { xx = w.x1; yy = w.y1; }
+    else if (param > 1) { xx = w.x2; yy = w.y2; }
+    else { xx = w.x1 + param * C; yy = w.y1 + param * D; }
+    const dx = x - xx;
+    const dy = y - yy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < minDist) {
+      minDist = dist;
+      closest = w;
+    }
+  });
+  return closest;
+}
+
+// --- 3. LOAD DATA ---
 function loadRoomsDropdown() {
   const select = document.getElementById('active-room-select');
-  
-  // Try to load from LocalStorage if we don't have a passed list
   let allRooms = [];
   try {
     const saved = JSON.parse(localStorage.getItem('msq_v2') || 'null');
@@ -67,7 +94,6 @@ function loadRoomsDropdown() {
 
   if (allRooms.length > 0) {
       select.innerHTML = allRooms.map((r, i) => `<option value="${i}" ${i === activeRoomIndex ? 'selected' : ''}>${r.name || 'Room '+(i+1)}</option>`).join('');
-      // Load initial room
       const room = allRooms[activeRoomIndex];
       if (room.dim) {
           wallDims.A = room.dim.L / 10 || 800;
@@ -81,16 +107,13 @@ function loadRoomsDropdown() {
         width: (r.l || 0) / 10, height: (r.w || 0) / 10, depth: (r.d || 600) / 10
       }));
       if (room.siteElements) window.siteElements = room.siteElements.map(el => ({...el}));
-  } else if (window.__dsParams.room && window.__dsParams.room.name) {
-      select.innerHTML = `<option value="0" selected>${window.__dsParams.room.name}</option>`;
   } else {
       select.innerHTML = `<option value="0">Living Room</option>`;
   }
-  
   initializeViews(); 
 }
 
-// --- 3. RENDER PLAN ---
+// --- 4. RENDER PLAN ---
 function renderPlanHTML() {
   const W = wallDims.A, H = wallDims.B;
   const walls = getWallSegments();
@@ -112,7 +135,7 @@ function renderPlanHTML() {
 
   let itemsHtml = '';
   
-  // Render Beams & Slabs
+  // Render Beams/Slabs behind everything
   window.siteElements.forEach(el => {
       if (el.type === 'beam' || el.type === 'slab') {
           let xPos = el.x + 100, yPos = el.y + 100;
@@ -120,107 +143,50 @@ function renderPlanHTML() {
       }
   });
 
-  // Render Site Elements
+  // Render Doors/Windows (Z-index 15 so they sit ON TOP of walls)
+  window.siteElements.forEach(el => {
+      if (el.type === 'pillar' || el.type === 'beam' || el.type === 'slab') return;
+      let w = walls.find(w => w.id === el.wall);
+      if(!w) return;
+      
+      const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+      const pct = (el.x + el.width/2) / wallLen;
+      const cx = w.x1 + (w.x2 - w.x1) * pct + 100;
+      const cy = w.y1 + (w.y2 - w.y1) * pct + 100;
+      const isHorizontal = Math.abs(w.y1 - w.y2) < 1;
+      
+      let typeClass = el.type === 'door' ? 'plan-door' : (el.type === 'window' ? 'plan-window' : 'plan-niche');
+      let bg = el.type === 'door' ? '#f5deb3' : (el.type === 'window' ? '#bfdbfe' : '#ffcdd2');
+      let border = el.type === 'door' ? '#8b5a2b' : (el.type === 'window' ? '#3b82f6' : '#b00020');
+
+      itemsHtml += `<div class="${typeClass} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" 
+        style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%); 
+        background:${bg}; border:2px solid ${border}; z-index:15; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold; color:${border};">${el.type}</div>`;
+  });
+
+  // Render Pillars
   window.siteElements.forEach(el => {
       if (el.type === 'pillar') {
           let cx = el.x + 100, cy = el.y + 100;
-          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${el.width}px; height:${el.width}px; transform:translate(-50%,-50%);"></div>`;
-      } else if (el.type === 'niche') {
-          let cx = el.x + 100, cy = el.y + 100;
-          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${el.width}px; height:${el.height}px; transform:translate(-50%,-50%); background:#ffebee; border:2px dashed red; color:#b00020; display:flex; align-items:center; justify-content:center; font-size:10px;">Niche</div>`;
-      } else {
-          let w = walls.find(w => w.id === el.wall);
-          if(!w) return;
-          const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
-          const pct = (el.x + el.width/2) / wallLen;
-          const cx = w.x1 + (w.x2 - w.x1) * pct + 100;
-          const cy = w.y1 + (w.y2 - w.y1) * pct + 100;
-          const isHorizontal = Math.abs(w.y1 - w.y2) < 1;
-          let color = el.type === 'door' ? 'plan-door' : 'plan-window';
-          itemsHtml += `<div class="${color} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%);"></div>`;
+          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${el.width}px; height:${el.width}px; transform:translate(-50%,-50%); z-index:10;"></div>`;
       }
   });
 
+  // Render Modules
   window.modules.forEach(m => {
-      itemsHtml += `<div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}" style="left:${m.x+100}px; top:${m.y+100}px; width:${m.width}px; height:${m.depth || m.width}px;">${m.type}</div>`;
+      itemsHtml += `<div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}" style="left:${m.x+100}px; top:${m.y+100}px; width:${m.width}px; height:${m.depth || m.width}px; z-index:12;">${m.type}</div>`;
   });
 
   return svg + itemsHtml;
 }
 
-// --- 4. RENDER ELEVATIONS ---
-function renderElevations() {
-  const container = document.getElementById('elevations-container');
-  const walls = getWallSegments();
-  let html = '';
-  
-  walls.forEach(w => {
-    const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
-    let content = `<div class="env-floor"></div><div class="env-ceiling"></div>`;
-    
-    window.siteElements.forEach(el => {
-      if (el.wall !== w.id) return;
-      const leftPct = (el.x / len) * 100, widthPct = (el.width / len) * 100, heightPct = (el.height / wallDims.H) * 100, bottomPct = (el.z / wallDims.H) * 100;
-      if (el.type === 'door') content += `<div class="elev-door ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
-      else if (el.type === 'window') content += `<div class="elev-window ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
-    });
-    
-    window.modules.forEach(mod => {
-      if (mod.wall !== w.id) return;
-      const leftPct = (mod.x / len) * 100, widthPct = (mod.width / len) * 100, heightPct = (mod.height / wallDims.H) * 100, bottomPct = ((mod.z || 0) / wallDims.H) * 100;
-      content += `<div class="elev-module ${mod.id === selectedId ? 'selected' : ''}" data-id="${mod.id}" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
-    });
-
-    html += `
-      <div class="elevation-box" onclick="changeView('wall${w.id}')">
-        <div class="panel-header">Wall ${w.name} Elevation</div>
-        <div class="elev-canvas" data-wall="${w.id}"><div class="zoom-wrapper">${content}</div></div>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-}
-
-// --- 5. UPDATE ALL VIEWS ---
-function updateAllViews() {
-  plan.style.width = (wallDims.A + 200) + 'px';
-  plan.style.height = (wallDims.B + 200) + 'px';
-  plan.innerHTML = renderPlanHTML();
-  renderElevations();
-  
-  const activeView = document.getElementById('box-center').getAttribute('data-view');
-  if (activeView !== 'plan' && activeView !== 'persp') {
-      const altWrapper = document.querySelector('#alt-content .zoom-wrapper');
-      const walls = getWallSegments();
-      const w = walls.find(x => x.id === activeView.replace('wall', ''));
-      
-      if (altWrapper && w) {
-        const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
-        let content = `<div class="env-floor"></div><div class="env-ceiling"></div>`;
-        window.siteElements.forEach(el => {
-          if (el.wall !== w.id) return;
-          const leftPct = (el.x / len) * 100, widthPct = (el.width / len) * 100, heightPct = (el.height / wallDims.H) * 100, bottomPct = (el.z / wallDims.H) * 100;
-          if (el.type === 'door') content += `<div class="elev-door ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
-          else if (el.type === 'window') content += `<div class="elev-window ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
-        });
-        window.modules.forEach(mod => {
-          if (mod.wall !== w.id) return;
-          const leftPct = (mod.x / len) * 100, widthPct = (mod.width / len) * 100, heightPct = (mod.height / wallDims.H) * 100, bottomPct = ((mod.z || 0) / wallDims.H) * 100;
-          content += `<div class="elev-module ${mod.id === selectedId ? 'selected' : ''}" data-id="${mod.id}" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
-        });
-        altWrapper.innerHTML = content;
-      }
-  }
-  renderRightPanelProperties();
-}
-
-// --- 6. INTERACTION & DRAG ---
+// --- 5. DRAG LOGIC ---
 document.addEventListener('mousedown', (e) => {
-  const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .elev-module, .elev-door, .elev-window');
+  const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .plan-niche');
   
   if (el) {
       selectedId = el.getAttribute('data-id');
-      selectedType = el.classList.contains('module') || el.classList.contains('elev-module') ? 'module' : 'site';
+      selectedType = el.classList.contains('module') ? 'module' : 'site';
       let obj = selectedType === 'module' ? window.modules.find(m => m.id === selectedId) : window.siteElements.find(m => m.id === selectedId);
       if (!obj) return;
       
@@ -229,18 +195,18 @@ document.addEventListener('mousedown', (e) => {
       startY = e.clientY;
       startLeft = obj.x;
       startTop = obj.y;
-      dragType = obj.type === 'pillar' ? 'pillar' : (selectedType === 'site' && obj.type !== 'niche' && obj.type !== 'beam' && obj.type !== 'slab' ? 'site' : 'module');
       
-      const parentCanvas = el.closest('.elev-canvas');
-      if (parentCanvas) {
-          dragType = 'elevation';
-          activeWall = parentCanvas.getAttribute('data-wall');
-          obj.wall = activeWall;
+      // Determine drag type
+      if (obj.type === 'pillar' || obj.type === 'beam' || obj.type === 'slab') {
+          dragType = 'pillar'; 
+      } else if (obj.type === 'door' || obj.type === 'window' || obj.type === 'niche') {
+          dragType = 'site';
+      } else {
+          dragType = 'module';
       }
       
       updateAllViews();
-  } 
-  else if (e.target.closest('#viewport') && !e.target.closest('.float-3d-btn')) {
+  } else {
       isPanning = true;
       panStartX = e.clientX - panX;
       panStartY = e.clientY - panY;
@@ -263,16 +229,46 @@ document.addEventListener('mousemove', (e) => {
   
   const dx = (e.clientX - startX) / currentZoom;
   const dy = (e.clientY - startY) / currentZoom;
-
-  if (dragType === 'pillar' || dragType === 'module') {
+  
+  // --- MODULE DRAGGING (Confinement) ---
+  if (dragType === 'module') {
+      let newX = startLeft + dx;
+      let newY = startTop + dy;
+      
+      // Keep module inside room bounds
+      newX = Math.max(0, Math.min(wallDims.A - obj.width, newX));
+      newY = Math.max(0, Math.min(wallDims.B - (obj.depth || obj.width), newY));
+      
+      obj.x = newX;
+      obj.y = newY;
+  } 
+  // --- PILLAR / BEAM DRAGGING (Free) ---
+  else if (dragType === 'pillar') {
       obj.x = startLeft + dx;
       obj.y = startTop + dy;
-  } else if (dragType === 'site') {
-      obj.x = Math.max(0, startLeft + dx);
-      obj.z = Math.max(0, startTop - dy); 
-  } else if (dragType === 'elevation') {
-      obj.x = Math.max(0, startLeft + dx);
-      obj.z = Math.max(0, startTop - dy); 
+  } 
+  // --- DOORS/WINDOWS (Smart Snap to Nearest Wall) ---
+  else if (dragType === 'site') {
+      const mouseX = startLeft + dx; 
+      const mouseY = startTop + dy;
+      
+      // Find the wall closest to the mouse cursor
+      const closestWall = findClosestWall(mouseX, mouseY);
+      
+      obj.wall = closestWall.id;
+      
+      // Calculate the X position along that wall
+      const wallLen = Math.sqrt(Math.pow(closestWall.x2 - closestWall.x1, 2) + Math.pow(closestWall.y2 - closestWall.y1, 2));
+      let newX = 0;
+      
+      if (closestWall.y1 === closestWall.y2) { // Horizontal wall
+          newX = mouseX - closestWall.x1; 
+      } else { // Vertical wall
+          newX = mouseY - closestWall.y1;
+      }
+      
+      // Clamp within wall bounds
+      obj.x = Math.max(0, Math.min(wallLen - obj.width, newX));
   }
   
   updateAllViews();
@@ -282,7 +278,7 @@ document.addEventListener('mouseup', () => {
   isDragging = false; isPanning = false; viewport.style.cursor = 'grab';
 });
 
-// --- 7. INITIALIZE ---
+// --- 6. INITIALIZE ---
 function initializeViews() {
   plan.style.width = (wallDims.A + 200) + 'px';
   plan.style.height = (wallDims.B + 200) + 'px';
@@ -303,20 +299,3 @@ function centerPlan() {
 window.zoomCanvas = function(factor) { currentZoom *= factor; applyTransform(); };
 window.switchRoom = function(idx) { activeRoomIndex = parseInt(idx); };
 function applyTransform() { if (plan) plan.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; }
-
-viewport.addEventListener('wheel', (e) => {
-    if (!document.getElementById('view-plan').classList.contains('active') && !document.getElementById('view-alt').classList.contains('active')) return; 
-    e.preventDefault();
-    const rect = viewport.getBoundingClientRect();
-    const mx = e.clientX - rect.left; 
-    const my = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = Math.max(0.2, Math.min(3, currentZoom * factor));
-    const scale = newZoom / currentZoom;
-    panX = mx - scale * (mx - panX); 
-    panY = my - scale * (my - panY);
-    currentZoom = newZoom; 
-    applyTransform();
-}, { passive: false });
-
-setTimeout(loadRoomsDropdown, 100);
