@@ -213,8 +213,11 @@
     const iframe = document.getElementById('ds-iframe');
     if (!overlay || !iframe) { alert('Design Studio overlay not found.'); return; }
 
-    const quoteId = S.cur || Object.keys(S.q || {})[0] || '';
-    const roomIdx = 0;
+        const quoteId = S.cur || Object.keys(S.q || {})[0] || '';
+    // Check if we are in the edit tab and find the currently selected room index
+    const roomIdx = (S.q[quoteId] && S.q[quoteId].rooms && S.q[quoteId].rooms.length > 0) ? 0 : 0; 
+    // (Note: If you add a UI button later to select a specific room, you can pass that index here.)
+    
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
     const params = new URLSearchParams({ q: quoteId, r: roomIdx, theme: theme });
     
@@ -231,11 +234,12 @@
     document.body.style.overflow = '';
   };
 
-  // Listen for messages from the design studio (save / close / dimensions changed)
+   // Listen for messages from the design studio (save / close / dimensions changed)
   window.addEventListener('message', function(e) {
     if (!e.data || typeof e.data !== 'object') return;
     if (e.data.type === 'ds-close') { closeDesignStudio(); }
-        if (e.data.type === 'ds-saved') {
+    
+    if (e.data.type === 'ds-saved') {
       let qid = e.data.quoteId;
       if (!qid || !S.q[qid]) {
         // Create a new quotation on the fly if none exists
@@ -244,40 +248,47 @@
         S.cur = qid;
       }
       const q = S.q[qid];
-      let rIdx = e.data.roomIdx;
+      let rIdx = e.data.roomIdx || 0;
+      
       if (!q.rooms[rIdx]) {
         q.rooms.push({ id: 'r' + Date.now().toString(36), t: 'DESIGN ROOM', name: 'DESIGN ROOM', w: 0, rate: '', rows: [], dim: { L: 3000, W: 3000, H: 2700 } });
         rIdx = q.rooms.length - 1;
       }
       const room = q.rooms[rIdx];
       
-      // Update room dimensions
+      // Update room name and dimensions
+      if (e.data.roomName) room.name = e.data.roomName;
       if (e.data.dim) {
         room.dim = { L: e.data.dim.L, W: e.data.dim.W, H: e.data.dim.H };
       }
       
-      // Map modules to BOQ rows
-      if (Array.isArray(e.data.modules) && e.data.modules.length > 0) {
-        room.rows = room.rows.filter(r => !r._fromDS); // Remove old DS rows to prevent duplicates
+      // 1. Save Site Elements (Doors/Windows)
+      if (e.data.siteElements) {
+        room.siteElements = e.data.siteElements;
+      }
+
+      // 2. Save Modules (with new categories: Base/Wall/Loft)
+      if (Array.isArray(e.data.modules)) {
+        // Remove old Design Studio rows
+        room.rows = room.rows.filter(r => !r._fromDS); 
         
         const newRows = e.data.modules.map(m => {
-          let mkId = ''; 
-          if (m.type.includes('Wardrobe')) mkId = 'wh2';
-          else if (m.type.includes('Base Unit')) mkId = 'kb2';
-          else if (m.type.includes('TV Unit')) mkId = 'tvb';
-          else if (m.type.includes('Dresser')) mkId = 'drs';
-          else if (m.type.includes('Bed')) mkId = 'bdpl';
+          let mkId = m.mk || ''; 
           
           return {
             n: m.type || 'Custom Design Module',
+            mk: mkId,
             l: Math.round(m.width * 10),
             w: Math.round(m.height * 10),
+            d: Math.round(m.depth * 10),
             u: 'mm',
             q: 1,
             b: 'sqft',
-            mk: mkId,
             x: Math.round(m.left * 10),
             y: Math.round(m.top * 10),
+            z: Math.round(m.z * 10),
+            wl: m.wall || 'A',
+            category: m.category || 'base', // Saves Base/Wall/Loft
             _fromDS: true
           };
         });
@@ -287,7 +298,7 @@
       if (typeof save === 'function') save('q', qid);
       if (typeof flash === 'function') flash('Design saved to: ' + (room.name || 'Room'));
       if (typeof render === 'function') render(); // Force re-render
-        }
+    }
   });
 
   // Hook the buttons
