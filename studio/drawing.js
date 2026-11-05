@@ -24,8 +24,6 @@ window.CURRENT_SHAPE = 'rectangle';
 let activeRoomIndex = window.__dsParams.roomIdx || 0;
 let selectedId = null, selectedType = null; 
 let activeWall = 'A';
-let isDragging = false, dragType = '', startX, startY, startLeft, startTop, startWall = '';
-let isPanning = false, panStartX, panStartY;
 let currentZoom = 1, panX = 0, panY = 0;
 window.SHAPE_CUT = 0.4;   
 window.SHAPE_CUT_Y = 0.4;
@@ -51,7 +49,7 @@ function getWallSegments() {
   return walls;
 }
 
-// --- 2. CLOSEST WALL MAGNET ---
+// --- 2. DISTANCE HELPERS ---
 function findClosestWall(x, y) {
   const walls = getWallSegments();
   let closest = walls[0];
@@ -127,21 +125,14 @@ function renderPlanHTML() {
 
   let itemsHtml = '';
   
-  // Render Site Elements (Pillars, Beams, Slabs first)
   window.siteElements.forEach(el => {
       if (el.type === 'pillar' || el.type === 'beam' || el.type === 'slab') {
           let xPos = el.x + 100, yPos = el.y + 100;
           let styleStr = "left:"+xPos+"px; top:"+yPos+"px; width:"+el.width+"px; height:"+(el.height||el.width)+"px; transform:translate(-50%,-50%); z-index:2;";
           if (el.type === 'pillar') styleStr += "background:#9ca3af; border:1px solid #4b5563;";
           if (el.type === 'beam') styleStr += "background:rgba(200,200,200,0.5); border:1px dashed #666;";
-          if (el.type === 'slab') styleStr += "background:rgba(150,150,150,0.3); border:1px solid #888;";
           itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="${styleStr}"></div>`;
-      }
-  });
-
-  // Render Doors/Windows (Z-Index 15)
-  window.siteElements.forEach(el => {
-      if (el.type === 'door' || el.type === 'window' || el.type === 'niche') {
+      } else {
           let w = walls.find(w => w.id === el.wall);
           if(!w) return;
           const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
@@ -155,7 +146,6 @@ function renderPlanHTML() {
       }
   });
 
-  // Render Modules
   window.modules.forEach(m => {
       itemsHtml += `<div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}" style="left:${m.x+100}px; top:${m.y+100}px; width:${m.width}px; height:${m.depth || m.width}px; z-index:12;">${m.type}</div>`;
   });
@@ -197,7 +187,6 @@ function renderElevations() {
   container.innerHTML = html;
 }
 
-// --- 6. UPDATE ALL VIEWS ---
 function updateAllViews() {
   plan.style.width = (wallDims.A + 200) + 'px';
   plan.style.height = (wallDims.B + 200) + 'px';
@@ -230,8 +219,11 @@ function updateAllViews() {
   renderRightPanelProperties();
 }
 
-// --- 7. MAGNETIC DRAG LOGIC ---
-document.addEventListener('mousedown', (e) => {
+// --- 6. NEW MAGNETIC DRAG ENGINE ---
+let draggedObj = null;
+let isPanning = false, panStartX = 0, panStartY = 0;
+
+document.addEventListener('pointerdown', (e) => {
   const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .elev-module, .elev-door, .elev-window');
   
   if (el) {
@@ -240,27 +232,16 @@ document.addEventListener('mousedown', (e) => {
       let obj = selectedType === 'module' ? window.modules.find(m => m.id === selectedId) : window.siteElements.find(m => m.id === selectedId);
       if (!obj) return;
       
-      isDragging = true;
-      startX = e.clientX; 
-      startY = e.clientY;
-      startLeft = obj.x;
-      startTop = obj.y;
-      startWall = obj.wall || '';
-      
-      if (obj.type === 'pillar' || obj.type === 'beam' || obj.type === 'slab' || obj.type === 'niche') {
-          dragType = 'pillar'; 
-      } else if (obj.type === 'door' || obj.type === 'window') {
-          dragType = 'site';
-      } else {
-          dragType = 'module';
-      }
-      
-      const parentCanvas = el.closest('.elev-canvas');
-      if (parentCanvas) {
-          dragType = 'elevation';
-          activeWall = parentCanvas.getAttribute('data-wall');
-          obj.wall = activeWall;
-      }
+      draggedObj = {
+          type: obj.type || 'module',
+          data: obj,
+          startX: e.clientX,
+          startY: e.clientY,
+          startLeft: obj.x,
+          startTop: obj.y,
+          isElevation: !!el.closest('.elev-canvas'),
+          wall: el.closest('.elev-canvas') ? el.closest('.elev-canvas').getAttribute('data-wall') : null
+      };
       
       updateAllViews();
   } 
@@ -274,52 +255,33 @@ document.addEventListener('mousedown', (e) => {
   }
 });
 
-document.addEventListener('mousemove', (e) => {
+document.addEventListener('pointermove', (e) => {
   if (isPanning) {
       panX = e.clientX - panStartX; panY = e.clientY - panStartY;
       applyTransform();
       return;
   }
-  if (!isDragging || !selectedId) return;
+  if (!draggedObj) return;
   
-  let obj = selectedType === 'module' ? window.modules.find(m => m.id === selectedId) : window.siteElements.find(m => m.id === selectedId);
-  if (!obj) return;
-  
-  const dx = (e.clientX - startX) / currentZoom;
-  const dy = (e.clientY - startY) / currentZoom;
+  const dx = (e.clientX - draggedObj.startX) / currentZoom;
+  const dy = (e.clientY - draggedObj.startY) / currentZoom;
+  const obj = draggedObj.data;
 
-  // --- MODULE DRAGGING (Confinement & Snapping) ---
-  if (dragType === 'module') {
-      let newX = startLeft + dx;
-      let newY = startTop + dy;
-      
-      // Confinement
-      newX = Math.max(0, Math.min(wallDims.A - obj.width, newX));
-      newY = Math.max(0, Math.min(wallDims.B - (obj.depth || obj.width), newY));
-      
-      // Snap Left/Right
-      window.modules.forEach(other => {
-          if (other.id === obj.id) return;
-          if (Math.abs((other.y) - newY) < 20) {
-              if (Math.abs((other.x + other.width) - newX) < 15) newX = other.x + other.width;
-              if (Math.abs((newX + obj.width) - other.x) < 15) newX = other.x - obj.width;
-          }
-      });
-      
-      obj.x = newX;
-      obj.y = newY;
+  if (draggedObj.isElevation) {
+      // Elevation drag logic
+      obj.x = Math.max(0, draggedObj.startLeft + dx);
+      obj.z = Math.max(0, draggedObj.startTop - dy); 
   } 
-  // --- PILLAR/BEAM (Free Movement) ---
-  else if (dragType === 'pillar') {
-      obj.x = startLeft + dx;
-      obj.y = startTop + dy;
+  else if (draggedObj.type === 'pillar' || draggedObj.type === 'beam' || draggedObj.type === 'slab') {
+      // Free movement for pillars/beams
+      obj.x = draggedObj.startLeft + dx;
+      obj.y = draggedObj.startTop + dy;
   } 
-  // --- DOORS/WINDOWS (Magnet to Wall) ---
-  else if (dragType === 'site') {
-      const mouseX = startLeft + dx; 
-      const mouseY = startTop + dy;
+  else if (draggedObj.type === 'door' || draggedObj.type === 'window') {
+      // Door/Window magnetic snap
+      const mouseX = draggedObj.startLeft + dx; 
+      const mouseY = draggedObj.startTop + dy;
       
-      // Snap to nearest wall
       const closestWall = findClosestWall(mouseX, mouseY);
       obj.wall = closestWall.id;
       
@@ -331,27 +293,44 @@ document.addEventListener('mousemove', (e) => {
           newX = mouseY - closestWall.y1;
       }
       
-      // Snap to edges (Left/Right)
-      if (Math.abs(newX) < 15) newX = 0;
-      if (Math.abs(newX + obj.width - wallLen) < 15) newX = wallLen - obj.width;
+      // Snap to wall edges
+      if (Math.abs(newX) < 30) newX = 0;
+      if (Math.abs(newX + obj.width - wallLen) < 30) newX = wallLen - obj.width;
       
-      // Clamp within wall
       obj.x = Math.max(0, Math.min(wallLen - obj.width, newX));
   } 
-  // --- ELEVATION DRAGGING (Sill Height / Sliding) ---
-  else if (dragType === 'elevation') {
-      obj.x = Math.max(0, startLeft + dx);
-      obj.z = Math.max(0, startTop - dy); 
+  else if (draggedObj.type === 'module') {
+      // Module confinement & snapping
+      let newX = draggedObj.startLeft + dx;
+      let newY = draggedObj.startTop + dy;
+      
+      // Confine to room
+      newX = Math.max(0, Math.min(wallDims.A - obj.width, newX));
+      newY = Math.max(0, Math.min(wallDims.B - (obj.depth || obj.width), newY));
+      
+      // Snap to other modules
+      window.modules.forEach(other => {
+          if (other.id === obj.id) return;
+          if (Math.abs(other.y - newY) < 50) { // 50mm Y tolerance
+              if (Math.abs((other.x + other.width) - newX) < 30) newX = other.x + other.width;
+              if (Math.abs(other.x - (newX + obj.width)) < 30) newX = other.x - obj.width;
+          }
+      });
+      
+      obj.x = newX;
+      obj.y = newY;
   }
   
   updateAllViews();
 });
 
-document.addEventListener('mouseup', () => {
-  isDragging = false; isPanning = false; viewport.style.cursor = 'grab';
+document.addEventListener('pointerup', () => {
+  draggedObj = null;
+  isPanning = false; 
+  viewport.style.cursor = 'grab';
 });
 
-// --- 8. INITIALIZE ---
+// --- 7. INITIALIZE ---
 function initializeViews() {
   plan.style.width = (wallDims.A + 200) + 'px';
   plan.style.height = (wallDims.B + 200) + 'px';
