@@ -1,4 +1,4 @@
-// --- READ URL PARAMS FROM MAIN APP ---
+// --- READ URL PARAMS ---
 (function() {
   const params = new URLSearchParams(location.search);
   const t = params.get('theme');
@@ -24,13 +24,13 @@ window.CURRENT_SHAPE = 'rectangle';
 let activeRoomIndex = window.__dsParams.roomIdx || 0;
 let selectedId = null, selectedType = null; 
 let activeWall = 'A';
-let isDragging = false, dragType = '', startX, startY, startLeft, startTop;
+let isDragging = false, dragType = '', startX, startY, startLeft, startTop, startWall = '';
 let isPanning = false, panStartX, panStartY;
 let currentZoom = 1, panX = 0, panY = 0;
 window.SHAPE_CUT = 0.4;   
 window.SHAPE_CUT_Y = 0.4;
 
-// --- 1. GET WALLS ---
+// --- 1. WALL GEOMETRY ---
 function getWallSegments() {
   const W = wallDims.A, H = wallDims.B;
   const walls = [];
@@ -51,31 +51,24 @@ function getWallSegments() {
   return walls;
 }
 
-// --- 2. FIND CLOSEST WALL ---
+// --- 2. CLOSEST WALL MAGNET ---
 function findClosestWall(x, y) {
   const walls = getWallSegments();
   let closest = walls[0];
   let minDist = 999999;
   walls.forEach(w => {
-    const A = x - w.x1;
-    const B = y - w.y1;
-    const C = w.x2 - w.x1;
-    const D = w.y2 - w.y1;
-    const dot = A * C + B * D;
-    const len_sq = C * C + D * D;
+    const A = x - w.x1, B = y - w.y1;
+    const C = w.x2 - w.x1, D = w.y2 - w.y1;
+    const dot = A * C + B * D, len_sq = C * C + D * D;
     let param = -1;
     if (len_sq != 0) param = dot / len_sq;
     let xx, yy;
     if (param < 0) { xx = w.x1; yy = w.y1; }
     else if (param > 1) { xx = w.x2; yy = w.y2; }
     else { xx = w.x1 + param * C; yy = w.y1 + param * D; }
-    const dx = x - xx;
-    const dy = y - yy;
+    const dx = x - xx, dy = y - yy;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < minDist) {
-      minDist = dist;
-      closest = w;
-    }
+    if (dist < minDist) { minDist = dist; closest = w; }
   });
   return closest;
 }
@@ -134,23 +127,21 @@ function renderPlanHTML() {
 
   let itemsHtml = '';
   
-  // Render Beams/Slabs
+  // Render Site Elements (Pillars, Beams, Slabs first)
   window.siteElements.forEach(el => {
-      if (el.type === 'beam' || el.type === 'slab') {
+      if (el.type === 'pillar' || el.type === 'beam' || el.type === 'slab') {
           let xPos = el.x + 100, yPos = el.y + 100;
-          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${xPos}px; top:${yPos}px; width:${el.width}px; height:${el.height||20}px; transform:translate(-50%,-50%); background:rgba(200,200,200,0.5); border:1px dashed #666; z-index:2;"></div>`;
+          let styleStr = "left:"+xPos+"px; top:"+yPos+"px; width:"+el.width+"px; height:"+(el.height||el.width)+"px; transform:translate(-50%,-50%); z-index:2;";
+          if (el.type === 'pillar') styleStr += "background:#9ca3af; border:1px solid #4b5563;";
+          if (el.type === 'beam') styleStr += "background:rgba(200,200,200,0.5); border:1px dashed #666;";
+          if (el.type === 'slab') styleStr += "background:rgba(150,150,150,0.3); border:1px solid #888;";
+          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="${styleStr}"></div>`;
       }
   });
 
-  // Render Site Elements (Doors/Windows)
+  // Render Doors/Windows (Z-Index 15)
   window.siteElements.forEach(el => {
-      if (el.type === 'pillar') {
-          let cx = el.x + 100, cy = el.y + 100;
-          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${el.width}px; height:${el.width}px; transform:translate(-50%,-50%); z-index:10;"></div>`;
-      } else if (el.type === 'niche') {
-          let cx = el.x + 100, cy = el.y + 100;
-          itemsHtml += `<div class="plan-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${el.width}px; height:${el.height}px; transform:translate(-50%,-50%); background:#ffebee; border:2px dashed red; color:#b00020; display:flex; align-items:center; justify-content:center; font-size:10px; z-index:10;">Niche</div>`;
-      } else if (el.type !== 'beam' && el.type !== 'slab') {
+      if (el.type === 'door' || el.type === 'window' || el.type === 'niche') {
           let w = walls.find(w => w.id === el.wall);
           if(!w) return;
           const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
@@ -158,11 +149,13 @@ function renderPlanHTML() {
           const cx = w.x1 + (w.x2 - w.x1) * pct + 100;
           const cy = w.y1 + (w.y2 - w.y1) * pct + 100;
           const isHorizontal = Math.abs(w.y1 - w.y2) < 1;
-          let color = el.type === 'door' ? 'plan-door' : 'plan-window';
-          itemsHtml += `<div class="${color} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%); z-index:15;"></div>`;
+          let bg = el.type === 'door' ? '#f5deb3' : (el.type === 'window' ? '#bfdbfe' : '#ffcdd2');
+          let br = el.type === 'door' ? '#8b5a2b' : (el.type === 'window' ? '#3b82f6' : '#b00020');
+          itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%); z-index:15; background:${bg}; border:2px solid ${br}; display:flex; align-items:center; justify-content:center; font-size:9px;">${el.type}</div>`;
       }
   });
 
+  // Render Modules
   window.modules.forEach(m => {
       itemsHtml += `<div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}" style="left:${m.x+100}px; top:${m.y+100}px; width:${m.width}px; height:${m.depth || m.width}px; z-index:12;">${m.type}</div>`;
   });
@@ -185,6 +178,7 @@ function renderElevations() {
       const leftPct = (el.x / len) * 100, widthPct = (el.width / len) * 100, heightPct = (el.height / wallDims.H) * 100, bottomPct = (el.z / wallDims.H) * 100;
       if (el.type === 'door') content += `<div class="elev-door ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
       else if (el.type === 'window') content += `<div class="elev-window ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
+      else if (el.type === 'pillar') content += `<div style="position:absolute; left:${leftPct}%; bottom:0; width:${widthPct}%; height:100%; background:rgba(0,0,0,0.2); border:1px dashed #333; z-index:4;">Pillar</div>`;
     });
     
     window.modules.forEach(mod => {
@@ -203,7 +197,7 @@ function renderElevations() {
   container.innerHTML = html;
 }
 
-// --- 6. UPDATE ALL VIEWS (THE CRUCIAL FUNCTION) ---
+// --- 6. UPDATE ALL VIEWS ---
 function updateAllViews() {
   plan.style.width = (wallDims.A + 200) + 'px';
   plan.style.height = (wallDims.B + 200) + 'px';
@@ -236,7 +230,7 @@ function updateAllViews() {
   renderRightPanelProperties();
 }
 
-// --- 7. DRAG LOGIC ---
+// --- 7. MAGNETIC DRAG LOGIC ---
 document.addEventListener('mousedown', (e) => {
   const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .elev-module, .elev-door, .elev-window');
   
@@ -251,6 +245,7 @@ document.addEventListener('mousedown', (e) => {
       startY = e.clientY;
       startLeft = obj.x;
       startTop = obj.y;
+      startWall = obj.wall || '';
       
       if (obj.type === 'pillar' || obj.type === 'beam' || obj.type === 'slab' || obj.type === 'niche') {
           dragType = 'pillar'; 
@@ -293,12 +288,38 @@ document.addEventListener('mousemove', (e) => {
   const dx = (e.clientX - startX) / currentZoom;
   const dy = (e.clientY - startY) / currentZoom;
 
-  if (dragType === 'pillar' || dragType === 'module') {
+  // --- MODULE DRAGGING (Confinement & Snapping) ---
+  if (dragType === 'module') {
+      let newX = startLeft + dx;
+      let newY = startTop + dy;
+      
+      // Confinement
+      newX = Math.max(0, Math.min(wallDims.A - obj.width, newX));
+      newY = Math.max(0, Math.min(wallDims.B - (obj.depth || obj.width), newY));
+      
+      // Snap Left/Right
+      window.modules.forEach(other => {
+          if (other.id === obj.id) return;
+          if (Math.abs((other.y) - newY) < 20) {
+              if (Math.abs((other.x + other.width) - newX) < 15) newX = other.x + other.width;
+              if (Math.abs((newX + obj.width) - other.x) < 15) newX = other.x - obj.width;
+          }
+      });
+      
+      obj.x = newX;
+      obj.y = newY;
+  } 
+  // --- PILLAR/BEAM (Free Movement) ---
+  else if (dragType === 'pillar') {
       obj.x = startLeft + dx;
       obj.y = startTop + dy;
-  } else if (dragType === 'site') {
+  } 
+  // --- DOORS/WINDOWS (Magnet to Wall) ---
+  else if (dragType === 'site') {
       const mouseX = startLeft + dx; 
       const mouseY = startTop + dy;
+      
+      // Snap to nearest wall
       const closestWall = findClosestWall(mouseX, mouseY);
       obj.wall = closestWall.id;
       
@@ -309,8 +330,16 @@ document.addEventListener('mousemove', (e) => {
       } else {
           newX = mouseY - closestWall.y1;
       }
+      
+      // Snap to edges (Left/Right)
+      if (Math.abs(newX) < 15) newX = 0;
+      if (Math.abs(newX + obj.width - wallLen) < 15) newX = wallLen - obj.width;
+      
+      // Clamp within wall
       obj.x = Math.max(0, Math.min(wallLen - obj.width, newX));
-  } else if (dragType === 'elevation') {
+  } 
+  // --- ELEVATION DRAGGING (Sill Height / Sliding) ---
+  else if (dragType === 'elevation') {
       obj.x = Math.max(0, startLeft + dx);
       obj.z = Math.max(0, startTop - dy); 
   }
