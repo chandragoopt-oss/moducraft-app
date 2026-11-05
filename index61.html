@@ -89,7 +89,6 @@
   .quick-add-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; font-size: 14px; }
   .quick-add-item:hover { background: var(--accent-blue); color: #fff; }
 
-  /* Context Menu for Elevations */
   .ctx-menu { position: fixed; display: none; background: var(--bg-panel); border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-radius: 6px; z-index: 10000; min-width: 180px; padding: 5px 0; }
   .ctx-menu div { padding: 8px 15px; font-size: 13px; cursor: pointer; color: var(--text-main); }
   .ctx-menu div:hover { background: var(--accent-blue); color: #fff; }
@@ -141,25 +140,8 @@
   </div>
 
   <div class="workspace-grid">
-    <!-- LEFT: ELEVATIONS -->
-    <div class="left-col">
-      <div class="elevation-box" onclick="changeView('wallA')" oncontextmenu="showElevationContext(event, 'wallA')">
-        <div class="panel-header">Wall A Elevation</div>
-        <div class="elev-canvas" data-wall="A"><div class="zoom-wrapper"></div></div>
-      </div>
-      <div class="elevation-box" onclick="changeView('wallB')" oncontextmenu="showElevationContext(event, 'wallB')">
-        <div class="panel-header">Wall B Elevation</div>
-        <div class="elev-canvas" data-wall="B"><div class="zoom-wrapper"></div></div>
-      </div>
-      <div class="elevation-box" onclick="changeView('wallC')" oncontextmenu="showElevationContext(event, 'wallC')">
-        <div class="panel-header">Wall C Elevation</div>
-        <div class="elev-canvas" data-wall="C"><div class="zoom-wrapper"></div></div>
-      </div>
-      <div class="elevation-box" onclick="changeView('wallD')" oncontextmenu="showElevationContext(event, 'wallD')">
-        <div class="panel-header">Wall D Elevation</div>
-        <div class="elev-canvas" data-wall="D"><div class="zoom-wrapper"></div></div>
-      </div>
-    </div>
+    <!-- LEFT: ELEVATIONS (Dynamically generated) -->
+    <div class="left-col" id="elevations-container"></div>
 
     <!-- CENTER: PLAN -->
     <div class="panel center-col" id="box-center" data-view="plan">
@@ -237,6 +219,39 @@
   let currentZoom = 1, panX = 0, panY = 0;
   const snapThreshold = 15; 
 
+  // --- WALL DEFINITIONS ---
+  // Returns an array of { id: 'A', name: 'Wall A', x1, y1, x2, y2 }
+  function getWallSegments() {
+    const W = wallDims.A, H = wallDims.B;
+    const walls = [];
+    if (CURRENT_SHAPE === 'l-shape') {
+      walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W*0.6, y2: 0 });
+      walls.push({ id: 'B', name: 'B', x1: W*0.6, y1: 0, x2: W, y2: 0 });
+      walls.push({ id: 'C', name: 'C', x1: W, y1: 0, x2: W, y2: H*0.6 });
+      walls.push({ id: 'D', name: 'D', x1: W, y1: H*0.6, x2: W*0.6, y2: H*0.6 });
+      walls.push({ id: 'E', name: 'E', x1: W*0.6, y1: H*0.6, x2: W*0.6, y2: H });
+      walls.push({ id: 'F', name: 'F', x1: W*0.6, y1: H, x2: 0, y2: H });
+      walls.push({ id: 'G', name: 'G', x1: 0, y1: H, x2: 0, y2: 0 });
+    } else if (CURRENT_SHAPE === 'u-shape') {
+      walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W*0.3, y2: 0 });
+      walls.push({ id: 'B', name: 'B', x1: W*0.3, y1: 0, x2: W*0.7, y2: 0 });
+      walls.push({ id: 'C', name: 'C', x1: W*0.7, y1: 0, x2: W, y2: 0 });
+      walls.push({ id: 'D', name: 'D', x1: W, y1: 0, x2: W, y2: H });
+      walls.push({ id: 'E', name: 'E', x1: W, y1: H, x2: W*0.7, y2: H });
+      walls.push({ id: 'F', name: 'F', x1: W*0.7, y1: H, x2: W*0.7, y2: H*0.5 });
+      walls.push({ id: 'G', name: 'G', x1: W*0.7, y1: H*0.5, x2: W*0.3, y2: H*0.5 });
+      walls.push({ id: 'H', name: 'H', x1: W*0.3, y1: H*0.5, x2: W*0.3, y2: H });
+      walls.push({ id: 'I', name: 'I', x1: W*0.3, y1: H, x2: 0, y2: H });
+      walls.push({ id: 'J', name: 'J', x1: 0, y1: H, x2: 0, y2: 0 });
+    } else {
+      walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W, y2: 0 });
+      walls.push({ id: 'B', name: 'B', x1: W, y1: 0, x2: W, y2: H });
+      walls.push({ id: 'C', name: 'C', x1: W, y1: H, x2: 0, y2: H });
+      walls.push({ id: 'D', name: 'D', x1: 0, y1: H, x2: 0, y2: 0 });
+    }
+    return walls;
+  }
+
   // --- RIGHT CLICK CONTEXT MENU ---
   window.showElevationContext = function(e, viewName) {
     e.preventDefault();
@@ -294,7 +309,7 @@
         if (room.siteElements) window.siteElements = room.siteElements.map(el => ({...el}));
       }
     } catch(e) { console.warn(e); }
-    initializeViews(); centerPlan();
+    initializeViews(); 
   }
 
   window.switchRoom = function(idx) { activeRoomIndex = parseInt(idx); loadActiveRoomData(); };
@@ -302,22 +317,37 @@
   // --- RENDERING ---
   function renderPlanHTML() {
     const W = wallDims.A, H = wallDims.B;
+    const walls = getWallSegments();
     let svg = `<svg width="${W+200}" height="${H+200}" style="position:absolute; top:-100px; left:-100px; pointer-events:none; z-index:0;">`;
     
-    // Shape
-    if (CURRENT_SHAPE === 'l-shape') {
-        svg += `<path d="M 100,100 L ${W+100},100 L ${W+100},${H*0.6+100} L ${W*0.6+100},${H*0.6+100} L ${W*0.6+100},${H+100} L 100,${H+100} Z" fill="#fdfdfd" stroke="#9ca3af" stroke-width="12" stroke-linejoin="round" />`;
-    } else if (CURRENT_SHAPE === 'u-shape') {
-        svg += `<path d="M 100,100 L ${W+100},100 L ${W+100},${H+100} L ${W*0.7+100},${H+100} L ${W*0.7+100},${H*0.5+100} L ${W*0.3+100},${H*0.5+100} L ${W*0.3+100},${H+100} L 100,${H+100} Z" fill="#fdfdfd" stroke="#9ca3af" stroke-width="12" stroke-linejoin="round" />`;
-    } else {
-        svg += `<rect x="100" y="100" width="${W}" height="${H}" fill="#fdfdfd" stroke="#9ca3af" stroke-width="12" />`;
-    }
+    // Draw Wall lines
+    let pathD = "";
+    walls.forEach(w => {
+      if (pathD === "") pathD = `M ${w.x1+100},${w.y1+100}`;
+      pathD += ` L ${w.x2+100},${w.y2+100}`;
+    });
+    pathD += " Z";
+    svg += `<path d="${pathD}" fill="#fdfdfd" stroke="#9ca3af" stroke-width="12" stroke-linejoin="round" />`;
 
-    // Wall Names
-    svg += `<text x="${W/2+100}" y="90" font-size="18" font-weight="bold" fill="#555" text-anchor="middle">WALL A</text>`;
-    svg += `<text x="${W+120}" y="${H/2+105}" font-size="18" font-weight="bold" fill="#555" transform="rotate(90, ${W+120}, ${H/2+105})" text-anchor="middle">WALL B</text>`;
-    svg += `<text x="${W/2+100}" y="${H+130}" font-size="18" font-weight="bold" fill="#555" text-anchor="middle">WALL C</text>`;
-    svg += `<text x="80" y="${H/2+105}" font-size="18" font-weight="bold" fill="#555" transform="rotate(-90, 80, ${H/2+105})" text-anchor="middle">WALL D</text>`;
+    // Draw Wall Labels
+    walls.forEach(w => {
+      const midX = (w.x1 + w.x2) / 2 + 100;
+      const midY = (w.y1 + w.y2) / 2 + 100;
+      const isVertical = Math.abs(w.x1 - w.x2) < 1;
+      
+      let tx = midX, ty = midY;
+      let rot = 0;
+      
+      if (isVertical) {
+        rot = -90;
+        tx = (w.x1 === 0) ? midX - 20 : midX + 20; // Push outward slightly
+      } else {
+        ty = (w.y1 === 0) ? midY - 10 : midY + 20; // Push outward slightly
+      }
+
+      svg += `<text x="${tx}" y="${ty}" font-size="16" font-weight="bold" fill="#555" text-anchor="middle" transform="rotate(${rot}, ${tx}, ${ty})">WALL ${w.name}</text>`;
+    });
+    
     svg += `</svg>`;
 
     let itemsHtml = '';
@@ -332,13 +362,20 @@
 
     window.siteElements.forEach(el => {
         if (el.type === 'pillar') return;
-        let xPos = 0, yPos = 0, w = el.width, h = 12;
-        let ox = 100, oy = 100;
-        if (el.wall === 'A') { xPos = el.x + ox; yPos = oy; w = el.width; h = 12; }
-        else if (el.wall === 'C') { xPos = W - el.x - el.width + ox; yPos = H + oy; w = el.width; h = 12; }
-        else if (el.wall === 'B') { xPos = W + ox; yPos = el.x + oy; w = 12; h = el.width; }
-        else if (el.wall === 'D') { xPos = ox; yPos = H - el.x - el.width + oy; w = 12; h = el.width; }
-        itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${xPos}px; top:${yPos}px; width:${w}px; height:${h}px; transform:translate(-50%,-50%);"></div>`;
+        // For basic snapping, we find which wall segment they belong to
+        let w = walls.find(w => w.id === el.wall);
+        if(!w) return; // fallback
+        
+        // Calculate length and position along the wall based on el.x
+        const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+        const pct = (el.x + el.width/2) / wallLen;
+        
+        const cx = w.x1 + (w.x2 - w.x1) * pct + 100;
+        const cy = w.y1 + (w.y2 - w.y1) * pct + 100;
+        
+        const isHorizontal = Math.abs(w.y1 - w.y2) < 1;
+        
+        itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%);"></div>`;
     });
 
     window.modules.forEach(m => {
@@ -348,33 +385,46 @@
     return svg + itemsHtml;
   }
 
-  function renderElevationHTML(wall) {
-    let html = `<div class="env-floor"></div><div class="env-ceiling"></div>`;
-    const W = (wall === 'A' || wall === 'C') ? wallDims.A : wallDims.B;
-    const H = wallDims.H;
+  function renderElevations() {
+    const container = document.getElementById('elevations-container');
+    const walls = getWallSegments();
+    let html = '';
+    
+    walls.forEach(w => {
+      // Determine wall length
+      const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+      
+      // Build elevation content
+      let content = `<div class="env-floor"></div><div class="env-ceiling"></div>`;
+      
+      window.siteElements.forEach(el => {
+        if (el.wall !== w.id) return;
+        const leftPct = (el.x / len) * 100;
+        const widthPct = (el.width / len) * 100;
+        const heightPct = (el.height / wallDims.H) * 100;
+        const bottomPct = (el.z / wallDims.H) * 100;
+        if (el.type === 'door') content += `<div class="elev-door" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
+        else if (el.type === 'window') content += `<div class="elev-window" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
+      });
+      
+      window.modules.forEach(mod => {
+        if (mod.wall !== w.id) return;
+        const leftPct = (mod.x / len) * 100;
+        const widthPct = (mod.width / len) * 100;
+        const heightPct = (mod.height / wallDims.H) * 100;
+        const bottomPct = ((mod.z || 0) / wallDims.H) * 100;
+        content += `<div class="elev-module" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
+      });
 
-    window.siteElements.forEach(el => {
-        if (el.wall !== wall) return;
-        const leftPct = (el.x / W) * 100;
-        const widthPct = (el.width / W) * 100;
-        const heightPct = (el.height / H) * 100;
-        const bottomPct = (el.z / H) * 100;
-        if (el.type === 'door') {
-            html += `<div class="elev-door" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
-        } else if (el.type === 'window') {
-            html += `<div class="elev-window" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
-        }
+      html += `
+        <div class="elevation-box" onclick="changeView('wall${w.id}')" oncontextmenu="showElevationContext(event, 'wall${w.id}')">
+          <div class="panel-header">Wall ${w.name} Elevation</div>
+          <div class="elev-canvas" data-wall="${w.id}"><div class="zoom-wrapper">${content}</div></div>
+        </div>
+      `;
     });
-
-    window.modules.forEach(mod => {
-        if (mod.wall !== wall) return;
-        const leftPct = (mod.x / W) * 100;
-        const widthPct = (mod.width / W) * 100;
-        const heightPct = (mod.height / H) * 100;
-        const bottomPct = ((mod.z || 0) / H) * 100;
-        html += `<div class="elev-module" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
-    });
-    return html;
+    
+    container.innerHTML = html;
   }
 
   function updateAllViews() {
@@ -383,16 +433,37 @@
     plan.style.height = (wallDims.B + 200) + 'px';
     plan.innerHTML = renderPlanHTML();
 
-    document.querySelectorAll('.elev-canvas').forEach(box => {
-        const wall = box.getAttribute('data-wall');
-        const wrapper = box.querySelector('.zoom-wrapper');
-        if (wrapper) wrapper.innerHTML = renderElevationHTML(wall);
-    });
+    renderElevations();
     
     const activeView = document.getElementById('box-center').getAttribute('data-view');
     if (activeView !== 'plan' && activeView !== 'persp') {
         const altWrapper = document.querySelector('#alt-content .zoom-wrapper');
-        if (altWrapper) altWrapper.innerHTML = renderElevationHTML(activeView.replace('wall', ''));
+        const walls = getWallSegments();
+        const wallId = activeView.replace('wall', '');
+        const w = walls.find(x => x.id === wallId);
+        
+        if (altWrapper && w) {
+          const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+          let content = `<div class="env-floor"></div><div class="env-ceiling"></div>`;
+          window.siteElements.forEach(el => {
+            if (el.wall !== w.id) return;
+            const leftPct = (el.x / len) * 100;
+            const widthPct = (el.width / len) * 100;
+            const heightPct = (el.height / wallDims.H) * 100;
+            const bottomPct = (el.z / wallDims.H) * 100;
+            if (el.type === 'door') content += `<div class="elev-door" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
+            else if (el.type === 'window') content += `<div class="elev-window" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
+          });
+          window.modules.forEach(mod => {
+            if (mod.wall !== w.id) return;
+            const leftPct = (mod.x / len) * 100;
+            const widthPct = (mod.width / len) * 100;
+            const heightPct = (mod.height / wallDims.H) * 100;
+            const bottomPct = ((mod.z || 0) / wallDims.H) * 100;
+            content += `<div class="elev-module" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
+          });
+          altWrapper.innerHTML = content;
+        }
     }
     renderRightPanelProperties();
   }
@@ -412,10 +483,10 @@
           </div>`;
     } else if (tabName === 'Room Setting') {
         tc.innerHTML = `
-          <div class="tool-group"><span class="tool-group-title">Wall Dimensions (mm)</span>
+          <div class="tool-group"><span class="tool-group-title">Room Dimensions (mm)</span>
             <div class="prop-form">
-              <div><label>Wall A (Top)</label><input type="number" value="${wallDims.A*10}" onchange="wallDims.A = +this.value/10; updateAllViews(); centerPlan();"></div>
-              <div><label>Wall B (Right)</label><input type="number" value="${wallDims.B*10}" onchange="wallDims.B = +this.value/10; updateAllViews(); centerPlan();"></div>
+              <div><label>Overall Length</label><input type="number" value="${wallDims.A*10}" onchange="wallDims.A = +this.value/10; updateAllViews(); centerPlan();"></div>
+              <div><label>Overall Width</label><input type="number" value="${wallDims.B*10}" onchange="wallDims.B = +this.value/10; updateAllViews(); centerPlan();"></div>
               <div><label>Ceiling Height</label><input type="number" value="${wallDims.H*10}" onchange="wallDims.H = +this.value/10; updateAllViews();"></div>
             </div>
           </div>`;
@@ -511,14 +582,15 @@
   };
 
   window.addSiteElement = function(type) {
-    const wallLen = (activeWall === 'A' || activeWall === 'C') ? wallDims.A : wallDims.B;
-    const newEl = { id: 'el-' + Date.now(), type: type, x: wallLen / 2, y: 0, z: type === 'window' ? 90 : 0, width: type === 'pillar' ? 30 : 90, height: type === 'pillar' ? 30 : 210, wall: activeWall };
+    const walls = getWallSegments();
+    const w = walls.find(x => x.id === activeWall) || walls[0];
+    const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+    
+    const newEl = { id: 'el-' + Date.now(), type: type, x: wallLen / 2, y: 0, z: type === 'window' ? 90 : 0, width: type === 'pillar' ? 30 : 90, height: type === 'pillar' ? 30 : 210, wall: w.id };
     if (type === 'window') { newEl.width = 120; newEl.height = 120; }
     if (type === 'pillar') {
-        if (activeWall === 'A') { newEl.x = wallLen / 2; newEl.y = 0; }
-        else if (activeWall === 'C') { newEl.x = wallLen / 2; newEl.y = wallDims.B; }
-        else if (activeWall === 'B') { newEl.x = wallDims.A; newEl.y = wallLen / 2; }
-        else if (activeWall === 'D') { newEl.x = 0; newEl.y = wallLen / 2; }
+        newEl.x = w.x1; newEl.y = w.y1;
+        newEl.wall = w.id;
     }
     window.siteElements.push(newEl);
     selectedId = newEl.id; selectedType = 'site';
@@ -598,7 +670,7 @@
     if (shape === 'l-shape') { wallDims.A = 1000; wallDims.B = 800; }
     else if (shape === 'u-shape') { wallDims.A = 1200; wallDims.B = 900; }
     else { wallDims.A = 800; wallDims.B = 600; }
-    initializeViews(); centerPlan();
+    initializeViews();
   };
 
   function applyTransform() { if (plan) plan.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; }
@@ -619,6 +691,7 @@
     plan.style.width = (wallDims.A + 200) + 'px';
     plan.style.height = (wallDims.B + 200) + 'px';
     updateAllViews();
+    centerPlan();
   }
 
   function centerPlan() {
@@ -645,6 +718,27 @@
     }
   };
 
+  // --- GET BACKEND MODULES ---
+  function getBackendModules() {
+    let list = [];
+    if (typeof MODS !== 'undefined') {
+      Object.values(MODS).forEach(m => {
+        if (!m.au) {
+          let cat = 'Base / Floor';
+          if (m.ty === 'wall') cat = 'Wall Units';
+          else if (m.ty === 'loft') cat = 'Loft Units';
+          else if (m.ty === 'tall') cat = 'Tall Units';
+          else if (m.ty === 'ward') cat = 'Wardrobes';
+          list.push({ id: m.id, n: m.n, cat: cat, w: m.w0 || 60, h: m.h || 80, d: m.d || 60 });
+        }
+      });
+    } else {
+      list = [ { id: 'wh3', n: 'Wardrobe (3 Door)', cat: 'Wardrobes', w: 120, h: 220, d: 60 } ];
+    }
+    return list.sort((a,b) => a.cat.localeCompare(b.cat) || a.n.localeCompare(b.n));
+  }
+
+  // --- INITIALIZE ---
   loadRoomsDropdown();
 
   window.addEventListener('message', function(ev) {
