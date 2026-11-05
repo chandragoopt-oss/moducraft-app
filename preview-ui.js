@@ -240,7 +240,7 @@
         room: JSON.stringify(roomData)
     });
     
-    iframe.src = 'index61.html?' + params.toString();
+   iframe.src = 'studio/index.html?' + params.toString();
     overlay.style.display = 'block';
     document.body.style.overflow = 'hidden';
   };
