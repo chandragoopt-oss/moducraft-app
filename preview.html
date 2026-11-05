@@ -3,24 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <script>
-// ==========================================
-// GOOGLE SHEETS DATABASE ADAPTER (SECURED)
-// ==========================================
 (function() {
   const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwgMExM7rKaDkJ4-LvUnb_HLpO4TL4-CKDkNEzuSWLiExCetpAT0sox2A1_-NL9clRM/exec";
-  const OWNER_EMAIL = "chandragoopt@gmail.com"; 
-  
+  const OWNER_EMAIL = "chandragoopt@gmail.com";
   async function apiCall(action, collection, id, data) {
     const token = localStorage.getItem('mc_token');
-    const payload = { action, collection, id, data, token: token };
     const res = await fetch(GOOGLE_WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ action, collection, id, data, token })
     });
     return await res.json();
   }
-
   const GoogleDB = {
     collection: function(colName) {
       return {
@@ -33,7 +27,7 @@
         onSnapshot: function(callback) {
           apiCall('read', colName).then(res => {
             if (res.ok && res.data) {
-              const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'added', doc: { id: id, data: () => res.data[id], metadata: { hasPendingWrites: false } } })) };
+              const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'added', doc: { id, data: () => res.data[id], metadata: { hasPendingWrites: false } } })) };
               callback(snapshot);
             }
           });
@@ -41,12 +35,12 @@
           setInterval(async () => {
             const res = await apiCall('read', colName);
             if (res.ok && res.data) {
-               const newHash = JSON.stringify(res.data);
-               if (newHash !== lastHash) {
-                 lastHash = newHash;
-                 const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'modified', doc: { id: id, data: () => res.data[id], metadata: { hasPendingWrites: false } } })) };
-                 callback(snapshot);
-               }
+              const newHash = JSON.stringify(res.data);
+              if (newHash !== lastHash) {
+                lastHash = newHash;
+                const snapshot = { docChanges: () => Object.keys(res.data).map(id => ({ type: 'modified', doc: { id, data: () => res.data[id], metadata: { hasPendingWrites: false } } })) };
+                callback(snapshot);
+              }
             }
           }, 5000);
         }
@@ -60,21 +54,20 @@
         onSnapshot: function(callback) {
           GoogleDB.collection(colName).onSnapshot(snap => {
             const changes = snap.docChanges().filter(c => c.doc.id === id);
-            if (changes.length > 0) callback({ exists: true, data: () => changes[0].doc.data(), metadata: {hasPendingWrites: false} });
+            if (changes.length > 0) callback({ exists: true, data: () => changes[0].doc.data(), metadata: { hasPendingWrites: false } });
           });
         }
       };
     }
   };
-
   window.claude = window.claude || {};
   window.claude.use = async function(type) {
     if (type === 'db') return GoogleDB;
     if (type === 'user') {
       const email = (localStorage.getItem('mc_user_email') || '').toLowerCase().trim();
       const isOwner = (email === OWNER_EMAIL.toLowerCase());
-      return { 
-        can: async () => true, 
+      return {
+        can: async () => true,
         id: async () => 'user-' + email.replace(/[^a-z0-9]/g, ''),
         email: async () => email,
         name: async () => localStorage.getItem('mc_user_name') || email,
@@ -88,12 +81,9 @@
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ModuCraft - Preview</title>
-
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="preview.css">
-
 <script>
-  // Apply theme instantly to prevent flashing
   const savedTheme = localStorage.getItem('mc_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
 </script>
@@ -133,10 +123,8 @@
         <small id="ci" style="color:var(--text-muted); font-size:11px;">Design • BOQ • Execute • Deliver</small>
       </div>
     </div>
-    
     <nav class="main-links" id="nav"></nav>
     <div class="user-actions" id="user-actions"></div>
-    
     <span id="st" class="noprint" style="display:none;"></span>
     <div id="err" class="warn noprint" style="display:none;"></div>
   </header>
@@ -147,6 +135,15 @@
   <!-- MAIN APP CONTAINER -->
   <main id="app" class="app-container"></main>
 
+  <!-- DESIGN STUDIO FULLSCREEN OVERLAY -->
+  <div id="design-studio-overlay" style="display:none; position:fixed; inset:0; z-index:999998; background:#0f172a;">
+    <div style="position:absolute; top:10px; right:10px; z-index:999999; display:flex; gap:8px;">
+      <button id="ds-save-btn" style="background:#22c55e; color:#fff; border:0; border-radius:6px; padding:8px 14px; font-weight:600; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.4);">💾 Save to Room</button>
+      <button id="ds-close-btn" style="background:#ef4444; color:#fff; border:0; border-radius:6px; padding:8px 14px; font-weight:600; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.4);">✕ Close</button>
+    </div>
+    <iframe id="ds-iframe" src="" style="width:100%; height:100%; border:none; display:block;"></iframe>
+  </div>
+
   <!-- HIDDEN SYSTEM ELEMENTS -->
   <div id="fl"></div>
   <datalist id="il"></datalist>
@@ -155,11 +152,9 @@
   <button id="changePassBtn" style="display:none;"></button>
   <button id="adminUsersBtn" style="display:none;"></button>
 
-  <!-- SCRIPTS -->
   <script src="app.js"></script>
   <script src="custom.js"></script>
   <script src="auth.js" defer></script>
   <script src="preview-ui.js"></script>
-
 </body>
 </html>
