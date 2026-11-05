@@ -39,16 +39,17 @@ window.updateRightPanel = function(tabName, btnElement) {
         </div>
         <div class="tool-group"><span class="tool-group-title">Calculated Wall Lengths</span>${wallList}</div>`;
   } 
-  else if (tabName === 'Site Structure') {
+   else if (tabName === 'Site Structure') {
       tc.innerHTML = `
-        <div class="tool-group"><span class="tool-group-title">Add Elements</span>
+        <div class="tool-group">
+          <span class="tool-group-title">Add Elements</span>
           <div class="btn-row" style="flex-direction:column; gap:8px;">
             <button onclick="addSiteElement('door')">+ Normal Door</button>
             <button onclick="addSiteElement('window')">+ Window</button>
+            <button onclick="addSiteElement('niche')">+ Niche / Cut</button>
             <button onclick="addSiteElement('pillar')">+ Column</button>
             <button onclick="addSiteElement('beam')">+ Beam</button>
-            <button onclick="addSiteElement('slab')">+ Concrete Slab</button>
-            <button onclick="addSiteElement('niche')">+ Niche / Cut</button>
+            <button onclick="addSiteElement('slab')">+ Slab</button>
           </div>
         </div>`;
   } 
