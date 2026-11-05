@@ -161,6 +161,22 @@ Here is the fully functional `index.html`.
 </style>
 </head>
 <body data-theme="dark">
+  <script>
+  // Preview bridge — read theme & room from URL params
+  (function() {
+    const params = new URLSearchParams(location.search);
+    const t = params.get('theme');
+    if (t) {
+      document.body.setAttribute('data-theme', t);
+      document.documentElement.setAttribute('data-theme', t);
+    }
+    window.__dsParams = {
+      quoteId: params.get('q') || '',
+      roomIdx: parseInt(params.get('r') || '0', 10),
+      theme: t || 'dark'
+    };
+  })();
+</script>
 
   <div class="mobile-backdrop" id="mobile-backdrop" onclick="closeMobilePanels()"></div>
 
@@ -1422,6 +1438,60 @@ Here is the fully functional `index.html`.
       if (!userHasPanned) centerPlan(); 
       if (window.innerWidth <= 900) closeMobilePanels();
   });
+  /* -------- PREVIEW BRIDGE -------- */
+(function() {
+  if (!window.__dsParams) return;
+  const { quoteId, roomIdx } = window.__dsParams;
+
+  // Load room dimensions from localStorage if available
+  try {
+    const saved = JSON.parse(localStorage.getItem('msq_v2') || 'null');
+    if (saved && saved.q && saved.q[quoteId] && saved.q[quoteId].rooms && saved.q[quoteId].rooms[roomIdx]) {
+      const room = saved.q[quoteId].rooms[roomIdx];
+      if (room.dim && room.dim.L && room.dim.W) {
+        ROOM_WIDTH = room.dim.L / 10;
+        ROOM_HEIGHT = room.dim.W / 10;
+        CEILING_HEIGHT = (room.dim.H || 2700) / 10;
+        initializeViews();
+        centerPlan();
+      }
+    }
+  } catch(e) { console.warn('Preview bridge: could not load room', e); }
+
+  // Respond to save requests from the parent preview app
+  window.addEventListener('message', function(ev) {
+    if (!ev.data || ev.data.type !== 'ds-request-save') return;
+    try {
+      const payload = {
+        type: 'ds-saved',
+        quoteId: quoteId,
+        roomIdx: roomIdx,
+        dim: { L: ROOM_WIDTH * 10, W: ROOM_HEIGHT * 10, H: CEILING_HEIGHT * 10 },
+        modules: (window.modules || []).map(m => ({
+          id: m.id, type: m.type, wall: m.wall,
+          left: m.left, top: m.top, z: m.z,
+          width: m.width, height: m.height, rotation: m.rotation
+        }))
+      };
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(payload, '*');
+      }
+    } catch(e) { console.warn('Preview bridge: save failed', e); }
+  });
+
+  // Optional: notify parent when the user hits Escape twice (feels like close)
+  let escCount = 0;
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      escCount++;
+      if (escCount >= 2 && window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'ds-close' }, '*');
+        escCount = 0;
+      }
+      setTimeout(() => { escCount = 0; }, 600);
+    }
+  });
+})();
 </script>
 </body>
 </html>
