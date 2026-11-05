@@ -1,8 +1,3 @@
-// ==========================================
-// STUDIO SETUP — Tabs, Modals, and Save Bridge
-// ==========================================
-
-// --- 1. RIGHT PANEL TABS ---
 window.updateRightPanel = function(tabName, btnElement) {
   if (btnElement) {
     document.querySelectorAll('.action-tabs button').forEach(b => b.classList.remove('active'));
@@ -27,25 +22,35 @@ window.updateRightPanel = function(tabName, btnElement) {
   } 
   else if (tabName === 'Room Setting') {
       const walls = getWallSegments();
-      let wallInputs = '';
-      
+      let wallList = '';
       walls.forEach(w => {
           const wLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
-          wallInputs += `<div><label>Wall ${w.name} Length</label><input type="number" value="${Math.round(wLen*10)}" disabled title="Edit Room Shape to change wall lengths"></div>`;
+          wallList += `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dashed #ccc; font-size:12px;">
+            <span>Wall ${w.name}</span>
+            <b>${Math.round(wLen*10)} mm</b>
+          </div>`;
       });
 
       tc.innerHTML = `
         <div class="tool-group">
-          <span class="tool-group-title">Wall Dimensions (mm)</span>
+          <span class="tool-group-title">Overall Room Size</span>
           <div class="prop-form">
-            <div><label>Overall Length</label><input type="number" value="${wallDims.A*10}" onchange="wallDims.A = +this.value/10; updateAllViews(); centerPlan();"></div>
-            <div><label>Overall Width</label><input type="number" value="${wallDims.B*10}" onchange="wallDims.B = +this.value/10; updateAllViews(); centerPlan();"></div>
-            <div style="margin-top:10px;"><label>Ceiling Height</label><input type="number" value="${wallDims.H*10}" onchange="wallDims.H = +this.value/10; updateAllViews();"></div>
-            <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px;">
-              <span class="mut" style="font-size:11px">Wall Segment Lengths (Auto-calculated)</span>
-              ${wallInputs}
-            </div>
+            <div><label>Overall Length (mm)</label><input type="number" value="${wallDims.A*10}" onchange="wallDims.A = +this.value/10; updateAllViews(); centerPlan();"></div>
+            <div><label>Overall Width (mm)</label><input type="number" value="${wallDims.B*10}" onchange="wallDims.B = +this.value/10; updateAllViews(); centerPlan();"></div>
+            <div style="margin-top:10px;"><label>Ceiling Height (mm)</label><input type="number" value="${wallDims.H*10}" onchange="wallDims.H = +this.value/10; updateAllViews();"></div>
           </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-group-title">L-Shape Cutout (Proportions)</span>
+          <div class="prop-form">
+            <div><label>Cutout Width</label><input type="number" value="40" onchange="SHAPE_CUT = +this.value/100; updateAllViews(); centerPlan();" placeholder="% of total length"></div>
+            <div><label>Cutout Depth</label><input type="number" value="40" onchange="SHAPE_CUT_Y = +this.value/100; updateAllViews(); centerPlan();" placeholder="% of total width"></div>
+            <p class="mut" style="font-size:11px; margin-top:4px;">Changes the notch in the L-shape.</p>
+          </div>
+        </div>
+        <div class="tool-group">
+          <span class="tool-group-title">Calculated Wall Lengths</span>
+          ${wallList}
         </div>`;
   } 
   else if (tabName === 'Site Structure') {
@@ -117,7 +122,6 @@ function renderRightPanelProperties() {
   }
 }
 
-// --- 3. MODULE POPUP (Add Module Modal) ---
 window.openAddModuleModal = function() {
   const list = document.getElementById('quick-add-list');
   const bMods = getBackendModules();
@@ -161,7 +165,6 @@ window.addModule = function(type, mk, zHeight) {
   updateAllViews();
 };
 
-// --- 4. GET MODULES FROM BACKEND ---
 function getBackendModules() {
   let list = [];
   if (window.__dsParams.mods && window.__dsParams.mods.length > 0) {
@@ -179,7 +182,6 @@ function getBackendModules() {
   return list.sort((a,b) => a.cat.localeCompare(b.cat) || a.n.localeCompare(b.n));
 }
 
-// --- 5. SITE ELEMENTS (Doors / Windows / Pillars) ---
 window.addSiteElement = function(type) {
   const walls = getWallSegments();
   const w = walls.find(x => x.id === activeWall) || walls[0];
@@ -204,7 +206,6 @@ window.deleteSelected = function() {
   updateAllViews();
 };
 
-// --- 6. CHANGE ROOM SHAPE ---
 window.changeRoomShape = function(shape) {
   CURRENT_SHAPE = shape;
   if (shape === 'l-shape') { wallDims.A = 1000; wallDims.B = 800; }
@@ -213,7 +214,6 @@ window.changeRoomShape = function(shape) {
   initializeViews();
 };
 
-// --- 7. VIEW SWITCHER (Plan / Elevations / 3D) ---
 window.changeView = function(viewType) {
   document.getElementById('box-center').setAttribute('data-view', viewType);
   if (viewType === 'plan') {
@@ -229,7 +229,6 @@ window.changeView = function(viewType) {
   }
 };
 
-// --- 8. ZOOM & PAN CONTROLS ---
 function applyTransform() { 
   if (plan) plan.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; 
 }
@@ -249,10 +248,8 @@ viewport.addEventListener('wheel', (e) => {
     applyTransform();
 }, { passive: false });
 
-// --- 9. BOOT THE APP ---
 loadRoomsDropdown();
 
-// --- 10. SAVE BRIDGE (Back to main app) ---
 window.addEventListener('message', function(ev) {
   if (!ev.data || ev.data.type !== 'ds-request-save') return;
   try {
