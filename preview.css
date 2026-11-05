@@ -873,3 +873,27 @@ body.preview-mode nav button[data-v="e"] {
 
 /* Red amount text */
 .k-amount { color: var(--accent-red); font-weight: bold; font-size: 13px; }
+
+/* =========================================
+   DESIGN STUDIO OVERLAY (New Interface)
+   ========================================= */
+#design-studio-overlay {
+  background: #0f172a;
+}
+#ds-iframe {
+  background: #0f172a;
+}
+#ds-save-btn:hover { background: #16a34a !important; }
+#ds-close-btn:hover { background: #dc2626 !important; }
+
+/* Highlight the new design item in the menu */
+.user-actions .dropdown-content button[data-ds-open] {
+  border-top: 1px solid var(--border-color);
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+/* Ensure the app doesn't scroll in the background when studio is open */
+body.preview-mode:has(#design-studio-overlay[style*="display: block"]) {
+  overflow: hidden !important;
+}
