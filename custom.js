@@ -2362,9 +2362,10 @@ const IO = srt(items,i=>i.n).map(i=>`<option>${esc(i.n)}</option>`).join('');
         grouped[dateLabel].forEach(e => {
           const stColor = e.status === 'Won' ? '#15803d' : e.status === 'Lost' ? '#b00020' : '#1F4E79';
           
-                    let actionButtons = '';
+                              let actionButtons = '';
           if (e.isQuotation) {
-              actionButtons = `<button class="g" data-a="oq" data-i="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit Quote</button>
+              actionButtons = `<button onclick="mcGenerateWAMsg('${e.id}')" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-right:4px;font-weight:bold;">💬 WA</button>
+                               <button class="g" data-a="oq" data-i="${e.id}" style="padding: 4px 8px; font-size: 12px;">Edit Quote</button>
                                <button class="g" data-a="pq" data-i="${e.id}" style="padding: 4px 8px; font-size: 12px; margin-left:4px;">Preview</button>`;
           } else {
               actionButtons = `<button onclick="mcGenerateWAMsg('${e.id}')" style="background:#25D366;color:#fff;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-right:4px;font-weight:bold;">💬 WA</button>
@@ -2424,6 +2425,27 @@ const IO = srt(items,i=>i.n).map(i=>`<option>${esc(i.n)}</option>`).join('');
       render();
     }
   });
+      // 4. Handle Filter Clicks
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-enq-filter]');
+    if (btn) {
+      e.preventDefault();
+      S.enqFilter = btn.dataset.enqFilter;
+      render();
+    }
+  });
+
+  // 5. Sync Button & Auto-Load
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('[data-enq-act="refresh"]')) {
+      e.preventDefault();
+      fetchEnquiries().then(() => {
+        if (typeof flash === 'function') flash("Enquiries synced from Google Sheets!");
+      });
+    }
+  });
+  setTimeout(fetchEnquiries, 1500);
+})();
 })();
 
 // ==========================================
@@ -3090,8 +3112,14 @@ document.addEventListener('click', function(e) {
     };
 
     // 9. WHATSAPP GROUP & WELCOME MESSAGE GENERATOR
-    window.mcGenerateWAMsg = function(enqId) {
-        const e = window.ENQ[enqId];
+        window.mcGenerateWAMsg = function(enqId) {
+        let e = window.ENQ[enqId];
+        if (!e) {
+            const q = S.q[enqId];
+            if (q) {
+                e = { id: q.id, name: q.name, phone: q.contact, project: q.project, budget: q.budget };
+            }
+        }
         if (!e) return alert("Enquiry not found.");
 
         const firstName = e.name.trim().split(' ')[0];
