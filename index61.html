@@ -40,11 +40,11 @@
   .env-floor { position: absolute; bottom: 0; width: 100%; height: 4px; background: #374151; z-index: 10; }
   .env-ceiling { position: absolute; top: 0; width: 100%; height: 4px; background: #9ca3af; z-index: 10; }
   
-  .elev-module { position: absolute; background: rgba(59, 130, 246, 0.8); border: 1px solid #1d4ed8; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: bold; pointer-events: none; }
-  .elev-door { position: absolute; bottom: 0; border: 2px solid #8b5a2b; border-bottom: none; background: #f5deb3; display: flex; align-items: flex-start; justify-content: center; padding-top: 4px; font-size: 9px; color: #5a3a1b; font-weight: bold; z-index: 5; }
-  .elev-window { position: absolute; border: 2px solid #3b82f6; background: #bfdbfe; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #1e40af; font-weight: bold; z-index: 5; }
-  .elev-pillar { position: absolute; bottom: 0; background: #9ca3af; border: 1px solid #4b5563; z-index: 6; }
-
+  /* Draggable Elements in Elevation */
+  .elev-module { position: absolute; background: rgba(59, 130, 246, 0.8); border: 1px solid #1d4ed8; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: bold; cursor: move; z-index: 5; }
+  .elev-door { position: absolute; border: 2px solid #8b5a2b; border-bottom: none; background: #f5deb3; display: flex; align-items: flex-start; justify-content: center; padding-top: 4px; font-size: 9px; color: #5a3a1b; font-weight: bold; z-index: 5; cursor: move; }
+  .elev-window { position: absolute; border: 2px solid #3b82f6; background: #bfdbfe; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #1e40af; font-weight: bold; z-index: 5; cursor: move; }
+  
   .center-col { background: #e5e7eb; position: relative; }
   .plan-viewport { flex: 1; overflow: hidden; margin: 10px; position: relative; border: 1px solid #888; background: #fff; box-shadow: inset 0 0 20px rgba(0,0,0,0.05); touch-action: none; cursor: grab;}
   .plan-viewport:active { cursor: grabbing; }
@@ -220,7 +220,6 @@
   const snapThreshold = 15; 
 
   // --- WALL DEFINITIONS ---
-  // Returns an array of { id: 'A', name: 'Wall A', x1, y1, x2, y2 }
   function getWallSegments() {
     const W = wallDims.A, H = wallDims.B;
     const walls = [];
@@ -320,7 +319,6 @@
     const walls = getWallSegments();
     let svg = `<svg width="${W+200}" height="${H+200}" style="position:absolute; top:-100px; left:-100px; pointer-events:none; z-index:0;">`;
     
-    // Draw Wall lines
     let pathD = "";
     walls.forEach(w => {
       if (pathD === "") pathD = `M ${w.x1+100},${w.y1+100}`;
@@ -329,25 +327,19 @@
     pathD += " Z";
     svg += `<path d="${pathD}" fill="#fdfdfd" stroke="#9ca3af" stroke-width="12" stroke-linejoin="round" />`;
 
-    // Draw Wall Labels
     walls.forEach(w => {
       const midX = (w.x1 + w.x2) / 2 + 100;
       const midY = (w.y1 + w.y2) / 2 + 100;
       const isVertical = Math.abs(w.x1 - w.x2) < 1;
-      
-      let tx = midX, ty = midY;
-      let rot = 0;
-      
+      let tx = midX, ty = midY, rot = 0;
       if (isVertical) {
         rot = -90;
-        tx = (w.x1 === 0) ? midX - 20 : midX + 20; // Push outward slightly
+        tx = (w.x1 === 0) ? midX - 20 : midX + 20;
       } else {
-        ty = (w.y1 === 0) ? midY - 10 : midY + 20; // Push outward slightly
+        ty = (w.y1 === 0) ? midY - 10 : midY + 20;
       }
-
       svg += `<text x="${tx}" y="${ty}" font-size="16" font-weight="bold" fill="#555" text-anchor="middle" transform="rotate(${rot}, ${tx}, ${ty})">WALL ${w.name}</text>`;
     });
-    
     svg += `</svg>`;
 
     let itemsHtml = '';
@@ -362,17 +354,13 @@
 
     window.siteElements.forEach(el => {
         if (el.type === 'pillar') return;
-        // For basic snapping, we find which wall segment they belong to
         let w = walls.find(w => w.id === el.wall);
-        if(!w) return; // fallback
+        if(!w) return;
         
-        // Calculate length and position along the wall based on el.x
         const wallLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
         const pct = (el.x + el.width/2) / wallLen;
-        
         const cx = w.x1 + (w.x2 - w.x1) * pct + 100;
         const cy = w.y1 + (w.y2 - w.y1) * pct + 100;
-        
         const isHorizontal = Math.abs(w.y1 - w.y2) < 1;
         
         itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${cx}px; top:${cy}px; width:${isHorizontal ? el.width : 12}px; height:${isHorizontal ? 12 : el.width}px; transform:translate(-50%,-50%);"></div>`;
@@ -391,10 +379,7 @@
     let html = '';
     
     walls.forEach(w => {
-      // Determine wall length
       const len = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
-      
-      // Build elevation content
       let content = `<div class="env-floor"></div><div class="env-ceiling"></div>`;
       
       window.siteElements.forEach(el => {
@@ -403,8 +388,8 @@
         const widthPct = (el.width / len) * 100;
         const heightPct = (el.height / wallDims.H) * 100;
         const bottomPct = (el.z / wallDims.H) * 100;
-        if (el.type === 'door') content += `<div class="elev-door" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
-        else if (el.type === 'window') content += `<div class="elev-window" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
+        if (el.type === 'door') content += `<div class="elev-door ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
+        else if (el.type === 'window') content += `<div class="elev-window ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
       });
       
       window.modules.forEach(mod => {
@@ -413,7 +398,7 @@
         const widthPct = (mod.width / len) * 100;
         const heightPct = (mod.height / wallDims.H) * 100;
         const bottomPct = ((mod.z || 0) / wallDims.H) * 100;
-        content += `<div class="elev-module" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
+        content += `<div class="elev-module ${mod.id === selectedId ? 'selected' : ''}" data-id="${mod.id}" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
       });
 
       html += `
@@ -451,8 +436,8 @@
             const widthPct = (el.width / len) * 100;
             const heightPct = (el.height / wallDims.H) * 100;
             const bottomPct = (el.z / wallDims.H) * 100;
-            if (el.type === 'door') content += `<div class="elev-door" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
-            else if (el.type === 'window') content += `<div class="elev-window" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
+            if (el.type === 'door') content += `<div class="elev-door ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
+            else if (el.type === 'window') content += `<div class="elev-window ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
           });
           window.modules.forEach(mod => {
             if (mod.wall !== w.id) return;
@@ -460,7 +445,7 @@
             const widthPct = (mod.width / len) * 100;
             const heightPct = (mod.height / wallDims.H) * 100;
             const bottomPct = ((mod.z || 0) / wallDims.H) * 100;
-            content += `<div class="elev-module" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
+            content += `<div class="elev-module ${mod.id === selectedId ? 'selected' : ''}" data-id="${mod.id}" style="left: ${leftPct}%; width: ${widthPct}%; height: ${heightPct}%; bottom: ${bottomPct}%;">${mod.type}</div>`;
           });
           altWrapper.innerHTML = content;
         }
@@ -528,12 +513,15 @@
     let obj = null;
     if (selectedType === 'module') obj = window.modules.find(m => m.id === selectedId);
     else if (selectedType === 'site') obj = window.siteElements.find(m => m.id === selectedId);
+    
     if (!obj) {
         titleEl.innerText = 'Details';
         bodyEl.innerHTML = `<p style="color:var(--text-muted); font-size:13px;">Select an item on the plan to edit its dimensions.</p>`;
         return;
     }
+    
     titleEl.innerText = selectedType === 'module' ? 'Module: ' + obj.type : 'Element: ' + obj.type.toUpperCase();
+    
     if (selectedType === 'module') {
         bodyEl.innerHTML = `
           <div class="prop-form">
@@ -544,8 +532,14 @@
             <button onclick="deleteSelected()" style="background:#ef4444; color:white; border:none; padding:8px; border-radius:4px; margin-top:10px; cursor:pointer;">Delete Module</button>
           </div>`;
     } else {
+        // Shows which wall it's on and exact location
         bodyEl.innerHTML = `
           <div class="prop-form">
+            <div><label>Mount on Wall</label>
+              <select onchange="const m=window.siteElements.find(x=>x.id==='${obj.id}'); m.wall=this.value; updateAllViews();">
+                ${getWallSegments().map(w => `<option value="${w.id}" ${obj.wall===w.id?'selected':''}>Wall ${w.name}</option>`).join('')}
+              </select>
+            </div>
             <div><label>Width (mm)</label><input type="number" value="${Math.round(obj.width * 10)}" onchange="const m=window.siteElements.find(x=>x.id==='${obj.id}'); m.width=+this.value/10; updateAllViews();"></div>
             <div><label>Height (mm)</label><input type="number" value="${Math.round(obj.height * 10)}" onchange="const m=window.siteElements.find(x=>x.id==='${obj.id}'); m.height=+this.value/10; updateAllViews();"></div>
             <div style="margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px;"><label>Sill Height (mm)</label><input type="number" value="${Math.round((obj.z||0) * 10)}" onchange="const m=window.siteElements.find(x=>x.id==='${obj.id}'); m.z=+this.value/10; updateAllViews();"></div>
@@ -605,17 +599,24 @@
   };
 
   document.addEventListener('mousedown', (e) => {
-    const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar');
+    const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .elev-module, .elev-door, .elev-window');
     if (el) {
         selectedId = el.getAttribute('data-id');
-        selectedType = el.classList.contains('module') ? 'module' : 'site';
+        selectedType = el.classList.contains('module') || el.classList.contains('elev-module') ? 'module' : 'site';
         let obj = selectedType === 'module' ? window.modules.find(m => m.id === selectedId) : window.siteElements.find(m => m.id === selectedId);
         if (!obj) return;
         isDragging = true;
         startX = e.clientX; startY = e.clientY;
         startLeft = obj.x; startTop = obj.y;
-        dragType = selectedType === 'module' ? 'module' : 'site';
-        if (selectedType === 'site') activeWall = obj.wall;
+        
+        const parentCanvas = el.closest('.elev-canvas');
+        dragType = parentCanvas ? 'elevation' : 'plan';
+        if (dragType === 'elevation') {
+            dragType = 'elevation';
+            activeWall = parentCanvas.getAttribute('data-wall');
+            obj.wall = activeWall;
+        }
+        
         updateAllViews();
     } 
     else if (e.target.closest('#viewport') && !e.target.closest('.float-3d-btn')) {
@@ -640,22 +641,27 @@
     const dx = (e.clientX - startX) / currentZoom;
     const dy = (e.clientY - startY) / currentZoom;
 
-    if (dragType === 'module') {
-        obj.x = startLeft + dx; obj.y = startTop + dy;
-        if (obj.y < 20) obj.wall = 'A';
-        else if (obj.y + (obj.depth || obj.width) > wallDims.B - 20) obj.wall = 'C';
-        else if (obj.x < 20) obj.wall = 'D';
-        else if (obj.x + obj.width > wallDims.A - 20) obj.wall = 'B';
-    } else if (dragType === 'site') {
-        if (obj.type === 'pillar') {
-            if (obj.wall === 'A') { obj.x = startLeft + dx; obj.y = 0; }
-            else if (obj.wall === 'C') { obj.x = startLeft + dx; obj.y = wallDims.B; }
-            else if (obj.wall === 'B') { obj.x = wallDims.A; obj.y = startTop + dy; }
-            else if (obj.wall === 'D') { obj.x = 0; obj.y = startTop + dy; }
+    if (dragType === 'plan') {
+        if (selectedType === 'module') {
+            obj.x = startLeft + dx; obj.y = startTop + dy;
+            if (obj.y < 20) obj.wall = 'A';
+            else if (obj.y + (obj.depth || obj.width) > wallDims.B - 20) obj.wall = 'C';
+            else if (obj.x < 20) obj.wall = 'D';
+            else if (obj.x + obj.width > wallDims.A - 20) obj.wall = 'B';
         } else {
-            obj.x = startLeft + dx; 
-            const wallLen = (obj.wall === 'A' || obj.wall === 'C') ? wallDims.A : wallDims.B;
-            obj.x = Math.max(0, Math.min(wallLen - obj.width, obj.x));
+            if (obj.type === 'pillar') {
+                obj.x = startLeft + dx; obj.y = startTop + dy;
+            } else {
+                obj.x = Math.max(0, startLeft + dx); 
+            }
+        }
+    } else if (dragType === 'elevation') {
+        if (selectedType === 'module') {
+            obj.x = Math.max(0, startLeft + dx);
+            obj.z = Math.max(0, (obj.z || 0) - dy); 
+        } else {
+            obj.x = Math.max(0, startLeft + dx); 
+            obj.z = Math.max(0, (obj.z || 0) - dy); 
         }
     }
     updateAllViews();
@@ -718,7 +724,6 @@
     }
   };
 
-  // --- GET BACKEND MODULES ---
   function getBackendModules() {
     let list = [];
     if (typeof MODS !== 'undefined') {
@@ -738,7 +743,6 @@
     return list.sort((a,b) => a.cat.localeCompare(b.cat) || a.n.localeCompare(b.n));
   }
 
-  // --- INITIALIZE ---
   loadRoomsDropdown();
 
   window.addEventListener('message', function(ev) {
