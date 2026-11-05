@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Design Studio - ModuCraft</title>
+
+<!-- ========================================== -->
+<!-- SECTION 1: STYLES                          -->
+<!-- ========================================== -->
 <style>
   :root {
     --bg-main: #f5f1ea; --bg-panel: #ffffff; --bg-input: #faf8f4;
@@ -98,19 +102,24 @@
 </style>
 </head>
 <body data-theme="dark">
+
+<!-- ========================================== -->
+<!-- SECTION 2: HTML LAYOUT                     -->
+<!-- ========================================== -->
   <script>
-  (function() {
-    const params = new URLSearchParams(location.search);
-    const t = params.get('theme');
-    if (t) {
-      document.body.setAttribute('data-theme', t);
-      document.documentElement.setAttribute('data-theme', t);
-    }
-    window.__dsParams = {
-      quoteId: params.get('q') || '',
-      roomIdx: parseInt(params.get('r') || '0', 10)
-    };
-  })();
+    // Read theme & room from URL
+    (function() {
+      const params = new URLSearchParams(location.search);
+      const t = params.get('theme');
+      if (t) {
+        document.body.setAttribute('data-theme', t);
+        document.documentElement.setAttribute('data-theme', t);
+      }
+      window.__dsParams = {
+        quoteId: params.get('q') || '',
+        roomIdx: parseInt(params.get('r') || '0', 10)
+      };
+    })();
   </script>
 
   <header class="top-nav">
@@ -164,7 +173,7 @@
 
     <!-- CENTER: PLAN -->
     <div class="panel center-col" id="box-center" data-view="plan">
-      <div class="panel-header">
+      <div class="panel-header" onclick="changeView('plan')" style="cursor:pointer;" title="Click to return to Plan View">
         <span id="center-title">Plan View</span> 
         <span style="font-size:11px;color:var(--text-muted);font-weight:normal; text-transform:none;">(Scroll to Zoom, Drag to Pan)</span>
       </div>
@@ -213,11 +222,15 @@
     </div>
   </div>
 
+
+<!-- ========================================== -->
+<!-- SECTION 3: JAVASCRIPT LOGIC                -->
+<!-- ========================================== -->
 <script>
   const viewport = document.getElementById('viewport');
   const plan = document.getElementById('plan');
 
-  // Data state
+  // --- Data State ---
   window.modules = [];
   window.siteElements = [];
   window.wallDims = { A: 800, B: 600, H: 240 };
@@ -233,7 +246,38 @@
   let currentZoom = 1, panX = 0, panY = 0;
   const snapThreshold = 15; 
 
-  // --- LOAD ROOM DATA ---
+  // --- Backend Modules matching ---
+  const KITCHEN_IDS = ['kb1','kb2','kbd2','kbd3','kbsd','kbh3','kbhs','kbsk','kbdd','kbc1','kbc2','kbmc','kbcr','kbpo','kbop','kbw2','kbw3','kbwd','kbw2d','kbw1','kbsp','kbpl','ktp','kto','ktw','kw1','kw2','kwl','kwg','kwa','kwo','kwc','kl1','kl2','kll','kwl2','kwsr','klc','klg','kwtb','kbtb','kdpf','kdpl','ktpb','kbf1','kbf2','klf1','klf2'];
+  const BEDROOM_IDS = ['wh2','wh3','wh4','ws2','ws3','wdr','wgl','wl1','wl2','wll','tvb','tvd','tvp','tvw','bst','drs','std','shr','cru','man','van','utl','bdpl','bdbx','bdsd','bddr2','bddr4','bdtr','bddw','bdbk','bdbn','hbp','hbs','wdl','wdls','wlc','LFT','FILLER','FILLERW','FILLERL'];
+
+  function getBackendModules() {
+    let list = [];
+    if (typeof MODS !== 'undefined') {
+      Object.values(MODS).forEach(m => {
+        if (!m.au) {
+          let isKit = KITCHEN_IDS.includes(m.id) || m.cat === 'KB' || m.cat === 'KT' || m.cat === 'KW' || m.cat === 'KL';
+          let isBed = BEDROOM_IDS.includes(m.id) || m.cat === 'WD' || m.cat === 'WL' || m.cat === 'BD' || m.cat === 'TV' || m.cat === 'BR';
+          
+          if (CURRENT_ROOM_TYPE === 'kitchen' && !isKit) return;
+          if (CURRENT_ROOM_TYPE === 'bedroom' && !isBed) return;
+          
+          let cat = 'Base / Floor';
+          if (m.ty === 'wall') cat = 'Wall Units';
+          else if (m.ty === 'loft') cat = 'Loft Units';
+          else if (m.ty === 'tall') cat = 'Tall Units';
+          else if (m.ty === 'ward') cat = 'Wardrobes';
+          
+          list.push({ id: m.id, n: m.n, cat: cat, w: m.w0 || 60, h: m.h || 80, d: m.d || 60 });
+        }
+      });
+    } else {
+      // Fallback if opened standalone (e.g. testing directly)
+      list = [ { id: 'wh3', n: 'Wardrobe (3 Door)', cat: 'Wardrobes', w: 120, h: 220, d: 60 } ];
+    }
+    return list.sort((a,b) => a.cat.localeCompare(b.cat) || a.n.localeCompare(b.n));
+  }
+
+  // --- Data Load ---
   function loadRoomsDropdown() {
     const select = document.getElementById('active-room-select');
     select.innerHTML = '';
@@ -245,7 +289,6 @@
         rooms.forEach((rm, idx) => {
             select.innerHTML += `<option value="${idx}" ${idx === activeRoomIndex ? 'selected' : ''}>${rm.name || 'Room '+(idx+1)}</option>`;
         });
-        
         loadActiveRoomData();
       } else {
         select.innerHTML = '<option value="0">No rooms found</option>';
@@ -290,7 +333,7 @@
     loadActiveRoomData();
   };
 
-  // --- RENDER ENGINE ---
+  // --- Render Engine ---
   function renderPlanHTML() {
     const W = wallDims.A, H = wallDims.B;
     let svg = `<svg width="${W+200}" height="${H+200}" style="position:absolute; top:-100px; left:-100px; pointer-events:none; z-index:0;">`;
@@ -312,6 +355,7 @@
 
     let itemsHtml = '';
     
+    // Site Elements (Doors/Windows)
     window.siteElements.forEach(el => {
         if (el.type === 'pillar') {
             let xPos = el.x + 100;
@@ -334,6 +378,7 @@
         itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${xPos}px; top:${yPos}px; width:${w}px; height:${h}px; transform:translate(-50%,-50%);"></div>`;
     });
 
+    // Modules
     window.modules.forEach(m => {
         itemsHtml += `<div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}" style="left:${m.x+100}px; top:${m.y+100}px; width:${m.width}px; height:${m.depth || m.width}px;">${m.type}</div>`;
     });
@@ -396,7 +441,7 @@
     renderRightPanelProperties();
   }
 
-  // --- UI SIDEBAR TABS ---
+  // --- UI Panels ---
   window.updateRightPanel = function(tabName, btnElement) {
     if (btnElement) {
         document.querySelectorAll('.action-tabs button').forEach(b => b.classList.remove('active'));
@@ -497,7 +542,7 @@
     }
   }
 
-  // --- ADDING MODULES & ELEMENTS ---
+  // --- Modals & Adding Items ---
   window.openAddModuleModal = function() {
     const list = document.getElementById('quick-add-list');
     const bMods = getBackendModules();
@@ -558,7 +603,7 @@
     updateAllViews();
   };
 
-  // --- DRAG & PAN LOGIC ---
+  // --- Interactions (Drag & Pan) ---
   document.addEventListener('mousedown', (e) => {
     const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar');
     if (el) {
@@ -631,7 +676,7 @@
     viewport.style.cursor = 'grab';
   });
 
-  // --- UTILS ---
+  // --- Utilities ---
   window.changeRoomShape = function(shape) {
     CURRENT_SHAPE = shape;
     if (shape === 'l-shape') { wallDims.A = 1000; wallDims.B = 800; }
@@ -684,7 +729,7 @@
     }
   };
 
-  // --- PREVIEW BRIDGE ---
+  // --- Initialise & Bridge ---
   loadRoomsDropdown();
 
   window.addEventListener('message', function(ev) {
