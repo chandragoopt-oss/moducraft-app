@@ -182,7 +182,16 @@
     </div>
   </header>
 
-  <div class="sub-header">
+    <div class="sub-header" style="flex-wrap: wrap;">
+    <div style="display:flex; gap:10px; align-items:center; margin-right:15px;">
+      <input type="text" id="room-name-input" placeholder="Room Name (e.g. Master Bedroom)" style="padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); font-weight:bold;" value="Master Bedroom">
+      <select id="room-shape-select" onchange="changeRoomShape(this.value)" style="padding:8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main);">
+        <option value="rectangle">Rectangle</option>
+        <option value="l-shape">L-Shape</option>
+        <option value="u-shape">U-Shape</option>
+        <option value="freehand">Freehand (Draw)</option>
+      </select>
+    </div>
     <div class="action-tabs">
       <button class="active" onclick="updateRightPanel('View & Tools', this)">View & Tools</button>
       <button onclick="updateRightPanel('Room Setting', this)">Room Setting</button>
@@ -404,6 +413,24 @@
 
   const STANDARD_HEIGHTS = {
       baseUnit: 86, wallUnit: 146, wardrobe: 220
+  };
+
+  // --- SHAPE CHANGE LOGIC ---
+  window.changeRoomShape = function(shape) {
+    if (shape === 'l-shape') {
+      ROOM_WIDTH = 1000; ROOM_HEIGHT = 800;
+      alert('L-Shape template loaded. (Drawing logic coming in the next step!)');
+      initializeViews(); centerPlan(); saveState();
+    } else if (shape === 'u-shape') {
+      ROOM_WIDTH = 1200; ROOM_HEIGHT = 900;
+      alert('U-Shape template loaded. (Drawing logic coming in the next step!)');
+      initializeViews(); centerPlan(); saveState();
+    } else if (shape === 'freehand') {
+      alert('Freehand drawing mode will be added in the next step.');
+    } else {
+      ROOM_WIDTH = 800; ROOM_HEIGHT = 600;
+      initializeViews(); centerPlan(); saveState();
+    }
   };
 
   // --- MOBILE UI LOGIC ---
@@ -1427,6 +1454,7 @@
       if (!userHasPanned) centerPlan(); 
       if (window.innerWidth <= 900) closeMobilePanels();
   });
+
   /* -------- PREVIEW BRIDGE -------- */
 (function() {
   if (!window.__dsParams) return;
@@ -1444,6 +1472,9 @@
         initializeViews();
         centerPlan();
       }
+      if (room.name) {
+        document.getElementById('room-name-input').value = room.name;
+      }
     }
   } catch(e) { console.warn('Preview bridge: could not load room', e); }
 
@@ -1456,11 +1487,22 @@
         quoteId: quoteId,
         roomIdx: roomIdx,
         dim: { L: ROOM_WIDTH * 10, W: ROOM_HEIGHT * 10, H: CEILING_HEIGHT * 10 },
-        modules: (window.modules || []).map(m => ({
-          id: m.id, type: m.type, wall: m.wall,
-          left: m.left, top: m.top, z: m.z,
-          width: m.width, height: m.height, rotation: m.rotation
-        }))
+        modules: (window.modules || []).map(m => {
+          let cat = 'base';
+          if (m.type.toLowerCase().includes('loft')) cat = 'loft';
+          else if (m.z > 100) cat = 'wall'; // If it's mounted higher than 1 meter
+
+          return {
+            fpId: m.id,              
+            type: m.type,
+            category: cat, 
+            wall: m.wall,
+            left: m.left, top: m.top, z: m.z,
+            width: m.width, height: m.height, depth: m.depth || 600,
+            rotation: m.rotation
+          };
+        }),
+        roomName: document.getElementById('room-name-input') ? document.getElementById('room-name-input').value : 'New Room'
       };
       if (window.parent && window.parent !== window) {
         window.parent.postMessage(payload, '*');
@@ -1484,4 +1526,3 @@
 </script>
 </body>
 </html>
-```
