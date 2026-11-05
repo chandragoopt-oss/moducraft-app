@@ -213,27 +213,37 @@
     const iframe = document.getElementById('ds-iframe');
     if (!overlay || !iframe) { alert('Design Studio overlay not found.'); return; }
 
-        const quoteId = S.cur || Object.keys(S.q || {})[0] || '';
-    // Check if we are in the edit tab and find the currently selected room index
-    const roomIdx = (S.q[quoteId] && S.q[quoteId].rooms && S.q[quoteId].rooms.length > 0) ? 0 : 0; 
-    // (Note: If you add a UI button later to select a specific room, you can pass that index here.)
-    
+    const quoteId = S.cur || Object.keys(S.q || {})[0] || '';
+    const roomIdx = 0; 
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    const params = new URLSearchParams({ q: quoteId, r: roomIdx, theme: theme });
+    
+    let roomData = {};
+    if (quoteId && S.q[quoteId] && S.q[quoteId].rooms && S.q[quoteId].rooms[roomIdx]) {
+        roomData = S.q[quoteId].rooms[roomIdx];
+    }
+    
+    // Extract all real modules from the app.js MODS object
+    let modulesData = [];
+    try {
+        if (typeof MODS !== 'undefined') {
+            Object.values(MODS).forEach(m => {
+                if (!m.au) modulesData.push({ id: m.id, n: m.n, cat: m.cat, ty: m.ty, w: m.w0 || 60, h: m.h || 80, d: m.d || 60 });
+            });
+        }
+    } catch(e) { console.warn("Could not read MODS", e); }
+
+    const params = new URLSearchParams({ 
+        q: quoteId, 
+        r: roomIdx, 
+        theme: theme,
+        mods: JSON.stringify(modulesData),
+        room: JSON.stringify(roomData)
+    });
     
     iframe.src = 'index61.html?' + params.toString();
     overlay.style.display = 'block';
     document.body.style.overflow = 'hidden';
   };
-  
-  window.closeDesignStudio = function() {
-    const overlay = document.getElementById('design-studio-overlay');
-    const iframe = document.getElementById('ds-iframe');
-    if (overlay) overlay.style.display = 'none';
-    if (iframe) iframe.src = '';
-    document.body.style.overflow = '';
-  };
-
    // Listen for messages from the design studio (save / close / dimensions changed)
   window.addEventListener('message', function(e) {
     if (!e.data || typeof e.data !== 'object') return;
