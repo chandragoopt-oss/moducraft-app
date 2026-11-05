@@ -41,15 +41,16 @@
   .env-floor { position: absolute; bottom: 0; width: 100%; height: 4px; background: #374151; z-index: 10; }
   .env-ceiling { position: absolute; top: 0; width: 100%; height: 4px; background: #9ca3af; z-index: 10; }
   
-  .elev-module { position: absolute; background: var(--accent-green); border: 1px solid #047857; opacity: 0.9; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: bold; cursor: move; touch-action: none; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .elev-module { position: absolute; background: var(--accent-green); border: 1px solid #047857; opacity: 0.9; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: bold; cursor: pointer; }
   .elev-module.selected { outline: 2px solid var(--accent-yellow); outline-offset: 1px; z-index: 50; }
-  .elev-door { position: absolute; bottom: 0; border: 2px solid #8b5a2b; background: repeating-linear-gradient(45deg, #f5deb3, #f5deb3 5px, #deb887 5px, #deb887 10px); display: flex; align-items: center; justify-content: center; font-size: 9px; color: #5a3a1b; font-weight: bold; z-index: 5; }
-  .elev-window { position: absolute; border: 3px solid #3b82f6; background: #bfdbfe; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #1e40af; font-weight: bold; z-index: 5; }
+  .elev-door { position: absolute; bottom: 0; border: 2px solid #8b5a2b; background: #f5deb3; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #5a3a1b; font-weight: bold; z-index: 5; cursor: pointer;}
+  .elev-window { position: absolute; border: 3px solid #3b82f6; background: #bfdbfe; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #1e40af; font-weight: bold; z-index: 5; cursor: pointer;}
   .elev-pillar { position: absolute; bottom: 0; background: #9ca3af; border: 1px solid #4b5563; z-index: 6; }
 
   /* CENTER PLAN */
   .center-col { background: #e5e7eb; position: relative; }
-  .plan-viewport { flex: 1; overflow: hidden; margin: 10px; position: relative; border: 1px solid #888; background: #fff; box-shadow: inset 0 0 20px rgba(0,0,0,0.05); touch-action: none; }
+  .plan-viewport { flex: 1; overflow: hidden; margin: 10px; position: relative; border: 1px solid #888; background: #fff; box-shadow: inset 0 0 20px rgba(0,0,0,0.05); touch-action: none; cursor: grab;}
+  .plan-viewport:active { cursor: grabbing; }
   .view-container { position: absolute; inset: 0; display: none; overflow: hidden; }
   .view-container.active { display: block; }
   .zoom-wrapper { width: 100%; height: 100%; position: relative; transform-origin: 0 0; transition: transform 0.1s; }
@@ -64,8 +65,7 @@
   .plan-window { position: absolute; border: 2px solid #3b82f6; background: #bfdbfe; z-index: 5; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1e40af; font-size: 10px; font-weight: bold; }
   .plan-pillar { position: absolute; background: #9ca3af; border: 1px solid #4b5563; z-index: 6; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #333; font-size: 9px; font-weight: bold; }
 
-  /* GUIDES & TAGS */
-  .dim-tag { position: absolute; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 95; display: none; }
+  /* FLOATING BUTTONS */
   .float-3d-btn { position: absolute; bottom: 15px; right: 15px; background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 6px; }
 
   /* RIGHT COLUMN (Toolbar) */
@@ -93,10 +93,6 @@
   .quick-add-cat { padding: 8px 20px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: var(--text-muted); background: var(--bg-main); position: sticky; top: 0; }
   .quick-add-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; font-size: 14px; }
   .quick-add-item:hover { background: var(--accent-blue); color: #fff; }
-
-  .custom-context-menu { position: fixed; display: none; z-index: 10000; background: var(--bg-panel); border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-radius: 6px; min-width: 180px; padding: 5px 0; }
-  .custom-context-menu div { padding: 8px 15px; font-size: 13px; cursor: pointer; color: var(--text-main); }
-  .custom-context-menu div:hover { background: var(--accent-blue); color: #fff; }
 </style>
 </head>
 <body data-theme="dark">
@@ -134,7 +130,10 @@
     <div class="action-tabs">
       <button class="active" onclick="updateRightPanel('View & Tools', this)">View & Tools</button>
       <button onclick="updateRightPanel('Room Setting', this)">Room Setting</button>
+      <button onclick="updateRightPanel('Add To Wall', this)">Add To Wall</button>
       <button onclick="updateRightPanel('Site Structure', this)">Site Structure</button>
+      <button onclick="updateRightPanel('Auto Loft', this)">Auto Loft</button>
+      <button onclick="updateRightPanel('Export', this)">Export Drawing</button>
     </div>
   </div>
 
@@ -161,14 +160,12 @@
 
     <!-- CENTER: PLAN -->
     <div class="panel center-col" id="box-center" data-view="plan">
-      <div class="panel-header" onclick="showContextMenu(event, this.parentElement)">
+      <div class="panel-header">
         <span id="center-title">Plan View</span> 
-        <span style="font-size:11px;color:var(--text-muted);font-weight:normal; text-transform:none;">(Scroll to Zoom, Drag to move)</span>
+        <span style="font-size:11px;color:var(--text-muted);font-weight:normal; text-transform:none;">(Scroll to Zoom, Drag empty space to Pan)</span>
       </div>
       
       <div class="plan-viewport" id="viewport">
-        <div class="dim-tag" id="dim-tag">800mm</div>
-
         <div class="view-container active" id="view-plan">
           <div class="plan-canvas" id="plan"></div>
         </div>
@@ -179,11 +176,7 @@
           </div>
         </div>
 
-        <div class="view-container" id="view-tab">
-          <div id="tab-content" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; background:#f8fafc; color:#334155;"></div>
-        </div>
-
-        <div class="float-3d-btn" onclick="changeView('persp', document.getElementById('box-center'))">
+        <div class="float-3d-btn" onclick="changeView('persp')">
           <span>🧊</span> <span>3D View</span>
         </div>
       </div>
@@ -201,7 +194,7 @@
       <div class="panel properties-panel">
         <div class="panel-header">
           <span id="prop-title">Details</span>
-          <button onclick="selectedId=null; updateAllViews();" style="background:none; border:none; color:var(--text-main); cursor:pointer;">&times;</button>
+          <button onclick="selectedId=null; selectedType=null; updateAllViews();" style="background:none; border:none; color:var(--text-main); cursor:pointer;">&times;</button>
         </div>
         <div class="properties-content" id="prop-body">
           <p style="color:var(--text-muted); font-size:13px;">Select an item on the plan to edit its dimensions.</p>
@@ -218,32 +211,26 @@
     </div>
   </div>
 
-  <div class="custom-context-menu" id="ctx-menu">
-    <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); padding:4px 15px; font-weight:bold;">Toggle View:</div>
-    <div onclick="changeView('plan', document.getElementById('box-center'))">Show Plan View</div>
-    <div onclick="changeView('wallA', document.getElementById('box-center'))">Show Wall A Elevation</div>
-    <div onclick="changeView('wallB', document.getElementById('box-center'))">Show Wall B Elevation</div>
-    <div onclick="changeView('persp', document.getElementById('box-center'))">Show 3D Perspective</div>
-  </div>
-
 <script>
   const viewport = document.getElementById('viewport');
   const plan = document.getElementById('plan');
-  const ctxMenu = document.getElementById('ctx-menu');
 
   // Data state
   window.modules = [];
-  window.siteElements = []; // Doors, windows, pillars
+  window.siteElements = [];
   window.wallDims = { A: 800, B: 600, C: 800, D: 600, H: 240 };
   window.CURRENT_SHAPE = 'rectangle';
   
   let selectedId = null;
-  let selectedType = null; // 'module', 'site', 'wall'
+  let selectedType = null; // 'module', 'site'
+  let activeWall = 'A'; // For adding elements
+  
+  // Drag / Pan logic
   let isDragging = false, dragType = '', startX, startY, startLeft, startTop;
+  let isPanning = false, panStartX, panStartY;
   let currentZoom = 1, panX = 0, panY = 0;
   const snapThreshold = 15; 
 
-  // --- DATA FETCHING ---
   function getBackendModules() {
     let list = [];
     if (typeof MODS !== 'undefined') {
@@ -261,13 +248,6 @@
       list = [ { id: 'wh3', n: 'Wardrobe (3 Door)', cat: 'Wardrobes', w: 120, h: 220, d: 60 } ];
     }
     return list.sort((a,b) => a.cat.localeCompare(b.cat) || a.n.localeCompare(b.n));
-  }
-
-  // --- INITIALIZATION ---
-  function initializeViews() {
-    plan.style.width = wallDims.A + 'px';
-    plan.style.height = wallDims.B + 'px';
-    updateAllViews();
   }
 
   // --- RENDER ENGINE ---
@@ -290,8 +270,6 @@
     }
 
     let itemsHtml = '';
-    
-    // Render site elements first (so modules sit on top)
     window.siteElements.forEach(el => {
         if (el.type === 'door' || el.type === 'window') {
             itemsHtml += `<div class="plan-${el.type} ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left: ${el.left}px; top: ${el.top}px; width: ${el.width}px; height: ${el.height}px; transform: rotate(${el.rotation}deg);">${el.type === 'door' ? 'Door' : 'Window'}</div>`;
@@ -300,7 +278,6 @@
         }
     });
 
-    // Render modules
     window.modules.forEach(m => {
         itemsHtml += `<div class="module ${m.id === selectedId ? 'selected' : ''}" data-id="${m.id}" style="left: ${m.left}px; top: ${m.top}px; width: ${m.width}px; height: ${m.height}px; transform: rotate(${m.rotation}deg);">${m.type}</div>`;
     });
@@ -313,24 +290,22 @@
     const W = (wall === 'A' || wall === 'C') ? wallDims.A : wallDims.B;
     const H = wallDims.H;
 
-    // Render site elements
     window.siteElements.forEach(el => {
         if (el.wall !== wall) return;
         const leftPct = (el.x / W) * 100;
-        const widthPct = (el.w / W) * 100;
-        const heightPct = (el.h / H) * 100;
+        const widthPct = (el.width / W) * 100;
+        const heightPct = (el.height / H) * 100;
         const bottomPct = (el.z / H) * 100;
         
         if (el.type === 'door') {
-            html += `<div class="elev-door" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
+            html += `<div class="elev-door ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Door</div>`;
         } else if (el.type === 'window') {
-            html += `<div class="elev-window" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
+            html += `<div class="elev-window ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:${heightPct}%; bottom:${bottomPct}%;">Window</div>`;
         } else if (el.type === 'pillar') {
-            html += `<div class="elev-pillar" style="left:${leftPct}%; width:${widthPct}%; height:100%;"></div>`;
+            html += `<div class="elev-pillar ${el.id === selectedId ? 'selected' : ''}" data-id="${el.id}" style="left:${leftPct}%; width:${widthPct}%; height:100%;"></div>`;
         }
     });
 
-    // Render modules
     window.modules.forEach(mod => {
         if (mod.wall !== wall) return;
         const leftPct = (mod.x / W) * 100;
@@ -343,27 +318,23 @@
     return html;
   }
 
-  // --- UPDATE LOOP ---
   function updateAllViews() {
-    // 1. Clamp positions
     window.modules.forEach(mod => {
         mod.left = Math.max(0, Math.min(wallDims.A - mod.width, mod.left));
         mod.top = Math.max(0, Math.min(wallDims.B - mod.height, mod.top));
     });
 
-    // 2. Render Plan
     plan.style.width = wallDims.A + 'px';
     plan.style.height = wallDims.B + 'px';
     plan.innerHTML = renderPlanHTML();
 
-    // 3. Render Elevations
     document.querySelectorAll('.elevation-box').forEach(box => {
         const wall = box.getAttribute('data-view').replace('wall', '');
         const wrapper = box.querySelector('.zoom-wrapper');
         if (wrapper) wrapper.innerHTML = renderElevationHTML(wall);
     });
     
-    // 4. Render Center Alt View
+    // Center Alt view
     const centerPanel = document.getElementById('box-center');
     const activeView = centerPanel.getAttribute('data-view');
     if (activeView !== 'plan') {
@@ -377,11 +348,10 @@
         }
     }
 
-    // 5. Update Right Panel
     renderRightPanelProperties();
   }
 
-  // --- UI: SIDE PANELS ---
+  // --- UI SIDEBAR TABS ---
   window.updateRightPanel = function(tabName, btnElement) {
     if (btnElement) {
         document.querySelectorAll('.action-tabs button').forEach(b => b.classList.remove('active'));
@@ -392,7 +362,9 @@
     
     if (tabName === 'View & Tools') {
         tc.innerHTML = `
-          <div class="tool-group"><button onclick="openAddModuleModal()" style="width:100%; background:var(--accent-blue); color:white; padding:10px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">+ Add Module</button></div>
+          <div class="tool-group">
+             <button onclick="openAddModuleModal()" style="width:100%; background:var(--accent-blue); color:white; padding:10px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">+ Add Module</button>
+          </div>
           <div class="tool-group">
             <span class="tool-group-title">Transform</span>
             <div class="btn-row"><button onclick="zoomCanvas(1.1)">Zoom +</button><button onclick="zoomCanvas(0.9)">Zoom -</button></div>
@@ -410,6 +382,12 @@
               <div style="margin-top:10px;"><label>Ceiling Height</label><input type="number" value="${wallDims.H*10}" onchange="wallDims.H = +this.value/10; updateAllViews();"></div>
             </div>
           </div>`;
+    } else if (tabName === 'Add To Wall') {
+        tc.innerHTML = `
+          <div class="tool-group">
+            <span class="tool-group-title">Add Module To Wall</span>
+            <button onclick="openAddModuleModal()" style="width:100%; background:var(--accent-blue); color:white; padding:10px; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">+ Select Module from List</button>
+          </div>`;
     } else if (tabName === 'Site Structure') {
         tc.innerHTML = `
           <div class="tool-group">
@@ -418,6 +396,25 @@
               <button onclick="addSiteElement('door')">+ Add Door</button>
               <button onclick="addSiteElement('window')">+ Add Window</button>
               <button onclick="addSiteElement('pillar')">+ Add Pillar / Column</button>
+            </div>
+          </div>`;
+    } else if (tabName === 'Auto Loft') {
+        tc.innerHTML = `
+          <div class="tool-group">
+            <span class="tool-group-title">Generate Loft</span>
+            <div class="prop-form">
+              <div><label>Loft Height (mm)</label><input type="number" value="450"></div>
+              <div><label>Loft Depth (mm)</label><input type="number" value="320"></div>
+            </div>
+            <div class="btn-row" style="margin-top:10px;"><button style="background:var(--accent-blue); color:white; border:none; padding:10px;">Generate Loft</button></div>
+          </div>`;
+    } else if (tabName === 'Export') {
+        tc.innerHTML = `
+          <div class="tool-group">
+            <span class="tool-group-title">Export Drawing</span>
+            <div class="btn-row" style="flex-direction:column; gap:8px;">
+              <button style="background:#1F4E79; color:white; border:none; padding:10px;">Export as DXF</button>
+              <button style="background:#1F4E79; color:white; border:none; padding:10px;">Export All Rooms</button>
             </div>
           </div>`;
     }
@@ -452,7 +449,6 @@
             <button onclick="deleteSelected()" style="background:#ef4444; color:white; border:none; padding:8px; border-radius:4px; margin-top:10px; cursor:pointer;">Delete Module</button>
           </div>`;
     } else {
-        // Site Element
         bodyEl.innerHTML = `
           <div class="prop-form">
             <div><label>Width (mm)</label><input type="number" value="${Math.round(obj.width * 10)}" onchange="const m=window.siteElements.find(x=>x.id==='${obj.id}'); m.width=+this.value/10; updateAllViews();"></div>
@@ -464,7 +460,7 @@
     }
   }
 
-  // --- INTERACTION: MODULES & ELEMENTS ---
+  // --- ADDING MODULES & ELEMENTS ---
   window.openAddModuleModal = function() {
     const list = document.getElementById('quick-add-list');
     const bMods = getBackendModules();
@@ -490,26 +486,25 @@
     document.getElementById('quick-add-modal').style.display = 'none'; 
     const newMod = {
         id: 'mod-' + Date.now(), type: type, mk: mk,
-        left: Math.round(wallDims.A / 2 - 40), top: Math.round(wallDims.B / 2 - 40), z: parseInt(zHeight),
-        x: 400, // Default X for elevation
-        width: 80, height: 80, depth: 60, rotation: 0, wall: 'A'
+        left: Math.round(wallDims.A / 2 - 40), top: Math.round(wallDims.B / 2 - 40), 
+        x: 400, z: parseInt(zHeight), width: 80, height: 80, depth: 60, rotation: 0, wall: activeWall
     };
     window.modules.push(newMod);
     selectedId = newMod.id; selectedType = 'module';
-    saveState(); updateAllViews();
+    updateAllViews();
   };
 
   window.addSiteElement = function(type) {
     const newEl = {
         id: 'el-' + Date.now(), type: type,
-        left: Math.round(wallDims.A / 2 - 40), top: Math.round(wallDims.B / 2 - 40), z: type === 'window' ? 90 : 0,
-        x: 400, // Default X for elevation
-        width: type === 'pillar' ? 30 : 90, height: type === 'pillar' ? 30 : 210, rotation: 0, wall: 'A'
+        left: Math.round(wallDims.A / 2 - 40), top: Math.round(wallDims.B / 2 - 40), 
+        x: 400, z: type === 'window' ? 90 : 0,
+        width: type === 'pillar' ? 30 : 90, height: type === 'pillar' ? 30 : 210, rotation: 0, wall: activeWall
     };
     if (type === 'window') { newEl.width = 120; newEl.height = 120; }
     window.siteElements.push(newEl);
     selectedId = newEl.id; selectedType = 'site';
-    saveState(); updateAllViews();
+    updateAllViews();
   };
 
   window.deleteSelected = function() {
@@ -519,9 +514,10 @@
     updateAllViews();
   };
 
-  // --- DRAG LOGIC ---
+  // --- DRAG & PAN LOGIC ---
   document.addEventListener('mousedown', (e) => {
-    const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .elev-module');
+    // 1. Check if clicking an object
+    const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .elev-module, .elev-door, .elev-window');
     if (el) {
         selectedId = el.getAttribute('data-id');
         selectedType = el.classList.contains('module') || el.classList.contains('elev-module') ? 'module' : 'site';
@@ -533,21 +529,35 @@
         startX = e.clientX; startY = e.clientY;
         startLeft = obj.left; startTop = obj.top;
         
-        if (el.classList.contains('elev-module')) {
+        if (el.classList.contains('elev-module') || el.classList.contains('elev-door') || el.classList.contains('elev-window')) {
             dragType = 'elev';
             if (e.target.closest('.elevation-box')) obj.wall = e.target.closest('.elevation-box').getAttribute('data-view').replace('wall', '');
         } else {
             dragType = 'plan';
         }
-        
         updateAllViews();
-    } else if (!e.target.closest('.panel') && !e.target.closest('.sub-header') && !e.target.closest('.top-nav')) {
+    } 
+    // 2. Otherwise, it's Panning (but only if clicking inside the canvas)
+    else if (e.target.closest('#viewport') && !e.target.closest('.float-3d-btn')) {
+        isPanning = true;
+        panStartX = e.clientX - panX;
+        panStartY = e.clientY - panY;
+        viewport.style.cursor = 'grabbing';
+        
+        // Deselect if clicking empty space
         selectedId = null; selectedType = null;
         updateAllViews();
     }
   });
 
   document.addEventListener('mousemove', (e) => {
+    if (isPanning) {
+        panX = e.clientX - panStartX;
+        panY = e.clientY - panStartY;
+        applyTransform();
+        return;
+    }
+
     if (!isDragging || !selectedId) return;
     let obj = selectedType === 'module' ? window.modules.find(m => m.id === selectedId) : window.siteElements.find(m => m.id === selectedId);
     if (!obj) return;
@@ -559,8 +569,7 @@
         let newLeft = startLeft + dx;
         let newTop = startTop + dy;
         
-        // Snap to nearest module logic (simplified to boundaries here)
-        if (document.getElementById('snap-wall').checked) {
+        if (document.getElementById('snap-wall') && document.getElementById('snap-wall').checked) {
             if (Math.abs(newLeft) < snapThreshold) newLeft = 0;
             if (Math.abs(newTop) < snapThreshold) newTop = 0;
             if (Math.abs(newLeft + obj.width - wallDims.A) < snapThreshold) newLeft = wallDims.A - obj.width;
@@ -570,11 +579,13 @@
         obj.left = newLeft; obj.top = newTop;
         obj.x = newLeft; // Keep X synced for elevations
         
-        // Auto-detect wall
+        // Auto-detect wall based on position
         if (obj.top < 20) obj.wall = 'A';
         else if (obj.top + obj.height > wallDims.B - 20) obj.wall = 'C';
         else if (obj.left < 20) obj.wall = 'D';
         else if (obj.left + obj.width > wallDims.A - 20) obj.wall = 'B';
+        
+        activeWall = obj.wall; // Remember for next Add
         
     } else if (dragType === 'elev') {
         obj.x = startLeft + dx;
@@ -585,7 +596,9 @@
   });
 
   document.addEventListener('mouseup', () => {
-    if (isDragging) { isDragging = false; saveState(); }
+    isDragging = false;
+    isPanning = false;
+    viewport.style.cursor = 'grab';
   });
 
   // --- UTILS ---
@@ -594,7 +607,7 @@
     if (shape === 'l-shape') { wallDims.A = 1000; wallDims.B = 800; }
     else if (shape === 'u-shape') { wallDims.A = 1200; wallDims.B = 900; }
     else { wallDims.A = 800; wallDims.B = 600; }
-    initializeViews(); centerPlan(); saveState();
+    initializeViews(); centerPlan();
   };
 
   function applyTransform() { if (plan) plan.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; }
@@ -610,6 +623,12 @@
       panX = mx - scale * (mx - panX); panY = my - scale * (my - panY);
       currentZoom = newZoom; applyTransform();
   }, { passive: false });
+
+  function initializeViews() {
+    plan.style.width = wallDims.A + 'px';
+    plan.style.height = wallDims.B + 'px';
+    updateAllViews();
+  }
 
   function centerPlan() {
       const border = 16; 
@@ -627,13 +646,6 @@
     if (obj) { obj.rotation += dir * (parseInt(document.getElementById('rot-step').value) || 90); updateAllViews(); }
   };
 
-  window.showContextMenu = function(e, box) {
-    e.preventDefault(); ctxMenu.style.display = 'block';
-    ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
-    ctxMenu.style.top = Math.min(e.clientY, window.innerHeight - 200) + 'px';
-  };
-  document.addEventListener('click', (e) => { if (!e.target.closest('.panel-header')) ctxMenu.style.display = 'none'; });
-
   window.changeView = function(viewType) {
     document.getElementById('box-center').setAttribute('data-view', viewType);
     if (viewType === 'plan') {
@@ -644,12 +656,7 @@
         document.getElementById('center-title').innerText = viewType === 'persp' ? '3D Perspective' : 'Elevation: Wall ' + viewType.replace('wall', '');
         updateAllViews();
     }
-    ctxMenu.style.display = 'none';
   };
-
-  function saveState() { }
-  window.undoAction = function() { alert('Undo coming soon!'); };
-  window.redoAction = function() { alert('Redo coming soon!'); };
 
   // --- PREVIEW BRIDGE ---
   const { quoteId, roomIdx } = window.__dsParams;
@@ -670,7 +677,9 @@
       }
     }
   } catch(e) {}
-  initializeViews(); centerPlan();
+  
+  initializeViews(); 
+  centerPlan();
 
   window.addEventListener('message', function(ev) {
     if (!ev.data || ev.data.type !== 'ds-request-save') return;
