@@ -26,13 +26,25 @@ window.updateRightPanel = function(tabName, btnElement) {
         </div>`;
   } 
   else if (tabName === 'Room Setting') {
+      const walls = getWallSegments();
+      let wallInputs = '';
+      
+      walls.forEach(w => {
+          const wLen = Math.sqrt(Math.pow(w.x2 - w.x1, 2) + Math.pow(w.y2 - w.y1, 2));
+          wallInputs += `<div><label>Wall ${w.name} Length</label><input type="number" value="${Math.round(wLen*10)}" disabled title="Edit Room Shape to change wall lengths"></div>`;
+      });
+
       tc.innerHTML = `
         <div class="tool-group">
-          <span class="tool-group-title">Room Dimensions (mm)</span>
+          <span class="tool-group-title">Wall Dimensions (mm)</span>
           <div class="prop-form">
             <div><label>Overall Length</label><input type="number" value="${wallDims.A*10}" onchange="wallDims.A = +this.value/10; updateAllViews(); centerPlan();"></div>
             <div><label>Overall Width</label><input type="number" value="${wallDims.B*10}" onchange="wallDims.B = +this.value/10; updateAllViews(); centerPlan();"></div>
-            <div><label>Ceiling Height</label><input type="number" value="${wallDims.H*10}" onchange="wallDims.H = +this.value/10; updateAllViews();"></div>
+            <div style="margin-top:10px;"><label>Ceiling Height</label><input type="number" value="${wallDims.H*10}" onchange="wallDims.H = +this.value/10; updateAllViews();"></div>
+            <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px;">
+              <span class="mut" style="font-size:11px">Wall Segment Lengths (Auto-calculated)</span>
+              ${wallInputs}
+            </div>
           </div>
         </div>`;
   } 
