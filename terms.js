@@ -199,9 +199,12 @@
     '</div>';
   }
 
-  function partC(q, c) {
+    function partC(q, c) {
     const blank = '___________________________';
-    return '<div class="pg" style="background-color:#ffffff !important; page-break-before: always; break-before: page; position:relative; z-index:99999; padding-top: 20px;">' +
+    // Creates an invisible white shield to block ghost text
+    const whiteShield = '&nbsp;'.repeat(500); 
+    
+    return '<div class="pg" style="background-color:#ffffff !important; page-break-before: always; break-before: page;">' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that any optional work, exclusions, special site conditions and agreed variations have been recorded in the quotation or an attached written approval. I/We have had the opportunity to ask questions and seek clarification before acceptance.</p>' +
@@ -216,20 +219,21 @@
         '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      // Solid white buffer block + high z-index to guarantee no text bleeding
-      '<div style="height: 80px; background-color: #ffffff; width: 100%; display: block; position: relative; z-index: 10;"></div>' +
+      // The Shield: 80px tall block filled with invisible white text
+      '<div style="height: 80px; background-color: #ffffff; color: #ffffff; font-size: 20px; line-height: 20px; overflow: hidden; text-align: justify; word-break: break-all;">' + whiteShield + '</div>' +
       
+      // Signature Panel
       '<table style="width:100%; border:none; background-color:#ffffff;">' +
         '<tr>' +
           '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:60px; background-color:#ffffff;">&nbsp;</div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">Customer Signature</div>' +
+            '<div style="border-bottom:1px solid #333; height:50px; background-color:#ffffff;">&nbsp;</div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:8px; color:#333;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
           '<td style="width:10%; border:none; background-color:#ffffff;"></td>' +
           '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:60px; background-color:#ffffff;">&nbsp;</div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">For ' + esc(c.name) + '</div>' +
+            '<div style="border-bottom:1px solid #333; height:50px; background-color:#ffffff;">&nbsp;</div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:8px; color:#333;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
         '</tr>' +
