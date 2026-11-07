@@ -1,8 +1,4 @@
-/* ===== MODULE STUDIO TERMS ADDON =====
-   Adds Part A (Experience), Part B (Detailed Terms 1-22), Part C (Acceptance)
-   to the quotation preview / print / PDF. Auto-fills customer details.
-   Load AFTER app.js and preview-ui.js in preview.html.
-*/
+/* ===== MODULE STUDIO TERMS ADDON (Updated) ===== */
 (function () {
   if (window.__mstudioTermsLoaded) return;
   window.__mstudioTermsLoaded = true;
@@ -148,15 +144,18 @@
       subs.map(s => '<p style="margin:2px 0 0;font-size:8.5px;line-height:1.35;color:#3a3a3a;text-align:justify">' + esc(s) + '</p>').join('') +
     '</div>';
 
-  const PART_B1 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a">' +
-    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 4px">PART B — DETAILED TERMS &amp; CONDITIONS</h2>' +
+  // Split Part B neatly into 3 pages
+  const PART_B1 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a; break-after: page;">' +
+    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 4px">PART B — DETAILED TERMS &amp; CONDITIONS (1/3)</h2>' +
     '<p style="text-align:center;font-size:9px;color:#888;margin:0 0 8px;font-style:italic">These terms govern how the project will be delivered. Please read them with your accepted quotation, BOQ and approved drawings.</p>' +
-    CLAUSES.slice(0,8).map(clauseHtml).join('') + '</div>';
+    CLAUSES.slice(0,7).map(clauseHtml).join('') + '</div>';
 
-  const PART_B2 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a">' +
-    CLAUSES.slice(8,15).map(clauseHtml).join('') + '</div>';
+  const PART_B2 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a; break-after: page;">' +
+    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 8px">PART B — DETAILED TERMS &amp; CONDITIONS (2/3)</h2>' +
+    CLAUSES.slice(7,15).map(clauseHtml).join('') + '</div>';
 
-  const PART_B3 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a">' +
+  const PART_B3 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a; break-after: page;">' +
+    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 8px">PART B — DETAILED TERMS &amp; CONDITIONS (3/3)</h2>' +
     CLAUSES.slice(15).map(clauseHtml).join('') + '</div>';
 
   const PART_A_CARDS = [
@@ -195,7 +194,6 @@
 
   function partC(q, c) {
     const blank = '___________________________';
-    const bigBlank = '&nbsp;'.repeat(40);
     return '<div class="pg">' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
@@ -206,8 +204,8 @@
         '<tr><td><b>Project address</b></td><td>' + (esc(q.address) || blank) + '</td></tr>' +
         '<tr><td><b>Quotation / work order number</b></td><td>' + esc(qno(q)) + '</td></tr>' +
         '<tr><td><b>Accepted quotation amount</b></td><td><b>' + fmt(gt(q)) + '</b></td></tr>' +
-        '<tr><td><b>Date of acceptance</b></td><td style="height:22px">' + bigBlank + '</td></tr>' +
-        '<tr><td><b>Customer signature</b></td><td style="height:36px"></td></tr>' +
+        '<tr><td><b>Date of acceptance</b></td><td style="height:30px; border-bottom:1px solid #ccc;"></td></tr>' +
+        '<tr><td><b>Customer signature</b></td><td style="height:50px; border-bottom:1px solid #ccc;"></td></tr>' +
         '<tr><td><b>MODULE STUDIO authorised representative</b></td><td>' + (esc(q.by) || blank) + '</td></tr>' +
         '<tr><td><b>Name and designation</b></td><td>' + (esc(q.by) || blank) + '</td></tr>' +
         '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
@@ -220,17 +218,31 @@
   const _render = window.render;
   window.render = function () {
     _render.apply(this, arguments);
-        if (typeof S === 'undefined' || S.tab !== 'p') return;
+    if (typeof S === 'undefined' || S.tab !== 'p') return;
+    
     const paper = document.querySelector('#app .paper');
-    if (!paper || paper.querySelector('#mstudio-terms')) return;
-    const q = T();
-    const c = co();
-    if (!q) return;
-    const cell = paper.querySelector('tbody > tr > td');
-    if (!cell) return;
-    const div = document.createElement('div');
-    div.id = 'mstudio-terms';
-    div.innerHTML = partA() + PART_B1 + PART_B2 + PART_B3 + partC(q, c);
-    cell.appendChild(div);
+    if (!paper) return;
+    
+    // 1. Hide Old Legacy Sections
+    paper.querySelectorAll('.pg, .card').forEach(el => {
+      const txt = el.textContent || '';
+      if (txt.includes('PROJECT MATERIAL & HARDWARE SUMMARY') || txt.includes('LIMITED WARRANTY & SERVICE POLICY')) {
+        el.style.display = 'none';
+      }
+    });
+
+    // 2. Append New Sections
+    if (!paper.querySelector('#mstudio-terms')) {
+      const q = T();
+      const c = co();
+      if (!q) return;
+      const cell = paper.querySelector('tbody > tr > td');
+      if (!cell) return;
+      
+      const div = document.createElement('div');
+      div.id = 'mstudio-terms';
+      div.innerHTML = partA() + PART_B1 + PART_B2 + PART_B3 + partC(q, c);
+      cell.appendChild(div);
+    }
   };
 })();
