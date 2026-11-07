@@ -201,7 +201,7 @@
     '</div>';
   }
 
-  function partC(q, c) {
+    function partC(q, c) {
     const blank = '___________________________';
     return '<div class="pg">' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
@@ -218,18 +218,18 @@
         '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      // Using Flexbox with a solid white background to prevent PDF text bleeding
-            '<table style="width:100%; margin-top:60px; border-collapse:collapse; page-break-inside:avoid; position:relative; z-index:10; background-color:#ffffff;">' +
+      // Using underscores instead of borders to prevent PDF canvas text bleeding
+      '<table style="width:100%; margin-top:50px; border:none; background-color:#ffffff;">' +
         '<tr>' +
-          '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:60px; background-color:#ffffff;"></div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">Customer Signature</div>' +
+          '<td style="width:45%; border:none; padding:0; vertical-align:bottom;">' +
+            '<div style="font-size:12px; color:#333; letter-spacing:2px; margin-bottom:4px; overflow:hidden; white-space:nowrap;">_________________________________________</div>' +
+            '<div style="font-size:11px; font-weight:bold;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
-          '<td style="width:10%; border:none; background-color:#ffffff;"></td>' + 
-          '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:60px; background-color:#ffffff;"></div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">For ' + esc(c.name) + '</div>' +
+          '<td style="width:10%; border:none;"></td>' +
+          '<td style="width:45%; border:none; padding:0; vertical-align:bottom;">' +
+            '<div style="font-size:12px; color:#333; letter-spacing:2px; margin-bottom:4px; overflow:hidden; white-space:nowrap;">_________________________________________</div>' +
+            '<div style="font-size:11px; font-weight:bold;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
         '</tr>' +
