@@ -141,7 +141,7 @@
   const clauseHtml = ([title, subs]) =>
     '<div style="margin-top:7px; break-inside:avoid; page-break-inside:avoid;">' +
       '<div style="background:#efe7d6;color:#4D5A4A;font-weight:700;padding:3px 8px;font-size:9px;letter-spacing:.5px;border-left:3px solid #B08D57">' + esc(title) + '</div>' +
-      subs.map(s => '<p style="margin:2px 0 0;font-size:8.5px;line-height:1.35;color:#3a3a3a;text-align:justify">' + esc(s) + '</p>').join('') +
+      subs.map(s => '<p style="margin:2px 0 0;font-size:8.5px;line-height:1.35;color:#3a3a3a;text-align:justify; word-wrap:break-word; overflow-wrap:break-word;">' + esc(s) + '</p>').join('') +
     '</div>';
 
   const PART_B1 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a;">' +
@@ -173,12 +173,20 @@
   ];
 
   function partA(q) {
-    const cards = PART_A_CARDS.map(([ac,bg,bd,title,body]) =>
-      '<div style="background:'+bg+';border:1px solid '+bd+';border-left:4px solid '+ac+';border-radius:6px;padding:8px 10px">' +
-        '<b style="color:'+ac+';font-size:10.5px">✦ '+title+'</b>' +
-        '<p style="margin:3px 0 0;font-size:9.5px;color:#4a4a4a;line-height:1.4">'+body+'</p>' +
-      '</div>'
-    ).join('');
+    const htmlCards = PART_A_CARDS.map(([ac,bg,bd,title,body]) =>
+      '<td style="width:50%; padding:4px; vertical-align:top;">' +
+        '<div style="background:'+bg+';border:1px solid '+bd+';border-left:4px solid '+ac+';border-radius:6px;padding:8px 10px; height:100%;">' +
+          '<b style="color:'+ac+';font-size:10.5px">✦ '+title+'</b>' +
+          '<p style="margin:3px 0 0;font-size:9.5px;color:#4a4a4a;line-height:1.4">'+body+'</p>' +
+        '</div>' +
+      '</td>'
+    );
+    
+    let cardRows = '';
+    for (let i = 0; i < htmlCards.length; i += 2) {
+      cardRows += '<tr>' + htmlCards[i] + htmlCards[i+1] + '</tr>';
+    }
+
     const commitment = S.set.cm.map(x => '• ' + esc(x)).join('<br/>');
     
     const notesHtml = q.notes ? `<div style="background:#fff3cd; border:1px solid #ffe69c; border-radius:8px; padding:12px 16px; margin-bottom:16px;"><b style="color:#664d03;font-size:12px;letter-spacing:1px">NOTES, EXCLUSIONS & ADDITIONAL COST ITEMS</b><div style="font-size:10px;color:#664d03;margin-top:6px;white-space:pre-line;line-height:1.5;">${esc(q.notes)}</div></div>` : '';
@@ -192,51 +200,43 @@
         '<div style="font-size:14px;letter-spacing:1px;margin-top:3px">A clear, considered approach to designing, fabricating &amp; installing spaces</div>' +
         '<div style="font-size:10px;color:#D8C4A5;margin-top:2px">that work beautifully for everyday life.</div>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">' + cards + '</div>' +
+      '<table style="width:100%; border:none; border-collapse:collapse; margin:0 -4px;">' + cardRows + '</table>' +
       '<div style="margin-top:10px;background:#f5f1ea;border-left:4px solid #B08D57;padding:8px 12px;border-radius:4px;font-size:10px;color:#4D5A4A">' +
         '<b style="color:#B08D57">OUR COMMITMENT TO YOU</b><br/>' + commitment +
       '</div>' +
     '</div>';
   }
 
-      function partC(q, c) {
+  function partC(q, c) {
     const blank = '___________________________';
     
-    // 1x1 transparent GIF stretched to fill the space, forcing the PDF to draw white
-    const whiteShield = '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="width:100%; height:80px; display:block;" />';
-    
-    return '<div class="pg" style="background-color:#ffffff !important; page-break-before: always; break-before: page;">' +
+    return '<div class="pg" style="page-break-before: always; background-color:#ffffff;">' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
-      '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
-      '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that any optional work, exclusions, special site conditions and agreed variations have been recorded in the quotation or an attached written approval. I/We have had the opportunity to ask questions and seek clarification before acceptance.</p>' +
+      '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5; text-align:justify;">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
+      '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5; text-align:justify;">I/We confirm that any optional work, exclusions, special site conditions and agreed variations have been recorded in the quotation or an attached written approval. I/We have had the opportunity to ask questions and seek clarification before acceptance.</p>' +
       
-      '<table class="t" style="margin-top:14px; background-color:#ffffff;">' +
-        '<tr><th style="width:45%;background:#1F2937;color:#fff">Acceptance details</th><th style="background:#1F2937;color:#fff">To be completed</th></tr>' +
-        '<tr><td><b>Customer name(s)</b></td><td>' + (esc(q.name) || blank) + '</td></tr>' +
-        '<tr><td><b>Project address</b></td><td>' + (esc(q.address) || blank) + '</td></tr>' +
-        '<tr><td><b>Quotation / work order number</b></td><td>' + esc(qno(q)) + '</td></tr>' +
-        '<tr><td><b>Accepted quotation amount</b></td><td><b>' + fmt(gt(q)) + '</b></td></tr>' +
-        '<tr><td><b>Prepared by</b></td><td>' + (esc(q.by) || blank) + '</td></tr>' +
-        '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
+      '<table class="t" style="margin-top:14px; width:100%; border-collapse:collapse;">' +
+        '<tr><th style="width:45%;background:#1F2937;color:#fff; text-align:left; padding:6px;">Acceptance details</th><th style="background:#1F2937;color:#fff; text-align:left; padding:6px;">To be completed</th></tr>' +
+        '<tr><td style="padding:6px; border-bottom:1px solid #ddd;"><b>Customer name(s)</b></td><td style="padding:6px; border-bottom:1px solid #ddd;">' + (esc(q.name) || blank) + '</td></tr>' +
+        '<tr><td style="padding:6px; border-bottom:1px solid #ddd;"><b>Project address</b></td><td style="padding:6px; border-bottom:1px solid #ddd;">' + (esc(q.address) || blank) + '</td></tr>' +
+        '<tr><td style="padding:6px; border-bottom:1px solid #ddd;"><b>Quotation / work order number</b></td><td style="padding:6px; border-bottom:1px solid #ddd;">' + esc(qno(q)) + '</td></tr>' +
+        '<tr><td style="padding:6px; border-bottom:1px solid #ddd;"><b>Accepted quotation amount</b></td><td style="padding:6px; border-bottom:1px solid #ddd;"><b>' + fmt(gt(q)) + '</b></td></tr>' +
+        '<tr><td style="padding:6px; border-bottom:1px solid #ddd;"><b>Prepared by</b></td><td style="padding:6px; border-bottom:1px solid #ddd;">' + (esc(q.by) || blank) + '</td></tr>' +
+        '<tr><td style="padding:6px; border-bottom:1px solid #ddd;"><b>Date</b></td><td style="padding:6px; border-bottom:1px solid #ddd;">' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      // The White Pixel Shield: Forces the PDF engine to draw a solid white block here
-      '<div style="height: 80px; background-color: #ffffff; overflow: hidden; margin-top: 20px;">' +
-        whiteShield +
-      '</div>' +
-      
-      // Signature Panel
-      '<table style="width:100%; border:none; background-color:#ffffff;">' +
+      // Signature panel: Adding a solid white table with line-height to prevent ghost text
+      '<table style="width:100%; margin-top:50px; border:none;">' +
         '<tr>' +
-          '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:40px; background-color:#ffffff;">&nbsp;</div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">Customer Signature</div>' +
+          '<td style="width:45%; border:none; vertical-align:bottom; padding-bottom:10px;">' +
+            '<div style="border-bottom:1px solid #333; height:50px; line-height:50px; color:#fff; overflow:hidden;">&nbsp;</div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:8px;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
-          '<td style="width:10%; border:none; background-color:#ffffff;"></td>' +
-          '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:40px; background-color:#ffffff;">&nbsp;</div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">For ' + esc(c.name) + '</div>' +
+          '<td style="width:10%; border:none;"></td>' +
+          '<td style="width:45%; border:none; vertical-align:bottom; padding-bottom:10px;">' +
+            '<div style="border-bottom:1px solid #333; height:50px; line-height:50px; color:#fff; overflow:hidden;">&nbsp;</div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:8px;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
         '</tr>' +
@@ -255,6 +255,7 @@
     const paper = document.querySelector('#app .paper');
     if (!paper) return;
     
+    // Hide Old Legacy Sections
     paper.querySelectorAll('.pg, .card').forEach(el => {
       const txt = el.textContent || '';
       if (txt.includes('PROJECT MATERIAL & HARDWARE SUMMARY') || txt.includes('LIMITED WARRANTY & SERVICE POLICY')) {
@@ -262,6 +263,7 @@
       }
     });
 
+    // Append New Sections
     if (!paper.querySelector('#mstudio-terms')) {
       const q = T();
       const c = co();
