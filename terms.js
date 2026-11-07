@@ -220,7 +220,7 @@
   const _render = window.render;
   window.render = function () {
     _render.apply(this, arguments);
-    if (!window.S || S.tab !== 'p') return;
+        if (typeof S === 'undefined' || S.tab !== 'p') return;
     const paper = document.querySelector('#app .paper');
     if (!paper || paper.querySelector('#mstudio-terms')) return;
     const q = T();
