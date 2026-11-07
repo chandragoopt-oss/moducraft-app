@@ -219,18 +219,21 @@
       '</table>' +
       
       // Using Flexbox with a solid white background to prevent PDF text bleeding
-      '<div style="display:flex; justify-content:space-between; margin-top:60px; background:#fff; position:relative; z-index:10; page-break-inside:avoid;">' +
-        '<div style="width:45%;">' +
-          '<div style="border-bottom:1px solid #333; height:60px; background:#fff;"></div>' +
-          '<div style="font-size:11px; font-weight:bold; margin-top:6px;">Customer Signature</div>' +
-          '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
-        '</div>' +
-        '<div style="width:45%;">' +
-          '<div style="border-bottom:1px solid #333; height:60px; background:#fff;"></div>' +
-          '<div style="font-size:11px; font-weight:bold; margin-top:6px;">For ' + esc(c.name) + '</div>' +
-          '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
-        '</div>' +
-      '</div>' +
+            '<table style="width:100%; margin-top:60px; border-collapse:collapse; page-break-inside:avoid; position:relative; z-index:10; background-color:#ffffff;">' +
+        '<tr>' +
+          '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
+            '<div style="border-bottom:1px solid #333; height:60px; background-color:#ffffff;"></div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">Customer Signature</div>' +
+            '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
+          '</td>' +
+          '<td style="width:10%; border:none; background-color:#ffffff;"></td>' + 
+          '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
+            '<div style="border-bottom:1px solid #333; height:60px; background-color:#ffffff;"></div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">For ' + esc(c.name) + '</div>' +
+            '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
+          '</td>' +
+        '</tr>' +
+      '</table>' +
       
       '<p style="text-align:center;font-size:10px;color:#666;margin-top:50px;font-style:italic">MODULE STUDIO | Designing Spaces. Defining Lifestyles.</p>' +
       '<p style="text-align:center;font-size:10px;color:#666;margin:2px 0">' + esc(c.web) + ' &nbsp;|&nbsp; WhatsApp &amp; Call: ' + esc(c.phone) + '</p>' +
