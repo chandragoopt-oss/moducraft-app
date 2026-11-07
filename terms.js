@@ -180,7 +180,7 @@
         '<p style="margin:3px 0 0;font-size:9.5px;color:#4a4a4a;line-height:1.4">'+body+'</p>' +
       '</div>'
     ).join('');
-    const commitment = S.set.cm.map(x => '• ' + esc(x)).join('<br>');
+    const commitment = S.set.cm.map(x => '• ' + esc(x)).join('<br/>');
     
     // Notes moved to Page 11 (Part A)
     const notesHtml = q.notes ? `<div style="background:#fff3cd; border:1px solid #ffe69c; border-radius:8px; padding:12px 16px; margin-bottom:16px;"><b style="color:#664d03;font-size:12px;letter-spacing:1px">NOTES, EXCLUSIONS & ADDITIONAL COST ITEMS</b><div style="font-size:10px;color:#664d03;margin-top:6px;white-space:pre-line;line-height:1.5;">${esc(q.notes)}</div></div>` : '';
@@ -196,7 +196,7 @@
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">' + cards + '</div>' +
       '<div style="margin-top:10px;background:#f5f1ea;border-left:4px solid #B08D57;padding:8px 12px;border-radius:4px;font-size:10px;color:#4D5A4A">' +
-        '<b style="color:#B08D57">OUR COMMITMENT TO YOU</b><br>' + commitment +
+        '<b style="color:#B08D57">OUR COMMITMENT TO YOU</b><br/>' + commitment +
       '</div>' +
     '</div>';
   }
