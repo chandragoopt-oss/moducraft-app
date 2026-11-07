@@ -201,14 +201,14 @@
     '</div>';
   }
 
-    function partC(q, c) {
+      function partC(q, c) {
     const blank = '___________________________';
-    return '<div class="pg">' +
+    return '<div class="pg" style="background-color:#ffffff; page-break-inside:avoid;">' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that any optional work, exclusions, special site conditions and agreed variations have been recorded in the quotation or an attached written approval. I/We have had the opportunity to ask questions and seek clarification before acceptance.</p>' +
       
-      '<table class="t" style="margin-top:14px">' +
+      '<table class="t" style="margin-top:14px; background-color:#ffffff;">' +
         '<tr><th style="width:45%;background:#1F2937;color:#fff">Acceptance details</th><th style="background:#1F2937;color:#fff">To be completed</th></tr>' +
         '<tr><td><b>Customer name(s)</b></td><td>' + (esc(q.name) || blank) + '</td></tr>' +
         '<tr><td><b>Project address</b></td><td>' + (esc(q.address) || blank) + '</td></tr>' +
@@ -218,18 +218,21 @@
         '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      // Using underscores instead of borders to prevent PDF canvas text bleeding
-      '<table style="width:100%; margin-top:50px; border:none; background-color:#ffffff;">' +
+      // Solid white buffer block to prevent any ghost text bleeding from the table above
+      '<div style="height:80px; background-color:#ffffff;"></div>' +
+      
+      // Signature panel using <hr> lines
+      '<table style="width:100%; border:none; background-color:#ffffff;">' +
         '<tr>' +
-          '<td style="width:45%; border:none; padding:0; vertical-align:bottom;">' +
-            '<div style="font-size:12px; color:#333; letter-spacing:2px; margin-bottom:4px; overflow:hidden; white-space:nowrap;">_________________________________________</div>' +
-            '<div style="font-size:11px; font-weight:bold;">Customer Signature</div>' +
+          '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
+            '<hr style="border:none; border-top:1px solid #333; margin:0 0 8px 0;">' +
+            '<div style="font-size:11px; font-weight:bold; color:#333;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
-          '<td style="width:10%; border:none;"></td>' +
-          '<td style="width:45%; border:none; padding:0; vertical-align:bottom;">' +
-            '<div style="font-size:12px; color:#333; letter-spacing:2px; margin-bottom:4px; overflow:hidden; white-space:nowrap;">_________________________________________</div>' +
-            '<div style="font-size:11px; font-weight:bold;">For ' + esc(c.name) + '</div>' +
+          '<td style="width:10%; border:none; background-color:#ffffff;"></td>' +
+          '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
+            '<hr style="border:none; border-top:1px solid #333; margin:0 0 8px 0;">' +
+            '<div style="font-size:11px; font-weight:bold; color:#333;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
         '</tr>' +
@@ -239,7 +242,6 @@
       '<p style="text-align:center;font-size:10px;color:#666;margin:2px 0">' + esc(c.web) + ' &nbsp;|&nbsp; WhatsApp &amp; Call: ' + esc(c.phone) + '</p>' +
     '</div>';
   }
-
   const _render = window.render;
   window.render = function () {
     _render.apply(this, arguments);
