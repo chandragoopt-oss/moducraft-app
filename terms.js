@@ -199,10 +199,11 @@
     '</div>';
   }
 
-    function partC(q, c) {
+      function partC(q, c) {
     const blank = '___________________________';
-    // Creates an invisible white shield to block ghost text
-    const whiteShield = '&nbsp;'.repeat(500); 
+    
+    // 1x1 transparent GIF stretched to fill the space, forcing the PDF to draw white
+    const whiteShield = '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="width:100%; height:80px; display:block;" />';
     
     return '<div class="pg" style="background-color:#ffffff !important; page-break-before: always; break-before: page;">' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
@@ -219,21 +220,23 @@
         '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      // The Shield: 80px tall block filled with invisible white text
-      '<div style="height: 80px; background-color: #ffffff; color: #ffffff; font-size: 20px; line-height: 20px; overflow: hidden; text-align: justify; word-break: break-all;">' + whiteShield + '</div>' +
+      // The White Pixel Shield: Forces the PDF engine to draw a solid white block here
+      '<div style="height: 80px; background-color: #ffffff; overflow: hidden; margin-top: 20px;">' +
+        whiteShield +
+      '</div>' +
       
       // Signature Panel
       '<table style="width:100%; border:none; background-color:#ffffff;">' +
         '<tr>' +
           '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:50px; background-color:#ffffff;">&nbsp;</div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:8px; color:#333;">Customer Signature</div>' +
+            '<div style="border-bottom:1px solid #333; height:40px; background-color:#ffffff;">&nbsp;</div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
           '<td style="width:10%; border:none; background-color:#ffffff;"></td>' +
           '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:50px; background-color:#ffffff;">&nbsp;</div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:8px; color:#333;">For ' + esc(c.name) + '</div>' +
+            '<div style="border-bottom:1px solid #333; height:40px; background-color:#ffffff;">&nbsp;</div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
         '</tr>' +
