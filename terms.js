@@ -213,10 +213,10 @@
         '<tr><td><b>Project address</b></td><td>' + (esc(q.address) || blank) + '</td></tr>' +
         '<tr><td><b>Quotation / work order number</b></td><td>' + esc(qno(q)) + '</td></tr>' +
         '<tr><td><b>Accepted quotation amount</b></td><td><b>' + fmt(gt(q)) + '</b></td></tr>' +
-        '<tr><td><b>Date of acceptance</b></td><td style="height:30px; border-bottom:1px solid #ccc;"></td></tr>' +
-        '<tr><td><b>Customer signature</b></td><td style="height:50px; border-bottom:1px solid #ccc;"></td></tr>' +
+        '<tr><td><b>Date of acceptance</b></td><td style="height:30px; border-bottom:1px solid #ccc;">&nbsp;</td></tr>' +
+        '<tr><td><b>Customer signature</b></td><td style="height:50px; border-bottom:1px solid #ccc;">&nbsp;</td></tr>' +
         '<tr><td><b>MODULE STUDIO authorised representative</b></td><td>' + (esc(q.by) || blank) + '</td></tr>' +
-        '<tr><td><b>Name and designation</b></td><td>' + (esc(q.by) || blank) + ' - Principal Interior Designer</td></tr>' +
+        '<tr><td><b>Name and designation</b></td><td>Principal Interior Designer</td></tr>' +
         '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
       '</table>' +
       '<p style="text-align:center;font-size:10px;color:#666;margin-top:16px;font-style:italic">MODULE STUDIO | Designing Spaces. Defining Lifestyles.</p>' +
