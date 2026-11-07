@@ -144,7 +144,6 @@
       subs.map(s => '<p style="margin:2px 0 0;font-size:8.5px;line-height:1.35;color:#3a3a3a;text-align:justify">' + esc(s) + '</p>').join('') +
     '</div>';
 
-  // Balanced into 4 pages
   const PART_B1 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a;">' +
     '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 4px">PART B — DETAILED TERMS &amp; CONDITIONS (1/4)</h2>' +
     '<p style="text-align:center;font-size:9px;color:#888;margin:0 0 8px;font-style:italic">These terms govern how the project will be delivered. Please read them with your accepted quotation, BOQ and approved drawings.</p>' +
@@ -182,7 +181,6 @@
     ).join('');
     const commitment = S.set.cm.map(x => '• ' + esc(x)).join('<br/>');
     
-    // Notes moved to Page 11 (Part A)
     const notesHtml = q.notes ? `<div style="background:#fff3cd; border:1px solid #ffe69c; border-radius:8px; padding:12px 16px; margin-bottom:16px;"><b style="color:#664d03;font-size:12px;letter-spacing:1px">NOTES, EXCLUSIONS & ADDITIONAL COST ITEMS</b><div style="font-size:10px;color:#664d03;margin-top:6px;white-space:pre-line;line-height:1.5;">${esc(q.notes)}</div></div>` : '';
 
     return '<div class="pg">' +
@@ -201,9 +199,9 @@
     '</div>';
   }
 
-      function partC(q, c) {
+  function partC(q, c) {
     const blank = '___________________________';
-    return '<div class="pg" style="background-color:#ffffff; page-break-inside:avoid;">' +
+    return '<div class="pg" style="background-color:#ffffff !important; page-break-before: always; break-before: page; position:relative; z-index:99999; padding-top: 20px;">' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that any optional work, exclusions, special site conditions and agreed variations have been recorded in the quotation or an attached written approval. I/We have had the opportunity to ask questions and seek clarification before acceptance.</p>' +
@@ -218,21 +216,20 @@
         '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      // Solid white buffer block to prevent any ghost text bleeding from the table above
-      '<div style="height:80px; background-color:#ffffff;"></div>' +
+      // Solid white buffer block + high z-index to guarantee no text bleeding
+      '<div style="height: 80px; background-color: #ffffff; width: 100%; display: block; position: relative; z-index: 10;"></div>' +
       
-      // Signature panel using <hr> lines
       '<table style="width:100%; border:none; background-color:#ffffff;">' +
         '<tr>' +
           '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<hr style="border:none; border-top:1px solid #333; margin:0 0 8px 0;">' +
-            '<div style="font-size:11px; font-weight:bold; color:#333;">Customer Signature</div>' +
+            '<div style="border-bottom:1px solid #333; height:60px; background-color:#ffffff;">&nbsp;</div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
           '<td style="width:10%; border:none; background-color:#ffffff;"></td>' +
           '<td style="width:45%; border:none; padding:0; vertical-align:bottom; background-color:#ffffff;">' +
-            '<hr style="border:none; border-top:1px solid #333; margin:0 0 8px 0;">' +
-            '<div style="font-size:11px; font-weight:bold; color:#333;">For ' + esc(c.name) + '</div>' +
+            '<div style="border-bottom:1px solid #333; height:60px; background-color:#ffffff;">&nbsp;</div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
         '</tr>' +
@@ -242,6 +239,7 @@
       '<p style="text-align:center;font-size:10px;color:#666;margin:2px 0">' + esc(c.web) + ' &nbsp;|&nbsp; WhatsApp &amp; Call: ' + esc(c.phone) + '</p>' +
     '</div>';
   }
+
   const _render = window.render;
   window.render = function () {
     _render.apply(this, arguments);
@@ -250,7 +248,6 @@
     const paper = document.querySelector('#app .paper');
     if (!paper) return;
     
-    // Hide Old Legacy Sections
     paper.querySelectorAll('.pg, .card').forEach(el => {
       const txt = el.textContent || '';
       if (txt.includes('PROJECT MATERIAL & HARDWARE SUMMARY') || txt.includes('LIMITED WARRANTY & SERVICE POLICY')) {
@@ -258,7 +255,6 @@
       }
     });
 
-    // Append New Sections
     if (!paper.querySelector('#mstudio-terms')) {
       const q = T();
       const c = co();
