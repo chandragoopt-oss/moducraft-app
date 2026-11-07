@@ -201,25 +201,40 @@
     '</div>';
   }
 
-  function partC(q, c) {
+    function partC(q, c) {
     const blank = '___________________________';
     return '<div class="pg">' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5">I/We confirm that any optional work, exclusions, special site conditions and agreed variations have been recorded in the quotation or an attached written approval. I/We have had the opportunity to ask questions and seek clarification before acceptance.</p>' +
+      
       '<table class="t" style="margin-top:14px">' +
         '<tr><th style="width:45%;background:#1F2937;color:#fff">Acceptance details</th><th style="background:#1F2937;color:#fff">To be completed</th></tr>' +
         '<tr><td><b>Customer name(s)</b></td><td>' + (esc(q.name) || blank) + '</td></tr>' +
         '<tr><td><b>Project address</b></td><td>' + (esc(q.address) || blank) + '</td></tr>' +
         '<tr><td><b>Quotation / work order number</b></td><td>' + esc(qno(q)) + '</td></tr>' +
         '<tr><td><b>Accepted quotation amount</b></td><td><b>' + fmt(gt(q)) + '</b></td></tr>' +
-        '<tr><td><b>Date of acceptance</b></td><td style="height:30px; border-bottom:1px solid #ccc;">&nbsp;</td></tr>' +
-        '<tr><td><b>Customer signature</b></td><td style="height:50px; border-bottom:1px solid #ccc;">&nbsp;</td></tr>' +
-        '<tr><td><b>MODULE STUDIO authorised representative</b></td><td>' + (esc(q.by) || blank) + '</td></tr>' +
-        '<tr><td><b>Name and designation</b></td><td>Principal Interior Designer</td></tr>' +
+        '<tr><td><b>Prepared by</b></td><td>' + (esc(q.by) || blank) + '</td></tr>' +
         '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
       '</table>' +
-      '<p style="text-align:center;font-size:10px;color:#666;margin-top:16px;font-style:italic">MODULE STUDIO | Designing Spaces. Defining Lifestyles.</p>' +
+      
+      '<table style="width:100%; margin-top:50px; border-collapse:collapse; page-break-inside:avoid;">' +
+        '<tr>' +
+          '<td style="width:45%; border:none; padding:0; vertical-align:bottom;">' +
+            '<div style="border-bottom:1px solid #333; height:60px;"></div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">Customer Signature</div>' +
+            '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
+          '</td>' +
+          '<td style="width:10%; border:none;"></td>' + 
+          '<td style="width:45%; border:none; padding:0; vertical-align:bottom;">' +
+            '<div style="border-bottom:1px solid #333; height:60px;"></div>' +
+            '<div style="font-size:11px; font-weight:bold; margin-top:6px;">For ' + esc(c.name) + '</div>' +
+            '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
+          '</td>' +
+        '</tr>' +
+      '</table>' +
+      
+      '<p style="text-align:center;font-size:10px;color:#666;margin-top:40px;font-style:italic">MODULE STUDIO | Designing Spaces. Defining Lifestyles.</p>' +
       '<p style="text-align:center;font-size:10px;color:#666;margin:2px 0">' + esc(c.web) + ' &nbsp;|&nbsp; WhatsApp &amp; Call: ' + esc(c.phone) + '</p>' +
     '</div>';
   }
