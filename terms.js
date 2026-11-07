@@ -1,4 +1,4 @@
-/* ===== MODULE STUDIO TERMS ADDON (Updated) ===== */
+/* ===== MODULE STUDIO TERMS ADDON (Final Fix) ===== */
 (function () {
   if (window.__mstudioTermsLoaded) return;
   window.__mstudioTermsLoaded = true;
@@ -139,24 +139,28 @@
   ];
 
   const clauseHtml = ([title, subs]) =>
-    '<div style="margin-top:7px;break-inside:avoid">' +
+    '<div style="margin-top:7px; break-inside:avoid; page-break-inside:avoid;">' +
       '<div style="background:#efe7d6;color:#4D5A4A;font-weight:700;padding:3px 8px;font-size:9px;letter-spacing:.5px;border-left:3px solid #B08D57">' + esc(title) + '</div>' +
       subs.map(s => '<p style="margin:2px 0 0;font-size:8.5px;line-height:1.35;color:#3a3a3a;text-align:justify">' + esc(s) + '</p>').join('') +
     '</div>';
 
-  // Split Part B neatly into 3 pages
-  const PART_B1 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a; break-after: page;">' +
-    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 4px">PART B — DETAILED TERMS &amp; CONDITIONS (1/3)</h2>' +
+  // Balanced into 4 pages
+  const PART_B1 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a;">' +
+    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 4px">PART B — DETAILED TERMS &amp; CONDITIONS (1/4)</h2>' +
     '<p style="text-align:center;font-size:9px;color:#888;margin:0 0 8px;font-style:italic">These terms govern how the project will be delivered. Please read them with your accepted quotation, BOQ and approved drawings.</p>' +
-    CLAUSES.slice(0,7).map(clauseHtml).join('') + '</div>';
+    CLAUSES.slice(0,5).map(clauseHtml).join('') + '</div>';
 
-  const PART_B2 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a; break-after: page;">' +
-    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 8px">PART B — DETAILED TERMS &amp; CONDITIONS (2/3)</h2>' +
-    CLAUSES.slice(7,15).map(clauseHtml).join('') + '</div>';
+  const PART_B2 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a;">' +
+    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 8px">PART B — DETAILED TERMS &amp; CONDITIONS (2/4)</h2>' +
+    CLAUSES.slice(5,11).map(clauseHtml).join('') + '</div>';
 
-  const PART_B3 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a; break-after: page;">' +
-    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 8px">PART B — DETAILED TERMS &amp; CONDITIONS (3/3)</h2>' +
-    CLAUSES.slice(15).map(clauseHtml).join('') + '</div>';
+  const PART_B3 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a;">' +
+    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 8px">PART B — DETAILED TERMS &amp; CONDITIONS (3/4)</h2>' +
+    CLAUSES.slice(11,17).map(clauseHtml).join('') + '</div>';
+
+  const PART_B4 = '<div class="pg" style="font-size:8.5px;color:#3a3a3a;">' +
+    '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 8px">PART B — DETAILED TERMS &amp; CONDITIONS (4/4)</h2>' +
+    CLAUSES.slice(17).map(clauseHtml).join('') + '</div>';
 
   const PART_A_CARDS = [
     ['#B08D57','#fff9ee','#e6d5b3','Thoughtful design. Clear specifications.','We plan and fabricate according to the approved layout, dimensions, module descriptions, materials, finishes and accessories recorded in your quotation and approved drawings.'],
@@ -169,7 +173,7 @@
     ['#555','#f0f0f0','#d0d0d0','After-sales support','Warranty and service requests can be raised using the contact details on this document and your quotation.']
   ];
 
-  function partA() {
+  function partA(q) {
     const cards = PART_A_CARDS.map(([ac,bg,bd,title,body]) =>
       '<div style="background:'+bg+';border:1px solid '+bd+';border-left:4px solid '+ac+';border-radius:6px;padding:8px 10px">' +
         '<b style="color:'+ac+';font-size:10.5px">✦ '+title+'</b>' +
@@ -177,7 +181,12 @@
       '</div>'
     ).join('');
     const commitment = S.set.cm.map(x => '• ' + esc(x)).join('<br>');
+    
+    // Notes moved to Page 11 (Part A)
+    const notesHtml = q.notes ? `<div style="background:#fff3cd; border:1px solid #ffe69c; border-radius:8px; padding:12px 16px; margin-bottom:16px;"><b style="color:#664d03;font-size:12px;letter-spacing:1px">NOTES, EXCLUSIONS & ADDITIONAL COST ITEMS</b><div style="font-size:10px;color:#664d03;margin-top:6px;white-space:pre-line;line-height:1.5;">${esc(q.notes)}</div></div>` : '';
+
     return '<div class="pg">' +
+      notesHtml +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;margin-top:6px;font-size:15px">YOUR MODULE STUDIO EXPERIENCE</h2>' +
       '<p style="text-align:center;font-size:11px;color:#666;margin:0 0 12px;font-style:italic">Designing Spaces. Defining Lifestyles.</p>' +
       '<div style="background:linear-gradient(135deg,#1F2937 0%,#3A4A5F 100%);color:#fff;border-radius:8px;padding:12px 18px;text-align:center;margin-bottom:10px">' +
@@ -207,7 +216,7 @@
         '<tr><td><b>Date of acceptance</b></td><td style="height:30px; border-bottom:1px solid #ccc;"></td></tr>' +
         '<tr><td><b>Customer signature</b></td><td style="height:50px; border-bottom:1px solid #ccc;"></td></tr>' +
         '<tr><td><b>MODULE STUDIO authorised representative</b></td><td>' + (esc(q.by) || blank) + '</td></tr>' +
-        '<tr><td><b>Name and designation</b></td><td>' + (esc(q.by) || blank) + '</td></tr>' +
+        '<tr><td><b>Name and designation</b></td><td>' + (esc(q.by) || blank) + ' - Principal Interior Designer</td></tr>' +
         '<tr><td><b>Date</b></td><td>' + qd(q) + '</td></tr>' +
       '</table>' +
       '<p style="text-align:center;font-size:10px;color:#666;margin-top:16px;font-style:italic">MODULE STUDIO | Designing Spaces. Defining Lifestyles.</p>' +
@@ -223,7 +232,7 @@
     const paper = document.querySelector('#app .paper');
     if (!paper) return;
     
-    // 1. Hide Old Legacy Sections
+    // Hide Old Legacy Sections
     paper.querySelectorAll('.pg, .card').forEach(el => {
       const txt = el.textContent || '';
       if (txt.includes('PROJECT MATERIAL & HARDWARE SUMMARY') || txt.includes('LIMITED WARRANTY & SERVICE POLICY')) {
@@ -231,7 +240,7 @@
       }
     });
 
-    // 2. Append New Sections
+    // Append New Sections
     if (!paper.querySelector('#mstudio-terms')) {
       const q = T();
       const c = co();
@@ -241,7 +250,7 @@
       
       const div = document.createElement('div');
       div.id = 'mstudio-terms';
-      div.innerHTML = partA() + PART_B1 + PART_B2 + PART_B3 + partC(q, c);
+      div.innerHTML = partA(q) + PART_B1 + PART_B2 + PART_B3 + PART_B4 + partC(q, c);
       cell.appendChild(div);
     }
   };
