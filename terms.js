@@ -221,13 +221,13 @@
       '<table style="width:100%; margin-top:50px; border-collapse:collapse; page-break-inside:avoid;">' +
         '<tr>' +
           '<td style="width:45%; border:none; padding:0; vertical-align:bottom;">' +
-            '<div style="border-bottom:1px solid #333; height:60px;"></div>' +
+            '<div style="border-bottom:1px solid #333; height:60px;">&nbsp;</div>' +
             '<div style="font-size:11px; font-weight:bold; margin-top:6px;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
           '<td style="width:10%; border:none;"></td>' + 
           '<td style="width:45%; border:none; padding:0; vertical-align:bottom;">' +
-            '<div style="border-bottom:1px solid #333; height:60px;"></div>' +
+            '<div style="border-bottom:1px solid #333; height:60px;">&nbsp;</div>' +
             '<div style="font-size:11px; font-weight:bold; margin-top:6px;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
