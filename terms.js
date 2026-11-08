@@ -210,8 +210,8 @@
   function partC(q, c) {
     const blank = '___________________________';
     
-    return '<div class="pg" style="page-break-before: always; break-before: page; background-color:#ffffff; min-height: 1000px;">' +
-      '<div style="background-color:#ffffff; padding: 20px;">' +
+    return '<div class="pg" style="page-break-before: always; break-before: page; background-color:#ffffff;">' +
+      '<div style="height: 100px; width: 100%; display: block; background-color: #ffffff;"></div>' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5; text-align:justify;">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5; text-align:justify;">I/We confirm that any optional work, exclusions, special site conditions and agreed variations have been recorded in the quotation or an attached written approval. I/We have had the opportunity to ask questions and seek clarification before acceptance.</p>' +
@@ -226,19 +226,18 @@
         '<tr><td style="padding:6px; border-bottom:1px solid #ddd; background-color: #ffffff;"><b>Date</b></td><td style="padding:6px; border-bottom:1px solid #ddd; background-color: #ffffff;">' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      // Massive White Text Shield: Fills the gap with invisible text to block the ghost text
-      '<div style="height: 150px; background-color: #ffffff; color: #ffffff; font-size: 10px; overflow: hidden; word-break: break-all; margin-top: 20px;">' + '&nbsp;'.repeat(1000) + '</div>' +
+      '<div style="height: 150px; width: 100%; display: block; background-color: #ffffff;"></div>' +
       
       '<table style="width:100%; border:none; background-color: #ffffff;">' +
         '<tr style="background-color: #ffffff;">' +
           '<td style="width:45%; border:none; vertical-align:bottom; padding-bottom:10px; background-color: #ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:50px; background-color: #ffffff;">&nbsp;</div>' +
+            '<div style="border-bottom:1px solid #333; height:50px; background-color: #ffffff;"></div>' +
             '<div style="font-size:11px; font-weight:bold; margin-top:8px;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
           '<td style="width:10%; border:none; background-color: #ffffff;"></td>' +
           '<td style="width:45%; border:none; vertical-align:bottom; padding-bottom:10px; background-color: #ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:50px; background-color: #ffffff;">&nbsp;</div>' +
+            '<div style="border-bottom:1px solid #333; height:50px; background-color: #ffffff;"></div>' +
             '<div style="font-size:11px; font-weight:bold; margin-top:8px;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
@@ -247,7 +246,6 @@
       
       '<p style="text-align:center;font-size:10px;color:#666;margin-top:50px;font-style:italic">MODULE STUDIO | Designing Spaces. Defining Lifestyles.</p>' +
       '<p style="text-align:center;font-size:10px;color:#666;margin:2px 0">' + esc(c.web) + ' &nbsp;|&nbsp; WhatsApp &amp; Call: ' + esc(c.phone) + '</p>' +
-      '</div>' +
     '</div>';
   }
 
@@ -259,7 +257,6 @@
     const paper = document.querySelector('#app .paper');
     if (!paper) return;
     
-    // Hide Old Legacy Sections
     paper.querySelectorAll('.pg, .card').forEach(el => {
       const txt = el.textContent || '';
       if (txt.includes('PROJECT MATERIAL & HARDWARE SUMMARY') || txt.includes('LIMITED WARRANTY & SERVICE POLICY')) {
@@ -267,7 +264,6 @@
       }
     });
 
-    // Append New Sections
     if (!paper.querySelector('#mstudio-terms')) {
       const q = T();
       const c = co();
