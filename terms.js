@@ -206,10 +206,14 @@
       '</div>' +
     '</div>';
   }
-  function partC(q, c) {
+    function partC(q, c) {
     const blank = '___________________________';
     
     return '<div class="pg" style="page-break-before: always; break-before: page; background-color:#ffffff;">' +
+      
+      // Solid white block at the top to push everything down and block ghost text
+      '<div style="height: 40px; width: 100%; background-color: #ffffff;"></div>' +
+      
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5; text-align:justify;">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5; text-align:justify;">I/We confirm that any optional work, exclusions, special site conditions and agreed variations have been recorded in the quotation or an attached written approval. I/We have had the opportunity to ask questions and seek clarification before acceptance.</p>' +
@@ -224,17 +228,16 @@
         '<tr><td style="padding:6px; border-bottom:1px solid #ddd; background-color: #ffffff;"><b>Date</b></td><td style="padding:6px; border-bottom:1px solid #ddd; background-color: #ffffff;">' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      // The definitive anti-ghost box. Solid borders and background force the PDF to render it.
-      '<table style="width:100%; margin-top:60px; border:none;">' +
+      // THE FIX: No empty <td> in the middle. Just 50% / 50% with padding.
+      '<table style="width:100%; margin-top:60px; border:none; border-collapse:collapse; background-color:#ffffff; position:relative; z-index:10;">' +
         '<tr>' +
-          '<td style="width:45%; border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; vertical-align:bottom; height:120px;">' +
-            '<div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>' +
+          '<td style="width:50%; border:none; padding-right:40px; vertical-align:bottom; background-color:#ffffff;">' +
+            '<div style="font-size:14px; color:#333; margin-bottom:6px; overflow:hidden; white-space:nowrap;">_________________________________________</div>' +
             '<div style="font-size:11px; font-weight:bold; color:#333;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
-          '<td style="width:10%; border:none;"></td>' +
-          '<td style="width:45%; border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; vertical-align:bottom; height:120px;">' +
-            '<div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>' +
+          '<td style="width:50%; border:none; padding-left:40px; vertical-align:bottom; background-color:#ffffff;">' +
+            '<div style="font-size:14px; color:#333; margin-bottom:6px; overflow:hidden; white-space:nowrap;">_________________________________________</div>' +
             '<div style="font-size:11px; font-weight:bold; color:#333;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
