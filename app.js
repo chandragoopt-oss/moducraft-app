@@ -1376,7 +1376,7 @@ return{sc,cat:sc>=75?'Green':sc>=50?'Yellow':'Red',parts:[['Timeline',Math.round
 const HCOL={Green:'#22C55E',Yellow:'#F59E0B',Red:'#DC2626'},hbadge=h=>`<span style="background:${HCOL[h.cat]};color:#fff;border-radius:10px;padding:2px 9px;font-weight:bold;font-size:12px">${h.sc} ${h.cat}</span>`;
 
 /* ---- project tabs added by the ERP layer ---- */
-const PJTABS=[['ov','Overview','fsv'],['wf','Workflow','fs'],['tk','Tasks','fslv'],['tl','Timeline','fslv'],['sl','Selections','fs'],['mt','Materials','fsl'],['ck','Checklists','fsl'],['py','Payments','fs'],['vr','Variations','fs'],['pu','Purchases','f'],['ap','Approvals','fs'],['lg','Site log','fslv'],['sn','Snags','fslv'],['ho','Handover','fs'],['cp','Customer portal','fs'],['dc','Documents','fslv']],ERPT=['wf','sl','mt','ck','vr','ap','ho','cp'];
+const PJTABS=[['ov','Overview','fsv'],['wf','Workflow','fs'],['tk','Tasks','fslv'],['tl','Timeline','fslv'],['mm','MOM','fs'],['sl','Selections','fs'],['mt','Materials','fsl'],['ck','Checklists','fsl'],['py','Payments','fs'],['vr','Variations','fs'],['pu','Purchases','f'],['ap','Approvals','fs'],['lg','Site log','fslv'],['sn','Snags','fslv'],['ho','Handover','fs'],['cp','Customer portal','fs'],['dc','Documents','fslv']];ERPT=['wf','sl','mt','ck','vr','ap','ho','cp'];
 function pjTabs(){const c=({full:'f',staff:'s',site:'l',view:'v'})[S.lvl||'full']||'f';return PJTABS.filter(t=>t[2].includes(c)).map(t=>[t[0],(!canRate()&&t[0]=='py')?'Payments to collect':t[1]])}
 const MS=['Requested','Approved','Ordered','Dispatched','Delivered','Verified','Installed'],SLC=['Paint','Laminate','Hardware','Accessories','Lighting','Appliances'],CKS=['Pending','In progress','Done','Blocked','N/A'],VRS=['Draft','Pending approval','Approved','Rejected','Invoiced'],
 CKT0={Kitchen:['Measurements & services marked on site','Base units levelled and fixed','Wall units & lofts fixed','Counter top fitted and sealed','Shutters aligned and gaps even','Hinges, channels and fittings tested','Handles fitted','Sink / hob cut-outs checked','Final cleaning'],Wardrobe:['Wall and floor level checked','Carcass fixed and plumb','Shutters / sliding doors aligned','Internal fittings (rods, drawers) fixed','Locks and handles fitted','Mirror / glass fitted','Final cleaning'],Electrical:['Points marked as per drawing','Conduits and wiring completed','Switch boards fitted','Lights and fans fixed','Earthing and MCB tested','Final testing done'],Plumbing:['Pipe lines laid and pressure-tested','Fixtures and taps fitted','Drainage checked for leaks','Water supply tested'],Painting:['Surface preparation and putty','Primer coat','First coat','Final coat','Touch-ups done'],'False Ceiling':['Layout marked','Framework fixed and levelled','Boards fixed and jointed','Light cut-outs made','Putty and finishing'],'Civil Work':['Demolition / breaking completed','Debris removed','Wall / floor repairs done','Waterproofing tested','Curing completed'],Flooring:['Base levelled','Tiles / planks laid','Grouting / finishing done','Skirting fitted','Protection laid'],'Glass Work':['Measurements verified','Glass cut and delivered','Glass fixed with correct fittings','Edges, gaskets and sealing checked','Protective film removed and cleaned']},
@@ -1799,3 +1799,148 @@ if(db){S.db=db;const typing=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeEle
 db.collection('quotes').onSnapshot(sn=>{sn.docChanges().forEach(c=>{if(c.doc.metadata.hasPendingWrites||pend['q'+c.doc.id]||fly['q'+c.doc.id]>0)return;if(c.type=='removed'){delete S.q[c.doc.id];if(S.cur==c.doc.id)S.cur=null}else S.q[c.doc.id]=cl(c.doc.data())});if(!typing())render()},e=>{saveErr='Cannot read cloud data: '+((e&&e.message)||'');setSt()});
 db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(!d.metadata.hasPendingWrites&&!pend.s&&!(fly.s>0)){S.set=Object.assign(cl(DEF),cl(d.data()));if(!typing())render()}},e=>{saveErr='Cannot read cloud data: '+((e&&e.message)||'');setSt()});bzInit(db);erpInit(db);db.doc('access/main').onSnapshot(d=>{S.acl=d.exists?cl(d.data().list||[]):[];applyLvl();if(!typing())render()},()=>0)}}catch(x){}render()})();
 
+
+/* ===== MINUTES OF MEETING (MOM) ADDON ===== */
+(function() {
+    // 2. The main MOM screen
+    window.momTab = function(p) {
+        const id = p.id;
+        if (!p.mom) p.mom = [];
+        const can = S.w && (canRate() || S.lvl == 'staff');
+        
+        let h = `<div class="card"><h3>Minutes of Meeting (MOM)</h3><p class="mut">Record design discussions, material approvals, and site handovers. Generate a PDF for the client to sign.</p><div class="bar noprint">${can ? ba('momadd', '+ Add New Meeting', '', '') : ''}</div>`;
+        
+        if (!p.mom.length) {
+            h += '<p class="mut">No meetings recorded yet.</p>';
+        } else {
+            h += tbl(['Date', 'Meeting Type', 'Location', 'Prepared By', ''], p.mom.map((m, i) => `<tr><td>${dmy(m.date)}<td><b>${esc(m.title)}</b><td>${esc(m.loc)}<td>${esc(m.by)}<td style="white-space:nowrap">${ba('momprint', 'Print PDF', 'data-i="' + i + '"', '')} ${can ? ba('momdel', 'Delete', 'data-i="' + i + '"') : ''}</td></tr>`), 700);
+        }
+        
+        if (S.momEdit !== undefined && p.mom[S.momEdit]) {
+            const m = p.mom[S.momEdit];
+            const P = 'mom.' + S.momEdit + '.';
+            
+            h += `<div style="border-top:2px solid #1F4E79; margin-top:20px; padding-top:20px;">
+                <h4 style="color:#1F4E79">Editing Meeting: ${esc(m.title)}</h4>
+                <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+                    ${fld('Meeting Type', bs('pj', id, P + 'title', m.title, ['Initial Briefing', 'Design Presentation', 'Material & Finish Selection', 'Site Readiness', 'Pre-Installation', 'Site Handover', 'Feedback']))}
+                    ${fld('Date', bdt('pj', id, P + 'date', m.date))}
+                    ${fld('Location', bi('pj', id, P + 'loc', m.loc))}
+                    ${fld('Prepared By', bi('pj', id, P + 'by', m.by))}
+                    ${fld('Client Attendees', bi('pj', id, P + 'c_att', m.c_att))}
+                    ${fld('Module Studio Team', bi('pj', id, P + 'm_att', m.m_att))}
+                </div>
+                
+                <h4 style="margin-top:15px">1. Points Discussed</h4>
+                ${bt('pj', id, P + 'points', m.points, 'rows=4 placeholder="e.g. Reviewed the kitchen 3D layout. Client requested a magic corner in the blind base unit."')}
+                
+                <h4 style="margin-top:15px">2. Checklist & Approvals</h4>
+                ${bt('pj', id, P + 'checklist', m.checklist, 'rows=4 placeholder="e.g. [Approved] Laminate shade for master bedroom (Code: 8112). [Pending] Hardware brand selection."')}
+                
+                <h4 style="margin-top:15px">3. Action Items (Task | Responsibility | Target Date)</h4>
+                ${bt('pj', id, P + 'actions', m.actions, 'rows=3 placeholder="Provide revised drawing | Module Studio | 15/10/2026\nClear debris from site | Client | 12/10/2026"')}
+                
+                <div class="bar" style="margin-top:10px">
+                    <button data-bza="momclose">Close Editor</button>
+                    ${ba('momprint', 'Preview / Print PDF', 'data-i="' + S.momEdit + '"', '')}
+                </div>
+            </div>`;
+        }
+        return h + '</div>';
+    };
+
+    // 3. The PDF Generator
+    window.momDoc = function(p, m, q) {
+        const c = co();
+        const body = `
+            <div style="background:#f8f9fa; padding:15px; border:1px solid #ddd; border-radius:5px; margin-bottom:20px;">
+                <table style="width:100%; font-size:12px; border:none;">
+                    <tr><td style="width:20%; border:none;"><b>Meeting Type:</b></td><td style="border:none;">${esc(m.title)}</td><td style="width:20%; border:none;"><b>Date:</b></td><td style="border:none;">${dmy(m.date)}</td></tr>
+                    <tr><td style="border:none;"><b>Location:</b></td><td style="border:none;">${esc(m.loc)}</td><td style="border:none;"><b>Prepared By:</b></td><td style="border:none;">${esc(m.by)}</td></tr>
+                    <tr><td style="border:none;"><b>Module Studio:</b></td><td style="border:none;">${esc(m.m_att)}</td><td style="border:none;"><b>Client:</b></td><td style="border:none;">${esc(m.c_att)}</td></tr>
+                </table>
+            </div>
+            
+            <div class="sh">1. POINTS DISCUSSED</div>
+            <div style="font-size:11px; line-height:1.6; white-space:pre-line; margin-bottom:20px;">${esc(m.points)}</div>
+            
+            <div class="sh">2. CHECKLIST & APPROVALS</div>
+            <div style="font-size:11px; line-height:1.6; white-space:pre-line; margin-bottom:20px;">${esc(m.checklist)}</div>
+            
+            <div class="sh">3. ACTION ITEMS</div>
+            <div style="font-size:11px; line-height:1.6; white-space:pre-line; margin-bottom:30px;">${esc(m.actions)}</div>
+            
+            <table style="width:100%; margin-top:40px; border:none; background-color:#ffffff; page-break-inside:avoid;">
+                <tr>
+                    <td style="width:50%; border:none; padding-right:10px; vertical-align:top;">
+                        <div style="border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; height:120px;">
+                            <div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>
+                            <div style="font-size:11px; font-weight:bold; color:#333;">Client Signature</div>
+                            <div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>
+                        </div>
+                    </td>
+                    <td style="width:50%; border:none; padding-left:10px; vertical-align:top;">
+                        <div style="border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; height:120px;">
+                            <div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>
+                            <div style="font-size:11px; font-weight:bold; color:#333;">For ${esc(c.name)}</div>
+                            <div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>${esc(m.by)}</b><br>Principal Interior Designer</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        `;
+        
+        return `<div class="bar noprint"><button data-a="dpdf" data-acc="1" data-fn="MOM-${esc(m.title).replace(/\s+/g,'-')}.pdf">Download PDF</button><button class="g" data-a="ap">Print</button><button class="g" data-bza="momback">← Back to Project</button></div>` + docPaper('MINUTES OF MEETING', `Client: <b>${esc(p.client)}</b><br>${esc(p.name)}<br>Quote No.: ${esc(q ? qno(q) : '')}`, body);
+    };
+
+    // 4. Hook it into the existing app navigation
+    const _erpTab = window.erpTab;
+    window.erpTab = function(p, T) {
+        if (T === 'mm') return window.momTab(p);
+        return _erpTab.apply(this, arguments);
+    };
+
+    const _vProj = window.vProj;
+    window.vProj = function() {
+        if (S.bzdoc && S.bzdoc.t === 'mm') {
+            const p = BZ.pj[S.bzdoc.id];
+            return window.momDoc(p, p.mom[S.bzdoc.i], S.q[p.qid]);
+        }
+        return _vProj.apply(this, arguments);
+    };
+
+    // 5. Handle MOM button clicks
+    document.addEventListener('click', function(e) {
+        const b = e.target.closest('[data-bza^="mom"]');
+        if (!b) return;
+        const a = b.dataset.bza;
+        const P = BZ.pj[S.pj];
+        const I = +b.dataset.i;
+        const w = () => { if (!S.w) { flash('View-only access'); return false; } return true; };
+
+        if (a === 'momadd') {
+            if (!w() || !P) return;
+            P.mom = P.mom || [];
+            P.mom.unshift({ id: bzId('m'), title: 'Design Presentation', date: today(), loc: P.addr || 'Site', by: uName(), c_att: P.client, m_att: uName(), points: '', checklist: '', actions: '' });
+            bzSave('pj', P.id);
+            S.momEdit = 0;
+            render();
+        } else if (a === 'momclose') {
+            S.momEdit = undefined;
+            render();
+        } else if (a === 'momdel') {
+            if (!w() || !P) return;
+            P.mom.splice(I, 1);
+            bzSave('pj', P.id);
+            S.momEdit = undefined;
+            render();
+        } else if (a === 'momprint') {
+            S.bzdoc = { t: 'mm', id: P.id, i: I };
+            render();
+        } else if (a === 'momback') {
+            S.bzdoc = null;
+            S.momEdit = undefined;
+            render();
+        }
+    });
+})();
