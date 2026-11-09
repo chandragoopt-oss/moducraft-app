@@ -69,3 +69,7 @@ body { background: var(--bg-main); color: var(--text-main); font-family: 'Segoe 
 .quick-add-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; font-size: 14px; background: var(--bg-panel) !important; }
 .quick-add-item:hover { background: var(--accent-blue) !important; color: #fff; }
 .float-3d-btn { position: absolute; bottom: 15px; right: 15px; background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; z-index: 100; }
+
+.module, .plan-door, .plan-window, .plan-pillar, .plan-niche, .elev-module, .elev-door, .elev-window {
+    touch-action: none;
+}
