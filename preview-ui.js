@@ -208,7 +208,7 @@
   }
 
   // ---------- DESIGN STUDIO BRIDGE ----------
-  window.openDesignStudio = function() {
+    window.openDesignStudio = function() {
     const overlay = document.getElementById('design-studio-overlay');
     const iframe = document.getElementById('ds-iframe');
     if (!overlay || !iframe) { alert('Design Studio overlay not found.'); return; }
@@ -222,7 +222,6 @@
         roomData = S.q[quoteId].rooms[roomIdx];
     }
     
-    // Extract all real modules from the app.js MODS object
     let modulesData = [];
     try {
         if (typeof MODS !== 'undefined') {
@@ -232,15 +231,21 @@
         }
     } catch(e) { console.warn("Could not read MODS", e); }
 
-    const params = new URLSearchParams({ 
-        q: quoteId, 
-        r: roomIdx, 
-        theme: theme,
-        mods: JSON.stringify(modulesData),
-        room: JSON.stringify(roomData)
-    });
+    // --- FIX: Save the large data to localStorage instead of the URL ---
+    try {
+        localStorage.setItem('msq_studio_data', JSON.stringify({
+            quoteId: quoteId,
+            roomIdx: roomIdx,
+            theme: theme,
+            mods: modulesData,
+            room: roomData
+        }));
+    } catch(e) { console.error("Failed to save studio data", e); }
+
+    // Pass only the basic info in the URL
+    const params = new URLSearchParams({ q: quoteId, r: roomIdx, theme: theme });
+    iframe.src = 'studio/index.html?' + params.toString();
     
-   iframe.src = 'studio/index.html?' + params.toString();
     overlay.style.display = 'block';
     document.body.style.overflow = 'hidden';
   };
