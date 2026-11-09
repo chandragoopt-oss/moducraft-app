@@ -206,7 +206,7 @@
       '</div>' +
     '</div>';
   }
-    function partC(q, c) {
+      function partC(q, c) {
     const blank = '___________________________';
     
     return '<div class="pg" style="page-break-before: always; break-before: page; background-color:#ffffff;">' +
@@ -228,18 +228,22 @@
         '<tr><td style="padding:6px; border-bottom:1px solid #ddd; background-color: #ffffff;"><b>Date</b></td><td style="padding:6px; border-bottom:1px solid #ddd; background-color: #ffffff;">' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      // THE FIX: No empty <td> in the middle. Just 50% / 50% with padding.
+      // The Beautiful Boxes (Safely structured to prevent ghost text)
       '<table style="width:100%; margin-top:60px; border:none; border-collapse:collapse; background-color:#ffffff; position:relative; z-index:10;">' +
         '<tr>' +
-          '<td style="width:50%; border:none; padding-right:40px; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="font-size:14px; color:#333; margin-bottom:6px; overflow:hidden; white-space:nowrap;">_________________________________________</div>' +
-            '<div style="font-size:11px; font-weight:bold; color:#333;">Customer Signature</div>' +
-            '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
+          '<td style="width:50%; border:none; padding-right:10px; vertical-align:top; background-color:#ffffff;">' +
+            '<div style="border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; height:120px;">' +
+              '<div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>' +
+              '<div style="font-size:11px; font-weight:bold; color:#333;">Customer Signature</div>' +
+              '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
+            '</div>' +
           '</td>' +
-          '<td style="width:50%; border:none; padding-left:40px; vertical-align:bottom; background-color:#ffffff;">' +
-            '<div style="font-size:14px; color:#333; margin-bottom:6px; overflow:hidden; white-space:nowrap;">_________________________________________</div>' +
-            '<div style="font-size:11px; font-weight:bold; color:#333;">For ' + esc(c.name) + '</div>' +
-            '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
+          '<td style="width:50%; border:none; padding-left:10px; vertical-align:top; background-color:#ffffff;">' +
+            '<div style="border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; height:120px;">' +
+              '<div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>' +
+              '<div style="font-size:11px; font-weight:bold; color:#333;">For ' + esc(c.name) + '</div>' +
+              '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
+            '</div>' +
           '</td>' +
         '</tr>' +
       '</table>' +
@@ -247,7 +251,7 @@
       '<p style="text-align:center;font-size:10px;color:#666;margin-top:50px;font-style:italic">MODULE STUDIO | Designing Spaces. Defining Lifestyles.</p>' +
       '<p style="text-align:center;font-size:10px;color:#666;margin:2px 0">' + esc(c.web) + ' &nbsp;|&nbsp; WhatsApp &amp; Call: ' + esc(c.phone) + '</p>' +
     '</div>';
-  }
+  }  
   
 
   const _render = window.render;
