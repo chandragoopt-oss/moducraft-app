@@ -1850,44 +1850,46 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
     };
 
     // 3. The PDF Generator
-    window.momDoc = function(p, m, q) {
+        window.momDoc = function(p, m, q) {
         const c = co();
         const body = `
-            <div style="background:#f8f9fa; padding:15px; border:1px solid #ddd; border-radius:5px; margin-bottom:20px;">
-                <table style="width:100%; font-size:12px; border:none;">
-                    <tr><td style="width:20%; border:none;"><b>Meeting Type:</b></td><td style="border:none;">${esc(m.title)}</td><td style="width:20%; border:none;"><b>Date:</b></td><td style="border:none;">${dmy(m.date)}</td></tr>
-                    <tr><td style="border:none;"><b>Location:</b></td><td style="border:none;">${esc(m.loc)}</td><td style="border:none;"><b>Prepared By:</b></td><td style="border:none;">${esc(m.by)}</td></tr>
-                    <tr><td style="border:none;"><b>Module Studio:</b></td><td style="border:none;">${esc(m.m_att)}</td><td style="border:none;"><b>Client:</b></td><td style="border:none;">${esc(m.c_att)}</td></tr>
+            <div class="keep">
+                <table class="t" style="margin-bottom:15px;">
+                    <tr><th style="width:25%">Meeting Type</th><td>${esc(m.title)}</td><th style="width:25%">Date</th><td>${dmy(m.date)}</td></tr>
+                    <tr><th>Location</th><td>${esc(m.loc)}</td><th>Prepared By</th><td>${esc(m.by)}</td></tr>
+                    <tr><th>Module Studio</th><td>${esc(m.m_att)}</td><th>Client</th><td>${esc(m.c_att)}</td></tr>
                 </table>
             </div>
             
             <div class="sh">1. POINTS DISCUSSED</div>
-            <div style="font-size:11px; line-height:1.6; white-space:pre-line; margin-bottom:20px;">${esc(m.points)}</div>
+            <div class="nt">${esc(m.points)}</div>
             
             <div class="sh">2. CHECKLIST & APPROVALS</div>
-            <div style="font-size:11px; line-height:1.6; white-space:pre-line; margin-bottom:20px;">${esc(m.checklist)}</div>
+            <div class="nt">${esc(m.checklist)}</div>
             
             <div class="sh">3. ACTION ITEMS</div>
-            <div style="font-size:11px; line-height:1.6; white-space:pre-line; margin-bottom:30px;">${esc(m.actions)}</div>
+            <div class="nt">${esc(m.actions)}</div>
             
-            <table style="width:100%; margin-top:40px; border:none; background-color:#ffffff; page-break-inside:avoid;">
-                <tr>
-                    <td style="width:50%; border:none; padding-right:10px; vertical-align:top;">
-                        <div style="border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; height:120px;">
-                            <div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>
-                            <div style="font-size:11px; font-weight:bold; color:#333;">Client Signature</div>
-                            <div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>
-                        </div>
-                    </td>
-                    <td style="width:50%; border:none; padding-left:10px; vertical-align:top;">
-                        <div style="border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; height:120px;">
-                            <div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>
-                            <div style="font-size:11px; font-weight:bold; color:#333;">For ${esc(c.name)}</div>
-                            <div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>${esc(m.by)}</b><br>Principal Interior Designer</div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
+            <div class="keep" style="margin-top:40px; page-break-inside:avoid;">
+                <table class="t" style="border:none; background-color:#ffffff;">
+                    <tr>
+                        <td style="width:50%; border:none; padding:0; padding-right:10px; vertical-align:top;">
+                            <div style="border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; height:120px;">
+                                <div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>
+                                <div style="font-size:11px; font-weight:bold; color:#333;">Client Signature</div>
+                                <div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>
+                            </div>
+                        </td>
+                        <td style="width:50%; border:none; padding:0; padding-left:10px; vertical-align:top;">
+                            <div style="border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; height:120px;">
+                                <div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>
+                                <div style="font-size:11px; font-weight:bold; color:#333;">For ${esc(c.name)}</div>
+                                <div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>${esc(m.by)}</b><br>Principal Interior Designer</div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
         `;
         
         return `<div class="bar noprint"><button data-a="dpdf" data-acc="1" data-fn="MOM-${esc(m.title).replace(/\s+/g,'-')}.pdf">Download PDF</button><button class="g" data-a="ap">Print</button><button class="g" data-bza="momback">← Back to Project</button></div>` + docPaper('MINUTES OF MEETING', `Client: <b>${esc(p.client)}</b><br>${esc(p.name)}<br>Quote No.: ${esc(q ? qno(q) : '')}`, body);
