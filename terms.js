@@ -206,12 +206,10 @@
       '</div>' +
     '</div>';
   }
-
   function partC(q, c) {
     const blank = '___________________________';
     
     return '<div class="pg" style="page-break-before: always; break-before: page; background-color:#ffffff;">' +
-      '<div style="height: 100px; width: 100%; display: block; background-color: #ffffff;"></div>' +
       '<h2 style="text-align:center;letter-spacing:3px;color:#B08D57;font-size:14px;margin:0 0 6px">PART C — CUSTOMER ACCEPTANCE &amp; SIGNATURES</h2>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5; text-align:justify;">I/We confirm that I/we have reviewed the accepted quotation, BOQ, applicable drawings and specifications, project-specific payment schedule, and this Customer Quotation Guide &amp; Project Terms document. I/We understand the included scope, exclusions, material/finish selections, project dependencies, payment milestones and the separate detailed Terms &amp; Conditions.</p>' +
       '<p style="font-size:11px;color:#4a4a4a;margin:6px 0;line-height:1.5; text-align:justify;">I/We confirm that any optional work, exclusions, special site conditions and agreed variations have been recorded in the quotation or an attached written approval. I/We have had the opportunity to ask questions and seek clarification before acceptance.</p>' +
@@ -226,19 +224,18 @@
         '<tr><td style="padding:6px; border-bottom:1px solid #ddd; background-color: #ffffff;"><b>Date</b></td><td style="padding:6px; border-bottom:1px solid #ddd; background-color: #ffffff;">' + qd(q) + '</td></tr>' +
       '</table>' +
       
-      '<div style="height: 150px; width: 100%; display: block; background-color: #ffffff;"></div>' +
-      
-      '<table style="width:100%; border:none; background-color: #ffffff;">' +
-        '<tr style="background-color: #ffffff;">' +
-          '<td style="width:45%; border:none; vertical-align:bottom; padding-bottom:10px; background-color: #ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:50px; background-color: #ffffff;"></div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:8px;">Customer Signature</div>' +
+      // The definitive anti-ghost box. Solid borders and background force the PDF to render it.
+      '<table style="width:100%; margin-top:60px; border:none;">' +
+        '<tr>' +
+          '<td style="width:45%; border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; vertical-align:bottom; height:120px;">' +
+            '<div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>' +
+            '<div style="font-size:11px; font-weight:bold; color:#333;">Customer Signature</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Date: _____________________</div>' +
           '</td>' +
-          '<td style="width:10%; border:none; background-color: #ffffff;"></td>' +
-          '<td style="width:45%; border:none; vertical-align:bottom; padding-bottom:10px; background-color: #ffffff;">' +
-            '<div style="border-bottom:1px solid #333; height:50px; background-color: #ffffff;"></div>' +
-            '<div style="font-size:11px; font-weight:bold; margin-top:8px;">For ' + esc(c.name) + '</div>' +
+          '<td style="width:10%; border:none;"></td>' +
+          '<td style="width:45%; border:1px solid #e0e0e0; padding:20px; background-color:#fafafa; vertical-align:bottom; height:120px;">' +
+            '<div style="font-size:14px; color:#333; margin-bottom:10px;">___________________________________</div>' +
+            '<div style="font-size:11px; font-weight:bold; color:#333;">For ' + esc(c.name) + '</div>' +
             '<div style="font-size:10px; color:#666; margin-top:4px;">Prepared by: <b>' + esc(q.by) + '</b><br>Principal Interior Designer</div>' +
           '</td>' +
         '</tr>' +
@@ -248,6 +245,7 @@
       '<p style="text-align:center;font-size:10px;color:#666;margin:2px 0">' + esc(c.web) + ' &nbsp;|&nbsp; WhatsApp &amp; Call: ' + esc(c.phone) + '</p>' +
     '</div>';
   }
+  
 
   const _render = window.render;
   window.render = function () {
