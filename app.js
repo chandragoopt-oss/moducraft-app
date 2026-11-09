@@ -1802,44 +1802,94 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
 
 /* ===== MINUTES OF MEETING (MOM) ADDON ===== */
 (function() {
+    // 1. Standard Templates (Final Site Visit is first)
+    const MOM_TPLS = {
+        'Final Site Visit': {
+            points: "[ ] Conducted physical site measurements with the client present.\n[ ] Checked for site obstacles (beams, columns, concealed pipes, skirting heights).\n[ ] Verified electrical and plumbing point locations against the final design.\n[ ] Finalized exact module widths, heights, and depths based on site conditions.",
+            checklist: "[ ] All room dimensions (Walls A, B, C, D) measured and verified.\n[ ] Clearances verified (doors, windows, AC units, ceiling heights).\n[ ] Client Sign-off on the final site measurement sheet.\n[ ] Commencement conditions met (Advance payment, site readiness).",
+            actions: "[ ] Update factory cutting list / DXF drawings with final sizes | Module Studio | [Date]\n[ ] Share final measurement drawing with client for record | Module Studio | [Date]\n[ ] Release to production | Module Studio | [Date]"
+        },
+        'Initial Briefing': {
+            points: "[ ] Discussed family requirements, lifestyle, and daily routines.\n[ ] Established budget allocation (Civil, Furniture, Electricals, Appliances).\n[ ] Discussed design style preferences (Modern, Traditional, Minimalist).",
+            checklist: "[ ] Collect basic site layout / floor plan.\n[ ] Discuss broad scope of work.\n[ ] Establish timeline expectations.",
+            actions: "[ ] Client to share floor plan and site photos | Client | [Date]\n[ ] Prepare initial concept and rough estimate | Module Studio | [Date]"
+        },
+        'Design Presentation': {
+            points: "[ ] Reviewed 2D layout and space planning (Walls A, B, C, D).\n[ ] Reviewed 3D views and module breakdown.\n[ ] Discussed ergonomics and sizing (Counter height, walkway clearance).",
+            checklist: "[ ] Review 2D Layouts and 3D Views.\n[ ] Finalize module positions and sizes.\n[ ] Discuss handle designs (J-Profile, Gola, Normal).\n[ ] Client Sign-off on all design drawings.",
+            actions: "[ ] Provide revised 3D layout | Module Studio | [Date]\n[ ] Approve final design drawings | Client | [Date]"
+        },
+        'Material & Finish Selection': {
+            points: "[ ] Finalized plywood brands and grades (BWR, BWP, MR).\n[ ] Selected outer and inner laminate codes.\n[ ] Finalized hardware brands and accessories (Tandem boxes, Magic corners).\n[ ] Selected stone/granite for counters.",
+            checklist: "[ ] Sign-off on Laminate Shade Card (Outer & Inner).\n[ ] Confirm Hardware brand and handle selections.\n[ ] Confirm Stone/Granite slab physically or via sample.\n[ ] Client Sign-off on the BOQ.",
+            actions: "[ ] Update Quotation with final selections | Module Studio | [Date]\n[ ] Approve final BOQ | Client | [Date]"
+        },
+        'Site Readiness': {
+            points: "[ ] Verified civil work status (Flooring, False ceiling, Painting).\n[ ] Checked electrical and plumbing point mapping.\n[ ] Discussed site access for material delivery.",
+            checklist: "[ ] Verify all electrical points and plumbing lines match the drawing.\n[ ] Ensure site is clean, dry, and dust-free for installation.\n[ ] Society permissions and work timings confirmed by Client.\n[ ] Advance payment cleared.",
+            actions: "[ ] Clear civil debris from site | Client | [Date]\n[ ] Commence factory production | Module Studio | [Date]"
+        },
+        'Pre-Installation': {
+            points: "[ ] Final check on factory measurement sheet.\n[ ] Ensured hardware and accessories are received and allocated.\n[ ] Confirmed delivery vehicle and unloading schedule.",
+            checklist: "[ ] Verify all module dimensions against site measurements.\n[ ] Quality Check (QC) passed in factory.\n[ ] Installation team assigned and briefed.",
+            actions: "[ ] Confirm unloading schedule with society | Client | [Date]\n[ ] Deliver modules to site | Module Studio | [Date]"
+        },
+        'Site Handover': {
+            points: "[ ] Walkthrough of the site with the client.\n[ ] Demonstration of all hardware (channels, lift-ups, tandem boxes).\n[ ] Provided care and maintenance instructions.",
+            checklist: "[ ] Demonstrate smooth operation of all shutters and drawers.\n[ ] Check edge banding and alignment.\n[ ] Provide hardware warranty cards and bills.\n[ ] Create a Snag List (list of minor fixes).",
+            actions: "[ ] Close minor snags | Module Studio | [Date]\n[ ] Collect the final 5% payment | Client | [Date]"
+        },
+        'Feedback': {
+            points: "[ ] Follow-up on snag closure and overall satisfaction.\n[ ] Verified all snags from the Handover Meeting are closed.\n[ ] Discussed post-handover care.",
+            checklist: "[ ] Verify all snags are closed.\n[ ] Hand over any pending warranty documents.\n[ ] Request for a Google Review or testimonial.",
+            actions: "[ ] Share warranty documents | Module Studio | [Date]\n[ ] Share Google Review link | Module Studio | [Date]"
+        }
+    };
+
     // 2. The main MOM screen
     window.momTab = function(p) {
         const id = p.id;
         if (!p.mom) p.mom = [];
         const can = S.w && (canRate() || S.lvl == 'staff');
-        
+
         let h = `<div class="card"><h3>Minutes of Meeting (MOM)</h3><p class="mut">Record design discussions, material approvals, and site handovers. Generate a PDF for the client to sign.</p><div class="bar noprint">${can ? ba('momadd', '+ Add New Meeting', '', '') : ''}</div>`;
-        
+
         if (!p.mom.length) {
             h += '<p class="mut">No meetings recorded yet.</p>';
         } else {
             h += tbl(['Date', 'Meeting Type', 'Location', 'Prepared By', ''], p.mom.map((m, i) => `<tr><td>${dmy(m.date)}<td><b>${esc(m.title)}</b><td>${esc(m.loc)}<td>${esc(m.by)}<td style="white-space:nowrap">${ba('momprint', 'Print PDF', 'data-i="' + i + '"', '')} ${can ? ba('momdel', 'Delete', 'data-i="' + i + '"') : ''}</td></tr>`), 700);
         }
-        
+
         if (S.momEdit !== undefined && p.mom[S.momEdit]) {
             const m = p.mom[S.momEdit];
             const P = 'mom.' + S.momEdit + '.';
-            
+
             h += `<div style="border-top:2px solid #1F4E79; margin-top:20px; padding-top:20px;">
-                <h4 style="color:#1F4E79">Editing Meeting: ${esc(m.title)}</h4>
-                <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
-                    ${fld('Meeting Type', bs('pj', id, P + 'title', m.title, ['Initial Briefing', 'Design Presentation', 'Material & Finish Selection', 'Site Readiness', 'Pre-Installation', 'Site Handover', 'Feedback']))}
+                <div class="bar noprint" style="justify-content:space-between;">
+                    <div>
+                        <h4 style="color:#1F4E79; margin:0;">Editing Meeting: ${esc(m.title)}</h4>
+                        <span class="mut" style="font-size:11px; margin-top:4px; display:block;">Tip: Change <code>[ ]</code> to <code>[X]</code> in the text boxes below for points you actually discussed and approved.</span>
+                    </div>
+                    <button class="g" data-momtpl="${S.momEdit}" style="background:#eef5ff; border-color:#1F4E79; color:#1F4E79;">📋 Load Standard Checklist</button>
+                </div>
+                <div class="dgrid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); margin-top:10px;">
+                    ${fld('Meeting Type', bs('pj', id, P + 'title', m.title, ['Final Site Visit', 'Initial Briefing', 'Design Presentation', 'Material & Finish Selection', 'Site Readiness', 'Pre-Installation', 'Site Handover', 'Feedback']))}
                     ${fld('Date', bdt('pj', id, P + 'date', m.date))}
                     ${fld('Location', bi('pj', id, P + 'loc', m.loc))}
                     ${fld('Prepared By', bi('pj', id, P + 'by', m.by))}
                     ${fld('Client Attendees', bi('pj', id, P + 'c_att', m.c_att))}
                     ${fld('Module Studio Team', bi('pj', id, P + 'm_att', m.m_att))}
                 </div>
-                
+
                 <h4 style="margin-top:15px">1. Points Discussed</h4>
-                ${bt('pj', id, P + 'points', m.points, 'rows=4 placeholder="e.g. Reviewed the kitchen 3D layout. Client requested a magic corner in the blind base unit."')}
-                
+                ${bt('pj', id, P + 'points', m.points, 'rows=4')}
+
                 <h4 style="margin-top:15px">2. Checklist & Approvals</h4>
-                ${bt('pj', id, P + 'checklist', m.checklist, 'rows=4 placeholder="e.g. [Approved] Laminate shade for master bedroom (Code: 8112). [Pending] Hardware brand selection."')}
-                
+                ${bt('pj', id, P + 'checklist', m.checklist, 'rows=4')}
+
                 <h4 style="margin-top:15px">3. Action Items (Task | Responsibility | Target Date)</h4>
-                ${bt('pj', id, P + 'actions', m.actions, 'rows=3 placeholder="Provide revised drawing | Module Studio | 15/10/2026\nClear debris from site | Client | 12/10/2026"')}
-                
+                ${bt('pj', id, P + 'actions', m.actions, 'rows=3')}
+
                 <div class="bar" style="margin-top:10px">
                     <button data-bza="momclose">Close Editor</button>
                     ${ba('momprint', 'Preview / Print PDF', 'data-i="' + S.momEdit + '"', '')}
@@ -1850,7 +1900,7 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
     };
 
     // 3. The PDF Generator
-        window.momDoc = function(p, m, q) {
+    window.momDoc = function(p, m, q) {
         const c = co();
         const body = `
             <div class="keep">
@@ -1860,16 +1910,16 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
                     <tr><th>Module Studio</th><td>${esc(m.m_att)}</td><th>Client</th><td>${esc(m.c_att)}</td></tr>
                 </table>
             </div>
-            
+
             <div class="sh">1. POINTS DISCUSSED</div>
             <div class="nt">${esc(m.points)}</div>
-            
+
             <div class="sh">2. CHECKLIST & APPROVALS</div>
             <div class="nt">${esc(m.checklist)}</div>
-            
+
             <div class="sh">3. ACTION ITEMS</div>
             <div class="nt">${esc(m.actions)}</div>
-            
+
             <div class="keep" style="margin-top:40px; page-break-inside:avoid;">
                 <table class="t" style="border:none; background-color:#ffffff;">
                     <tr>
@@ -1891,7 +1941,7 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
                 </table>
             </div>
         `;
-        
+
         return `<div class="bar noprint"><button data-a="dpdf" data-acc="1" data-fn="MOM-${esc(m.title).replace(/\s+/g,'-')}.pdf">Download PDF</button><button class="g" data-a="ap">Print</button><button class="g" data-bza="momback">← Back to Project</button></div>` + docPaper('MINUTES OF MEETING', `Client: <b>${esc(p.client)}</b><br>${esc(p.name)}<br>Quote No.: ${esc(q ? qno(q) : '')}`, body);
     };
 
@@ -1911,57 +1961,58 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
         return _vProj.apply(this, arguments);
     };
 
-    // 5. Handle MOM button clicks
+    // 5. Handle MOM button clicks and template loading
     document.addEventListener('click', function(e) {
         const b = e.target.closest('[data-bza^="mom"]');
-        if (!b) return;
-        const a = b.dataset.bza;
-        const P = BZ.pj[S.pj];
-        const I = +b.dataset.i;
-        const w = () => { if (!S.w) { flash('View-only access'); return false; } return true; };
+        if (b) {
+            const a = b.dataset.bza;
+            const P = BZ.pj[S.pj];
+            const I = +b.dataset.i;
+            const w = () => { if (!S.w) { flash('View-only access'); return false; } return true; };
 
-        if (a === 'momadd') {
-            if (!w() || !P) return;
-            P.mom = P.mom || [];
-            P.mom.unshift({ id: bzId('m'), title: 'Design Presentation', date: today(), loc: P.addr || 'Site', by: uName(), c_att: P.client, m_att: uName(), points: '', checklist: '', actions: '' });
-            bzSave('pj', P.id);
-            S.momEdit = 0;
-            render();
-        } else if (a === 'momclose') {
-            S.momEdit = undefined;
-            render();
-        } else if (a === 'momdel') {
-            if (!w() || !P) return;
-            P.mom.splice(I, 1);
-            bzSave('pj', P.id);
-            S.momEdit = undefined;
-            render();
-        } else if (a === 'momprint') {
-            S.bzdoc = { t: 'mm', id: P.id, i: I };
-            render();
-        } else if (a === 'momback') {
-            S.bzdoc = null;
-            S.momEdit = undefined;
-            render();
-        }
-    });
-})();
-
-
-/* ===== FORCE MOM TAB TO APPEAR ===== */
-(function() {
-    const _pjTabs = window.pjTabs;
-    window.pjTabs = function() {
-        let tabs = _pjTabs.apply(this, arguments);
-        // Ensure the MOM tab is always in the list, right after Timeline
-        if (!tabs.some(t => t[0] === 'mm')) {
-            const timelineIndex = tabs.findIndex(t => t[0] === 'tl');
-            if (timelineIndex !== -1) {
-                tabs.splice(timelineIndex + 1, 0, ['mm', 'MOM', 'fs']);
-            } else {
-                tabs.push(['mm', 'MOM', 'fs']);
+            if (a === 'momadd') {
+                if (!w() || !P) return;
+                P.mom = P.mom || [];
+                const t = 'Final Site Visit';
+                const tpl = MOM_TPLS[t] || {points:'',checklist:'',actions:''};
+                P.mom.unshift({ id: bzId('m'), title: t, date: today(), loc: P.addr || 'Site', by: uName(), c_att: P.client, m_att: uName(), points: tpl.points, checklist: tpl.checklist, actions: tpl.actions });
+                bzSave('pj', P.id);
+                S.momEdit = 0;
+                render();
+            } else if (a === 'momclose') {
+                S.momEdit = undefined;
+                render();
+            } else if (a === 'momdel') {
+                if (!w() || !P) return;
+                P.mom.splice(I, 1);
+                bzSave('pj', P.id);
+                S.momEdit = undefined;
+                render();
+            } else if (a === 'momprint') {
+                S.bzdoc = { t: 'mm', id: P.id, i: I };
+                render();
+            } else if (a === 'momback') {
+                S.bzdoc = null;
+                S.momEdit = undefined;
+                render();
             }
         }
-        return tabs;
-    };
+
+        // Handle the "Load Standard Checklist" button
+        const tplBtn = e.target.closest('[data-momtpl]');
+        if (tplBtn) {
+            if (!S.w) return;
+            const idx = tplBtn.dataset.momtpl;
+            const P = BZ.pj[S.pj];
+            if (!P || !P.mom[idx]) return;
+            const m = P.mom[idx];
+            const tpl = MOM_TPLS[m.title] || {points:'',checklist:'',actions:''};
+            m.points = tpl.points;
+            m.checklist = tpl.checklist;
+            m.actions = tpl.actions;
+            bzSave('pj', P.id);
+            render();
+            flash('Standard checklist loaded for ' + m.title);
+        }
+    });
 })();
