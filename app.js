@@ -1800,9 +1800,10 @@ db.collection('quotes').onSnapshot(sn=>{sn.docChanges().forEach(c=>{if(c.doc.met
 db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(!d.metadata.hasPendingWrites&&!pend.s&&!(fly.s>0)){S.set=Object.assign(cl(DEF),cl(d.data()));if(!typing())render()}},e=>{saveErr='Cannot read cloud data: '+((e&&e.message)||'');setSt()});bzInit(db);erpInit(db);db.doc('access/main').onSnapshot(d=>{S.acl=d.exists?cl(d.data().list||[]):[];applyLvl();if(!typing())render()},()=>0)}}catch(x){}render()})();
 
 
+
 /* ===== MINUTES OF MEETING (MOM) ADDON ===== */
 (function() {
-    // 1. Standard Templates (Final Site Visit is first)
+    // 1. Standard Templates
     const MOM_TPLS = {
         'Final Site Visit': {
             points: "[ ] Conducted physical site measurements with the client present.\n[ ] Checked for site obstacles (beams, columns, concealed pipes, skirting heights).\n[ ] Verified electrical and plumbing point locations against the final design.\n[ ] Finalized exact module widths, heights, and depths based on site conditions.",
@@ -1902,24 +1903,28 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
     // 3. The PDF Generator
     window.momDoc = function(p, m, q) {
         const c = co();
+        // Lock the quote number to the MOM. If m.qid exists, use that. Otherwise fallback to project's current quote.
+        const quoteNo = m.qid && S.q[m.qid] ? qno(S.q[m.qid]) : (q ? qno(q) : '');
+        
         const body = `
             <div class="keep">
                 <table class="t" style="margin-bottom:15px;">
                     <tr><th style="width:25%">Meeting Type</th><td>${esc(m.title)}</td><th style="width:25%">Date</th><td>${dmy(m.date)}</td></tr>
                     <tr><th>Location</th><td>${esc(m.loc)}</td><th>Prepared By</th><td>${esc(m.by)}</td></tr>
                     <tr><th>Module Studio</th><td>${esc(m.m_att)}</td><th>Client</th><td>${esc(m.c_att)}</td></tr>
+                    <tr><th>Quote No.</th><td colspan="3"><b>${esc(quoteNo)}</b></td></tr>
                 </table>
             </div>
-
+            
             <div class="sh">1. POINTS DISCUSSED</div>
-            <div class="nt">${esc(m.points)}</div>
-
+            <div class="nt" style="white-space: pre-wrap;">${esc(m.points)}</div>
+            
             <div class="sh">2. CHECKLIST & APPROVALS</div>
-            <div class="nt">${esc(m.checklist)}</div>
-
+            <div class="nt" style="white-space: pre-wrap;">${esc(m.checklist)}</div>
+            
             <div class="sh">3. ACTION ITEMS</div>
-            <div class="nt">${esc(m.actions)}</div>
-
+            <div class="nt" style="white-space: pre-wrap;">${esc(m.actions)}</div>
+            
             <div class="keep" style="margin-top:40px; page-break-inside:avoid;">
                 <table class="t" style="border:none; background-color:#ffffff;">
                     <tr>
@@ -1942,7 +1947,7 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
             </div>
         `;
 
-        return `<div class="bar noprint"><button data-a="dpdf" data-acc="1" data-fn="MOM-${esc(m.title).replace(/\s+/g,'-')}.pdf">Download PDF</button><button class="g" data-a="ap">Print</button><button class="g" data-bza="momback">← Back to Project</button></div>` + docPaper('MINUTES OF MEETING', `Client: <b>${esc(p.client)}</b><br>${esc(p.name)}<br>Quote No.: ${esc(q ? qno(q) : '')}`, body);
+        return `<div class="bar noprint"><button data-a="dpdf" data-acc="1" data-fn="MOM-${esc(m.title).replace(/\s+/g,'-')}.pdf">Download PDF</button><button class="g" data-a="ap">Print</button><button class="g" data-bza="momback">← Back to Project</button></div>` + docPaper('MINUTES OF MEETING', `Client: <b>${esc(p.client)}</b><br>${esc(p.name)}<br>Quote No.: <b>${esc(quoteNo)}</b>`, body);
     };
 
     // 4. Hook it into the existing app navigation
@@ -1975,7 +1980,8 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
                 P.mom = P.mom || [];
                 const t = 'Final Site Visit';
                 const tpl = MOM_TPLS[t] || {points:'',checklist:'',actions:''};
-                P.mom.unshift({ id: bzId('m'), title: t, date: today(), loc: P.addr || 'Site', by: uName(), c_att: P.client, m_att: uName(), points: tpl.points, checklist: tpl.checklist, actions: tpl.actions });
+                // Save the current qid into the MOM so it is permanently locked to this quote
+                P.mom.unshift({ id: bzId('m'), qid: P.qid, title: t, date: today(), loc: P.addr || 'Site', by: uName(), c_att: P.client, m_att: uName(), points: tpl.points, checklist: tpl.checklist, actions: tpl.actions });
                 bzSave('pj', P.id);
                 S.momEdit = 0;
                 render();
