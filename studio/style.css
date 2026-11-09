@@ -46,7 +46,7 @@ body { background: var(--bg-main); color: var(--text-main); font-family: 'Segoe 
 .plan-door { position: absolute; background: #f5deb3; cursor: ew-resize; z-index: 5; border: 1px solid #8b5a2b; }
 .plan-window { position: absolute; background: #bfdbfe; cursor: ew-resize; z-index: 5; border: 1px solid #3b82f6; }
 .plan-pillar { position: absolute; background: #9ca3af; border: 1px solid #4b5563; z-index: 6; cursor: move; }
-.plan-door.selected, .plan-window.selected, .plan-pillar.selected { outline: 2px solid var(--accent-yellow); z-index: 60; }
+.plan-door.selected, .plan-window.selected, .plan-pillar.selected, .plan-niche.selected { outline: 2px solid var(--accent-yellow); z-index: 60; }
 
 .right-col { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
 .toolbar-content { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
