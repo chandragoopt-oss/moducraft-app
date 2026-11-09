@@ -26,7 +26,7 @@ const plan = document.getElementById('plan');
 
 window.modules = [];
 window.siteElements = [];
-window.wallDims = { A: 800, B: 600, H: 240 };
+window.wallDims = { A: 3000, B: 3000, H: 2700 };
 window.CURRENT_SHAPE = 'rectangle';
 let activeRoomIndex = window.__dsParams.roomIdx || 0;
 let selectedId = null, selectedType = null; 
@@ -234,19 +234,22 @@ document.addEventListener('pointerdown', (e) => {
   const el = e.target.closest('.module, .plan-door, .plan-window, .plan-pillar, .plan-niche, .elev-module, .elev-door, .elev-window');
   
   if (el) {
+      e.preventDefault(); // Stop text selection/scrolling
       selectedId = el.getAttribute('data-id');
       selectedType = el.classList.contains('module') || el.classList.contains('elev-module') ? 'module' : 'site';
       let obj = selectedType === 'module' ? window.modules.find(m => m.id === selectedId) : window.siteElements.find(m => m.id === selectedId);
       if (!obj) return;
       
+      const rect = viewport.getBoundingClientRect();
+      const mouseRoomX = (e.clientX - rect.left - panX) / currentZoom;
+      const mouseRoomY = (e.clientY - rect.top - panY) / currentZoom;
+
       draggedObj = {
           isSite: selectedType === 'site',
-          type: obj.type || 'unknown', // pillar, beam, door, window, niche, or module name
+          type: obj.type || 'module', 
           data: obj,
-          startX: e.clientX,
-          startY: e.clientY,
-          startLeft: obj.x,
-          startTop: obj.y,
+          offsetX: mouseRoomX - obj.x,
+          offsetY: mouseRoomY - obj.y,
           isElevation: !!el.closest('.elev-canvas'),
           wall: el.closest('.elev-canvas') ? el.closest('.elev-canvas').getAttribute('data-wall') : (obj.wall || 'A')
       };
@@ -271,38 +274,35 @@ document.addEventListener('pointermove', (e) => {
   }
   if (!draggedObj) return;
   
-  const dx = (e.clientX - draggedObj.startX) / currentZoom;
-  const dy = (e.clientY - draggedObj.startY) / currentZoom;
+  const rect = viewport.getBoundingClientRect();
+  const mouseRoomX = (e.clientX - rect.left - panX) / currentZoom;
+  const mouseRoomY = (e.clientY - rect.top - panY) / currentZoom;
+  
   const obj = draggedObj.data;
+  let newX = mouseRoomX - draggedObj.offsetX;
+  let newY = mouseRoomY - draggedObj.offsetY;
 
   if (draggedObj.isElevation) {
       // --- ELEVATION DRAGGING ---
-      obj.x = Math.max(0, draggedObj.startLeft + dx);
-      obj.z = Math.max(0, draggedObj.startTop - dy); 
+      obj.x = Math.max(0, newX);
+      obj.z = Math.max(0, wallDims.H - newY); 
   } 
   else if (draggedObj.type === 'pillar' || draggedObj.type === 'beam' || draggedObj.type === 'slab') {
       // --- COLUMNS, BEAMS, SLABS (Confined to room) ---
-      obj.x = Math.max(0, Math.min(wallDims.A, draggedObj.startLeft + dx));
-      obj.y = Math.max(0, Math.min(wallDims.B, draggedObj.startTop + dy));
+      obj.x = Math.max(0, Math.min(wallDims.A - obj.width, newX));
+      obj.y = Math.max(0, Math.min(wallDims.B - (obj.height || obj.width), newY));
   } 
   else if (draggedObj.type === 'niche' || draggedObj.type === 'door' || draggedObj.type === 'window') {
       // --- DOORS, WINDOWS, NICHES (Snap to wall) ---
-      const rect = viewport.getBoundingClientRect();
-      
-      // Calculate absolute mouse position relative to the room origin
-      const roomX = (e.clientX - rect.left - panX) / currentZoom - 100;
-      const roomY = (e.clientY - rect.top - panY) / currentZoom - 100;
-
-      const closestWall = findClosestWall(roomX, roomY);
+      const closestWall = findClosestWall(mouseRoomX, mouseRoomY);
       obj.wall = closestWall.id;
       
       const wallLen = Math.sqrt(Math.pow(closestWall.x2 - closestWall.x1, 2) + Math.pow(closestWall.y2 - closestWall.y1, 2));
-      let newX = 0;
       
       if (closestWall.y1 === closestWall.y2) {
-          newX = roomX - closestWall.x1; 
+          newX = mouseRoomX - draggedObj.offsetX; 
       } else {
-          newX = roomY - closestWall.y1;
+          newX = mouseRoomY - draggedObj.offsetY;
       }
       
       // Snap to wall ends (left/right)
@@ -313,21 +313,14 @@ document.addEventListener('pointermove', (e) => {
   } 
   else if (draggedObj.isSite === false) {
       // --- MODULES (Confinement & Snapping) ---
-      let newX = draggedObj.startLeft + dx;
-      let newY = draggedObj.startTop + dy;
-      
-      // Confine to room boundaries
       newX = Math.max(0, Math.min(wallDims.A - obj.width, newX));
       newY = Math.max(0, Math.min(wallDims.B - (obj.depth || obj.width), newY));
       
       // Snap to other modules
       window.modules.forEach(other => {
           if (other.id === obj.id) return;
-          // If they are roughly on the same horizontal line
-          if (Math.abs(other.y - newY) < 50) {
-              // Snap left edge of dragged to right edge of other
+          if (Math.abs(other.y - newY) < 50) { 
               if (Math.abs((other.x + other.width) - newX) < 30) newX = other.x + other.width;
-              // Snap right edge of dragged to left edge of other
               if (Math.abs(other.x - (newX + obj.width)) < 30) newX = other.x - obj.width;
           }
       });
