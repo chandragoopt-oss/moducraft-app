@@ -1944,3 +1944,22 @@ db.doc('settings/main').onSnapshot(d=>{if(!d.exists){if(S.w)doSave('s')}else if(
         }
     });
 })();
+
+
+/* ===== FORCE MOM TAB TO APPEAR ===== */
+(function() {
+    const _pjTabs = window.pjTabs;
+    window.pjTabs = function() {
+        let tabs = _pjTabs.apply(this, arguments);
+        // Ensure the MOM tab is always in the list, right after Timeline
+        if (!tabs.some(t => t[0] === 'mm')) {
+            const timelineIndex = tabs.findIndex(t => t[0] === 'tl');
+            if (timelineIndex !== -1) {
+                tabs.splice(timelineIndex + 1, 0, ['mm', 'MOM', 'fs']);
+            } else {
+                tabs.push(['mm', 'MOM', 'fs']);
+            }
+        }
+        return tabs;
+    };
+})();
