@@ -249,6 +249,13 @@
     overlay.style.display = 'block';
     document.body.style.overflow = 'hidden';
   };
+    window.closeDesignStudio = function() {
+    const overlay = document.getElementById('design-studio-overlay');
+    const iframe = document.getElementById('ds-iframe');
+    if (overlay) overlay.style.display = 'none';
+    if (iframe) iframe.src = '';
+    document.body.style.overflow = '';
+  };
    // Listen for messages from the design studio (save / close / dimensions changed)
   window.addEventListener('message', function(e) {
     if (!e.data || typeof e.data !== 'object') return;
