@@ -1,4 +1,4 @@
-// --- READ URL PARAMS ---
+// --- READ DATA FROM LOCAL STORAGE ---
 (function() {
   const params = new URLSearchParams(location.search);
   const t = params.get('theme');
@@ -6,11 +6,18 @@
     document.body.setAttribute('data-theme', t);
     document.documentElement.setAttribute('data-theme', t);
   }
+
+  // Read the large data we saved from the parent
+  let savedData = {};
+  try {
+    savedData = JSON.parse(localStorage.getItem('msq_studio_data') || '{}');
+  } catch(e) { console.error("Failed to parse studio data", e); }
+
   window.__dsParams = {
-    quoteId: params.get('q') || '',
-    roomIdx: parseInt(params.get('r') || '0', 10),
-    mods: JSON.parse(params.get('mods') || '[]'),
-    room: JSON.parse(params.get('room') || '{}')
+    quoteId: params.get('q') || savedData.quoteId || '',
+    roomIdx: parseInt(params.get('r') || savedData.roomIdx || '0', 10),
+    mods: savedData.mods || [],
+    room: savedData.room || {}
   };
 })();
 
