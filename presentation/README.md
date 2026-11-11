@@ -29,3 +29,9 @@ Open `presentation/index.html` in a browser, or serve the repository root with a
 4. Replace provisional fixed-page text with approved brand master content.
 5. Add server-side role validation, Slides generation/sync, Drive asset management and PDF export.
 6. Add automated browser tests and deploy the standalone route before adding any main-app navigation entry.
+
+
+## Existing preview feature decision
+The repository's `preview.html` / `preview-ui.js` is the ModuCraft sandbox preview workspace (including a Design Studio iframe bridge); it is not a presentation-deck preview component. The quotation application's existing `Preview / Print` view is specifically for quotation documents. Neither existing UI will be modified, embedded, restyled, or repurposed by this module.
+
+The Presentation Builder will have its own isolated slide preview renderer inside `presentation/`. It may read approved project/quotation data through a documented, read-only integration contract, but will not call or alter the existing preview UI. This preserves both existing preview experiences unchanged.
