@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="application-name" content="ModuCraft Presentation Builder">
+  <title>Presentation Builder | Module Studio</title>
+  <link rel="stylesheet" href="styles/presentation.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="./index.html"><span class="brand-mark">M</span><span><b>MODULE STUDIO</b><small>MODUCRAFT · PRESENTATIONS</small></span></a>
+      <div class="nav-label">WORKSPACE</div>
+      <button class="nav-item active" data-view="dashboard">▦ <span>Dashboard</span></button>
+      <button class="nav-item" data-view="templates">▤ <span>Templates</span></button>
+      <button class="nav-item" data-view="assets">▧ <span>Asset library</span></button>
+      <div class="sidebar-bottom"><span class="status-dot"></span> Standalone module<br><small>Design Studio is not loaded here.</small></div>
+    </aside>
+    <main class="main">
+      <header class="topbar"><div><div class="eyebrow">MODULE STUDIO / PRESENTATION BUILDER</div><h1 id="page-title">Presentations</h1></div><div class="top-actions"><span class="save-state" id="save-state">Local draft storage</span><button class="button primary" id="new-presentation">＋ New presentation</button></div></header>
+      <section id="dashboard-view" class="view">
+        <div class="hero"><div><span class="eyebrow light">DESIGN · STORYTELLING · DELIVERY</span><h2>Every project deserves<br>a considered presentation.</h2><p>Create moodboards and design presentations using Module Studio's approved structure.</p><button class="button light-button" id="hero-create">Create a presentation <span>→</span></button></div><div class="hero-art"><div class="art-card card-one">01 <b>CONCEPT</b></div><div class="art-card card-two">02 <b>MATERIAL</b></div><div class="art-card card-three">03 <b>DETAIL</b></div></div></div>
+        <div class="stats"><div class="stat"><span>ALL PRESENTATIONS</span><b id="stat-all">0</b></div><div class="stat"><span>MOODBOARDS</span><b id="stat-mood">0</b></div><div class="stat"><span>DESIGN PRESENTATIONS</span><b id="stat-design">0</b></div><div class="stat"><span>READY FOR REVIEW</span><b id="stat-ready">0</b></div></div>
+        <div class="section-head"><div><span class="eyebrow">YOUR WORKSPACE</span><h2>Recent presentations</h2></div><input id="search" class="search" placeholder="Search client or project…"></div>
+        <div id="presentation-list" class="presentation-list"></div>
+      </section>
+      <section id="templates-view" class="view hidden"><div class="section-head"><div><span class="eyebrow">START WITH A SYSTEM</span><h2>Presentation templates</h2></div></div><div class="template-grid"><article class="template-card"><div class="template-preview mood-preview"><span>MOODBOARD</span><b>Explore<br>possibilities.</b><i>01 / 03 / 02</i></div><h3>Moodboard</h3><p>Room-wise concepts, three design directions, palettes and materials.</p></article><article class="template-card"><div class="template-preview first-preview"><span>DESIGN CONCEPT</span><b>Design<br>direction.</b><i>PLAN · RENDER · FINISH</i></div><h3>First Design Presentation</h3><p>Concepts, layouts, renders and material specifications. No prices or dimensions.</p></article><article class="template-card"><div class="template-preview final-preview"><span>FINAL DESIGN</span><b>Designed<br>in detail.</b><i>ELEVATION · SIZE · MATERIAL</i></div><h3>Final Design Presentation</h3><p>Approved design details, dimensions, material specifications and quotation-linked terms.</p></article></div></section>
+      <section id="assets-view" class="view hidden"><div class="section-head"><div><span class="eyebrow">PROJECT RESOURCES</span><h2>Asset library</h2></div></div><div class="notice"><b>Drive connection is not enabled yet.</b><p>This isolated first release keeps assets in the presentation workspace only. Google Drive upload and Slides generation will be connected after the owner account and Apps Script project are confirmed.</p></div></section>
+      <section id="wizard-view" class="view hidden">
+        <div class="section-head"><div><span class="eyebrow">NEW PROJECT DOCUMENT</span><h2>Create presentation</h2></div><button class="button ghost" id="cancel-wizard">Cancel</button></div>
+        <div class="wizard-layout"><div class="wizard-main">
+          <div class="stepper"><span class="step active">01 <small>TYPE</small></span><span class="step">02 <small>PROJECT</small></span><span class="step">03 <small>REVIEW</small></span></div>
+          <div id="wizard-step-1"><h3>What are you creating?</h3><div class="type-options">
+            <label class="type-option"><input type="radio" name="type" value="moodboard" checked><span class="type-icon">▧</span><b>Moodboard</b><small>Concepts, options and material direction</small></label>
+            <label class="type-option"><input type="radio" name="type" value="first-design"><span class="type-icon">◫</span><b>First Design Presentation</b><small>Initial design direction, no pricing or sizes</small></label>
+            <label class="type-option"><input type="radio" name="type" value="final-design"><span class="type-icon">▤</span><b>Final Design Presentation</b><small>Detailed design and approved commercial data</small></label>
+          </div><button class="button primary" id="step-next">Continue →</button></div>
+          <div id="wizard-step-2" class="hidden"><h3>Project information</h3><div class="form-grid"><label>Client name<input id="client-name" required placeholder="Client / customer name"></label><label>Project name<input id="project-name" required placeholder="e.g. Residence at New Town"></label><label>Project category<select id="project-category"><option>Residential</option><option>Commercial</option></select></label><label>Presentation date<input id="presentation-date" type="date"></label><label>Prepared by<input id="prepared-by" placeholder="Designer name"></label><label id="quotation-field">Quotation number<input id="quotation-number" placeholder="e.g. MSQ-2026-001"></label></div><div class="wizard-actions"><button class="button ghost" id="step-back">← Back</button><button class="button primary" id="review-create">Create draft →</button></div></div>
+        </div><aside class="wizard-aside"><span class="eyebrow">FIXED PRESENTATION ORDER</span><ol><li>Cover page</li><li>About Us</li><li>How We Work</li><li>Why Module Studio</li><li>Project-specific content</li><li>Our Commitments</li><li>Quotation &amp; Payment Milestones</li><li>Contact Us</li></ol><p>Opening studio pages and closing pages are system-managed. Project slides can be edited and reordered within their section.</p></aside></div>
+      </section>
+      <section id="editor-view" class="view hidden"><div class="editor-top"><div><button class="text-button" id="back-dashboard">← All presentations</button><h2 id="editor-title">Presentation editor</h2><span class="pill" id="editor-type"></span></div><div class="top-actions"><button class="button ghost" id="validate">Validate</button><button class="button primary" id="save-presentation">Save draft</button></div></div><div class="editor-layout"><aside class="slide-list"><div class="slide-list-head">SLIDE OUTLINE <button id="add-slide" class="icon-button" title="Add project slide">＋</button></div><div id="slides"></div></aside><section class="slide-canvas"><div id="slide-preview" class="slide-preview"></div><div class="canvas-caption">PREVIEW · 16:9 PRESENTATION CANVAS</div></section><aside class="properties"><span class="eyebrow">SLIDE PROPERTIES</span><div id="slide-properties"><p>Select a slide to edit its content.</p></div></aside></div><div id="validation-results" class="validation-results hidden"></div></section>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="js/templates.js"></script><script src="js/app.js"></script>
+</body></html>
