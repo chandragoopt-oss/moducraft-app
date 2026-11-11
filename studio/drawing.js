@@ -170,6 +170,68 @@ function renderPlanHTML() {
   return svg + itemsHtml;
 }
 
+// --- 5. LIGHTWEIGHT ISOMETRIC 3D PREVIEW ---
+function renderPerspectiveHTML() {
+  const W = wallDims.A, D = wallDims.B, H = wallDims.H;
+  const project = (x, y, z = 0) => ({
+    x: (x - y) * 0.72 + (W + D) * 0.72,
+    y: (x + y) * 0.36 - z * 0.72 + H * 0.72 + 40
+  });
+  const pts = [];
+  const point = (x, y, z = 0) => {
+    const p = project(x, y, z); pts.push(p); return p;
+  };
+  const poly = (arr, fill, stroke = "#475569", opacity = 1) =>
+    `<polygon points="${arr.map(p => `${p.x},${p.y}`).join(" ")}" fill="${fill}" fill-opacity="${opacity}" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>`;
+  const walls = getWallSegments();
+  let shapes = "";
+  const floor = walls.map(w => point(w.x1, w.y1, 0));
+  shapes += poly(floor, "#e8edf3", "#64748b", 0.96);
+
+  // Room perimeter walls are drawn as transparent planes so the furniture remains visible.
+  walls.forEach((w, i) => {
+    const face = [
+      point(w.x1, w.y1, 0), point(w.x2, w.y2, 0),
+      point(w.x2, w.y2, H), point(w.x1, w.y1, H)
+    ];
+    shapes += poly(face, i % 2 ? "#94a3b8" : "#cbd5e1", "#64748b", 0.22);
+  });
+
+  window.modules.forEach((m) => {
+    const x = Number(m.x) || 0, y = Number(m.y) || 0, z = Number(m.z) || 0;
+    const w = Math.max(1, Number(m.width) || 60);
+    const d = Math.max(1, Number(m.depth) || 60);
+    const h = Math.max(1, Number(m.height) || 80);
+    const a = point(x, y, z), b = point(x + w, y, z);
+    const c = point(x + w, y + d, z), e = point(x, y + d, z);
+    const at = point(x, y, z + h), bt = point(x + w, y, z + h);
+    const ct = point(x + w, y + d, z + h), et = point(x, y + d, z + h);
+    shapes += poly([b, c, ct, bt], "#0f766e", "#115e59", 0.92);
+    shapes += poly([e, c, ct, et], "#14b8a6", "#0f766e", 0.92);
+    shapes += poly([at, bt, ct, et], "#99f6e4", "#0f766e", 0.98);
+    const label = String(m.type || "Module").replace(/[&<>"]/g, "");
+    const mid = project(x + w / 2, y + d / 2, z + h + 8);
+    shapes += `<text x="${mid.x}" y="${mid.y}" font-size="13" text-anchor="middle" fill="#0f172a" font-weight="600">${label}</text>`;
+  });
+
+  window.siteElements.filter(el => el.type === "pillar").forEach(el => {
+    const x = Number(el.x) || 0, y = Number(el.y) || 0;
+    const w = Math.max(8, Number(el.width) || 30), d = Math.max(8, Number(el.height) || 30);
+    const h = H;
+    const a = point(x, y, 0), b = point(x + w, y, 0), c = point(x + w, y + d, 0), e = point(x, y + d, 0);
+    const at = point(x, y, h), bt = point(x + w, y, h), ct = point(x + w, y + d, h), et = point(x, y + d, h);
+    shapes += poly([b, c, ct, bt], "#64748b", "#334155", 0.85);
+    shapes += poly([e, c, ct, et], "#94a3b8", "#334155", 0.85);
+    shapes += poly([at, bt, ct, et], "#cbd5e1", "#334155", 0.9);
+  });
+
+  const minX = Math.min(...pts.map(p => p.x)), maxX = Math.max(...pts.map(p => p.x));
+  const minY = Math.min(...pts.map(p => p.y)), maxY = Math.max(...pts.map(p => p.y));
+  const pad = 45;
+  const viewBox = `${minX - pad} ${minY - pad} ${Math.max(100, maxX - minX + pad * 2)} ${Math.max(100, maxY - minY + pad * 2)}`;
+  return `<svg class="studio-3d-preview" viewBox="${viewBox}" role="img" aria-label="Isometric room and furniture preview" preserveAspectRatio="xMidYMid meet">${shapes}</svg>`;
+}
+
 // --- 5. RENDER ELEVATIONS ---
 function renderElevations() {
   const container = document.getElementById('elevations-container');
@@ -211,8 +273,10 @@ function updateAllViews() {
   renderElevations();
   
   const activeView = document.getElementById('box-center').getAttribute('data-view');
-  if (activeView !== 'plan' && activeView !== 'persp') {
-      const altWrapper = document.querySelector('#alt-content .zoom-wrapper');
+  const altWrapper = document.querySelector('#alt-content .zoom-wrapper');
+  if (activeView === 'persp' && altWrapper) {
+      altWrapper.innerHTML = renderPerspectiveHTML();
+  } else if (activeView !== 'plan') {
       const walls = getWallSegments();
       const w = walls.find(x => x.id === activeView.replace('wall', ''));
       
