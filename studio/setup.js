@@ -183,10 +183,10 @@ window.deleteSelected = function() {
 
 // --- 5. SHAPE ---
 window.changeRoomShape = function(shape) {
+  const allowed = ['rectangle', 'l-shape', 'u-shape'];
+  if (!allowed.includes(shape)) return;
+  // Keep the designer-entered room dimensions when changing its outline.
   CURRENT_SHAPE = shape;
-  if (shape === 'l-shape') { wallDims.A = 1000; wallDims.B = 800; }
-  else if (shape === 'u-shape') { wallDims.A = 1200; wallDims.B = 900; }
-  else { wallDims.A = 800; wallDims.B = 600; }
   initializeViews();
 };
 
