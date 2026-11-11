@@ -368,28 +368,30 @@ document.addEventListener('pointermove', (e) => {
   else if (draggedObj.type === 'niche' || draggedObj.type === 'door' || draggedObj.type === 'window') {
       // --- DOORS, WINDOWS, NICHES (Snap to wall) ---
       const rect = viewport.getBoundingClientRect();
-      const mouseRoomX = (e.clientX - rect.left - panX) / currentZoom;
-      const mouseRoomY = (e.clientY - rect.top - panY) / currentZoom;
+      // The plan canvas is drawn with a 100-unit inset around the room.
+      // Convert the pointer from screen coordinates back into room coordinates.
+      const mouseRoomX = (e.clientX - rect.left - panX) / currentZoom - 100;
+      const mouseRoomY = (e.clientY - rect.top - panY) / currentZoom - 100;
 
-      // Find nearest wall
+      // Find the nearest wall and project the pointer onto that wall segment.
       const closestWall = findClosestWall(mouseRoomX, mouseRoomY);
       obj.wall = closestWall.id;
-      
-      const wallLen = Math.sqrt(Math.pow(closestWall.x2 - closestWall.x1, 2) + Math.pow(closestWall.y2 - closestWall.y1, 2));
-      
-      // Calculate X along the wall
-      let newX = 0;
-      if (closestWall.y1 === closestWall.y2) {
-          newX = (mouseRoomX - rect.left) / currentZoom - closestWall.x1; 
-      } else {
-          newX = (mouseRoomY - rect.top) / currentZoom - closestWall.y1;
-      }
-      
-      // Snap to wall ends
+
+      const wallDX = closestWall.x2 - closestWall.x1;
+      const wallDY = closestWall.y2 - closestWall.y1;
+      const wallLen = Math.hypot(wallDX, wallDY);
+      const safeLength = Math.max(1, wallLen);
+      const projection = (
+          (mouseRoomX - closestWall.x1) * wallDX +
+          (mouseRoomY - closestWall.y1) * wallDY
+      ) / (safeLength * safeLength);
+      let newX = Math.max(0, Math.min(wallLen, projection * wallLen)) - obj.width / 2;
+
+      // Snap openings to wall ends and keep their full width on the wall.
       if (Math.abs(newX) < 30) newX = 0;
       if (Math.abs(newX + obj.width - wallLen) < 30) newX = wallLen - obj.width;
-      
-      obj.x = Math.max(0, Math.min(wallLen - obj.width, newX));
+
+      obj.x = Math.max(0, Math.min(Math.max(0, wallLen - obj.width), newX));
   } 
   else if (draggedObj.isSite === false) {
       // --- MODULES (Confinement & Snapping) ---
