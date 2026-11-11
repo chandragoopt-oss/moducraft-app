@@ -47,6 +47,16 @@ function getWallSegments() {
     walls.push({ id: 'E', name: 'E', x1: W*SHAPE_CUT, y1: H*(1-SHAPE_CUT_Y), x2: W*SHAPE_CUT, y2: H });
     walls.push({ id: 'F', name: 'F', x1: W*SHAPE_CUT, y1: H, x2: 0, y2: H });
     walls.push({ id: 'G', name: 'G', x1: 0, y1: H, x2: 0, y2: 0 });
+  } else if (CURRENT_SHAPE === 'u-shape') {
+    const left = W * 0.30, right = W * 0.70, innerY = H * 0.35;
+    walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W, y2: 0 });
+    walls.push({ id: 'B', name: 'B', x1: W, y1: 0, x2: W, y2: H });
+    walls.push({ id: 'C', name: 'C', x1: W, y1: H, x2: right, y2: H });
+    walls.push({ id: 'D', name: 'D', x1: right, y1: H, x2: right, y2: innerY });
+    walls.push({ id: 'E', name: 'E', x1: right, y1: innerY, x2: left, y2: innerY });
+    walls.push({ id: 'F', name: 'F', x1: left, y1: innerY, x2: left, y2: H });
+    walls.push({ id: 'G', name: 'G', x1: left, y1: H, x2: 0, y2: H });
+    walls.push({ id: 'H', name: 'H', x1: 0, y1: H, x2: 0, y2: 0 });
   } else {
     walls.push({ id: 'A', name: 'A', x1: 0, y1: 0, x2: W, y2: 0 });
     walls.push({ id: 'B', name: 'B', x1: W, y1: 0, x2: W, y2: H });
@@ -257,7 +267,7 @@ document.addEventListener('pointerdown', (e) => {
   else if (e.target.closest('#viewport') && !e.target.closest('.float-3d-btn')) {
       isPanning = true;
       panStartX = e.clientX - panX;
-      panStartY = e.clientY - panStartY;
+      panStartY = e.clientY - panY;
       viewport.style.cursor = 'grabbing';
       selectedId = null; selectedType = null;
       updateAllViews();
@@ -366,8 +376,19 @@ function centerPlan() {
   applyTransform();
 }
 
-window.zoomCanvas = function(factor) { currentZoom *= factor; applyTransform(); };
-window.switchRoom = function(idx) { activeRoomIndex = parseInt(idx); };
+window.zoomCanvas = function(factor) {
+  currentZoom = Math.max(0.2, Math.min(3, currentZoom * factor));
+  applyTransform();
+};
+window.switchRoom = function(idx) {
+  const nextIndex = Number.parseInt(idx, 10);
+  if (!Number.isInteger(nextIndex) || nextIndex < 0) return;
+  activeRoomIndex = nextIndex;
+  selectedId = null;
+  selectedType = null;
+  draggedObj = null;
+  loadRoomsDropdown();
+};
 function applyTransform() { if (plan) plan.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; }
 
 viewport.addEventListener('wheel', (e) => {
