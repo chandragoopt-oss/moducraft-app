@@ -119,7 +119,7 @@ window.openAddModuleModal = function() {
   let html = '', currentCat = '';
   bMods.forEach(m => {
     if (m.cat !== currentCat) { html += `<div class="quick-add-cat">${m.cat}</div>`; currentCat = m.cat; }
-    html += `<div class="quick-add-item" data-search="${m.n.toLowerCase()}" onclick="addModule('${m.n.replace(/'/g,"\\'")}', '${m.id}', '${m.cat.includes('Loft') ? 200 : 0}')"><span>${m.n}</span><span style="font-size:11px; opacity:0.6">${m.w}cm</span></div>`;
+    html += '<div class="quick-add-item" data-search="' + m.n.toLowerCase() + '" onclick="addModule(\'' + m.n.replace(/'/g, "\\'") + '\', \'' + m.id + '\', \'' + (m.cat.includes('Loft') ? 200 : 0) + '\', \'' + m.w + '\', \'' + m.h + '\', \'' + m.d + '\')"><span>' + m.n + '</span><span style="font-size:11px; opacity:0.6">' + m.w + 'cm</span></div>';
   });
   list.innerHTML = html;
   document.getElementById('quick-add-modal').style.display = 'flex';
@@ -130,9 +130,14 @@ window.filterQuickAdd = function() {
   const q = document.getElementById('quick-add-input').value.toLowerCase();
   document.querySelectorAll('.quick-add-item').forEach(el => { el.style.display = el.dataset.search.includes(q) ? 'flex' : 'none'; });
 };
-window.addModule = function(type, mk, zHeight) { 
-  document.getElementById('quick-add-modal').style.display = 'none'; 
-  const newMod = { id: 'mod-' + Date.now(), type: type, mk: mk, x: 50, y: 50, z: parseInt(zHeight), width: 60, height: 80, depth: 60, wall: 'A' };
+window.addModule = function(type, mk, zHeight, moduleWidth, moduleHeight, moduleDepth) {
+  document.getElementById('quick-add-modal').style.display = 'none';
+  // Catalogue dimensions are supplied in centimetres, matching the Studio's
+  // internal room-coordinate unit. Fall back to practical cabinet defaults.
+  const width = Number(moduleWidth) > 0 ? Number(moduleWidth) : 60;
+  const height = Number(moduleHeight) > 0 ? Number(moduleHeight) : 80;
+  const depth = Number(moduleDepth) > 0 ? Number(moduleDepth) : 60;
+  const newMod = { id: 'mod-' + Date.now(), type: type, mk: mk, x: 50, y: 50, z: parseInt(zHeight, 10) || 0, width, height, depth, wall: 'A' };
   window.modules.push(newMod);
   selectedId = newMod.id; selectedType = 'module';
   updateAllViews();
