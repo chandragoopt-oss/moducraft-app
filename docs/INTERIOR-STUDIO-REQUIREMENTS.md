@@ -524,3 +524,457 @@ Do not claim bug-free or production-ready without recorded test evidence.
 - Preserve existing quotation, invoice, payment and project workflows.
 - Report actual commits, files changed, tests run and results.
 - Launch target previously specified by the owner: **19 November 2026, 10:00 AM IST**. Prioritize a tested and safe deliverable over unsupported completion claims.
+
+
+---
+
+## 18. Architecture decision recorded from earlier project discussions
+
+The owner previously rejected repairing the unsatisfactory legacy 3D tool as the primary solution and approved a **new, separate Interior Studio application**.
+
+- Build the new application in a dedicated `interior-studio/` directory.
+- Preserve the existing ERP and legacy `studio/` directory. Do not destabilize, delete or silently replace either.
+- Integrate the new Studio into the ERP only through a deliberate, tested integration bridge after the new application works independently.
+- The existing checkpoint/tag `pre-new-interior-studio` is a recovery boundary; preserve it.
+- The previously agreed implementation direction is React + TypeScript + Vite, Three.js / React Three Fiber for 3D, SVG-based 2D drawing/CAD interaction, Zustand for application state and Zod for schema validation. Re-evaluate only if repository constraints make a documented alternative necessary.
+- Keep design-domain logic independent from the ERP UI so the Studio can be run as an online web application and can later be packaged as a desktop application.
+- Design offline/local working capability deliberately, with clear save status and safe synchronization when online. Do not silently overwrite a newer server version with stale offline data.
+- The Studio must not directly mutate production ERP storage. Use a documented, versioned adapter/contract and safe test data first.
+- Existing ERP remains authoritative for customer, project, quotation, module catalogue, accessory/material masters, rates, invoices and payments. Studio owns its room geometry, furniture placements, design options, drawing data and design revisions.
+- The designated Google account `databasemoducraft@gmail.com` is reserved for the user's planned database/Google services work. This does not authorize an immediate production migration or changes to the running online ERP.
+
+This architecture decision supersedes any interpretation of the earlier development sequence that implies rebuilding the legacy `studio/` in place.
+
+## 19. The single-designer, fast-turnaround operating model
+
+Design the product around one interior designer completing the full customer journey with minimal hand-offs. The designer may be working under severe time pressure, switching between customer discussion, measurement, design, pricing, presentation and documentation. The application must reduce repeated entry, context switching and memory-based checking.
+
+The target is a guided, low-friction workflow that can produce a coordinated proposal and approval package in one customer meeting when the inputs are available. The software cannot guarantee customer approval or compensate for missing/incorrect site measurements; it must expose missing information and uncertainty rather than inventing it.
+
+### 19.1 One project command centre
+
+Create one project dashboard showing:
+- Customer/contact details and existing ERP customer/project/quotation references.
+- Project address, property type, project status and target dates.
+- Rooms and their completion status.
+- Site survey status and missing measurements.
+- Design status and selected design revision.
+- Customer brief, budget, preferred style and constraints.
+- Material/finish selections and approval status.
+- Appliance/service coordination status.
+- Estimate/quotation status.
+- Drawings and presentation pack status.
+- Outstanding validation errors, warnings and decisions.
+- Last saved/synced status, last editor and revision.
+
+Use a single visible progress checklist, with one-click navigation to incomplete tasks. The dashboard must show what prevents customer sign-off, not just a percentage score.
+
+### 19.2 Guided project intake and design brief
+
+A fast intake flow should capture once and reuse throughout the project:
+- Customer goals, family/users and room usage.
+- Room list, priorities and functional requirements.
+- Style direction, reference images and inspiration.
+- Preferred colours/materials/finishes and items to avoid.
+- Budget range and priority trade-offs.
+- Existing furniture/appliances to retain.
+- Appliance make/model/dimensions or clearly marked provisional dimensions.
+- Storage needs and special requirements.
+- Accessibility, child-safety, maintenance and durability requirements where relevant.
+- Vastu preferences/directions where requested by the customer.
+- Site constraints, building rules and landlord/society restrictions where applicable.
+- Target timeline and decision-makers.
+- Customer-provided references, sketches, photographs and documents.
+
+Provide a quick brief mode for live meetings and a more detailed mode for later completion. Mark every field as confirmed, provisional, unknown or not applicable. Never present a guessed value as customer-confirmed.
+
+### 19.3 Site survey capture designed for speed and accuracy
+
+- Mobile/tablet-friendly survey interface with room-by-room checklists.
+- Wall-by-wall dimension entry, height, thickness, diagonals and opening positions.
+- Capture door/window width, height, sill/lintel height and swing/slide direction.
+- Record columns, beams, niches, shafts, skirting, ledges, floor level differences and ceiling drops.
+- Record electrical, plumbing, gas, drainage, AC and exhaust points.
+- Attach photographs to the exact room/wall/point and add arrows/notes.
+- Capture measurement source, date, person and confidence/status.
+- Highlight missing dimensions and impossible/inconsistent measurements.
+- Allow a rough preliminary survey and a later site-verified revision.
+- Support unit conversion while storing canonical geometry in millimetres.
+- Where an image/PDF/DWG/DXF underlay is imported, allow calibration against known dimensions, scale/rotation/origin setting and tracing. Preserve the original as a reference layer. Imported drawings are not automatically assumed accurate or current.
+- Provide a survey completion report before design is marked ready for customer approval.
+
+If camera-based measurement, LiDAR or automatic photo dimension extraction is ever offered, treat it as an estimate requiring manual confirmation, not authoritative site measurement.
+
+### 19.4 CAD and reference-file intake
+
+Support a controlled import workflow for formats the implementation can reliably parse:
+- DWG/DXF where a supported parser/conversion path is available.
+- PDF plan underlays.
+- Common raster images such as PNG/JPG.
+- Existing project drawings and reference images.
+
+Import flow must allow:
+- Select pages/layers and visible reference elements.
+- Set units, scale, origin and rotation.
+- Verify scale using at least one known dimension.
+- Lock/unlock reference underlay.
+- Trace/convert selected walls/openings where reliable.
+- Preserve the uploaded original and record its source/date.
+- Compare imported plan against site-verified measurements.
+- Flag uncertain geometry instead of silently converting it into exact dimensions.
+
+Never redraw or redesign an imported client plan automatically without explicit designer action. When the customer has identified an existing CAD plan as the source of truth, preserve walls, thickness, boundaries, doors/opening directions, windows, columns, balconies, projections, furniture and circulation unless the designer explicitly edits them.
+
+### 19.5 Rapid room setup and reusable design intelligence
+
+Provide:
+- One-click room templates for common room types and standard layouts.
+- Saved company templates and designer's own reusable templates.
+- Reusable wall runs, cabinet combinations, wardrobe interiors, TV units, vanity units, study units, false-ceiling patterns and lighting layouts.
+- Copy room / duplicate wall / duplicate module / mirror layout / repeat along wall.
+- Room presets with editable dimensions, never fixed unchangeable dimensions.
+- Recent and favourite modules, materials, accessories and finishes.
+- Search by module name, code, category, dimensions and keywords.
+- Bulk selection and bulk property editing.
+- Multi-select material/finish assignment with preview and confirmation.
+- Keyboard shortcuts, right-click/context menus, command search and undo/redo.
+- Quick actions for common operations.
+- Save any approved room or furniture arrangement as a reusable template.
+- Clear distinction between catalogue standard dimensions and designer-customized dimensions.
+
+The design must never force the designer to re-enter a room's dimensions or the same customer/material data in multiple screens.
+
+### 19.6 Fast furniture planning and intelligent assistance
+
+Provide optional, designer-controlled assistance for:
+- Suggesting module combinations based on available wall length and functional brief.
+- Filling remaining wall gaps with valid fillers/end panels or suitable modules.
+- Aligning base, wall and tall units.
+- Generating lofts from available wall/ceiling dimensions.
+- Suggesting wardrobe internal layouts from storage requirements.
+- Suggesting drawer, shelf, hanging and accessory arrangements.
+- Checking standard clearances and appliance dimensions.
+- Detecting unused/dead spaces and potential clashes.
+- Suggesting alternative layouts when a selected arrangement fails validation.
+- Comparing standard, premium and luxury design alternatives.
+- Generating a design option from a selected template/catalogue only when the designer requests it.
+
+All generated/suggested changes must be previewed, explain their assumptions and require designer acceptance. No AI or automation may silently move/delete modules, change a confirmed dimension, replace a material, alter a price or modify an approved design.
+
+### 19.7 Complete catalogue coverage and module-specific detail
+
+The Studio must fetch the user's existing live module, accessory, material and other lists from the ERP rather than relying on hardcoded sample items. Catalogue mapping and missing-item diagnostics are required.
+
+Include the previously discussed product-specific examples where they exist in the ERP catalogue or are explicitly configured:
+- Kitchen base, sink, pantry, wall, loft, corner and breakfast-counter modules.
+- Aluminium glass shutters, including clear, frosted and fluted glass options.
+- Kitchen pantry soft-close complete system mechanism and flat-base basket.
+- Rolling shutter and wall tambour units.
+- L-shaped chimney duct/front panel.
+- Bedroom beds, headboards, bedside units, study units, wardrobes, dressers and TV units.
+- Living room TV units and crockery/display units.
+- Room-specific accessories and add-on modules.
+
+The module picker must not silently fall back to a hardcoded wardrobe or dummy module when the catalogue fails to load. Show loading/error/empty states and let the designer retry or work with a clearly marked cached catalogue.
+
+For accessory schedules, clearly distinguish pull-out mechanisms from rack-only/static accessories. Show accessory quantity, compatibility, module association and whether it is selected, optional or not selected.
+
+### 19.8 Materials and visual selection in the customer meeting
+
+- Material board / finish board generated from the actual selected catalogue records.
+- Side-by-side finish alternatives with labels, images, brand/model and finish code where known.
+- Compare carcass, shutter, countertop, glass, profile, handle and hardware independently.
+- Save a room palette and apply it consistently to selected rooms/modules.
+- Show a material change live in 3D without losing geometry or other selections.
+- Track proposed, shortlisted, customer-selected, approved and unavailable/substitution states.
+- Capture customer comments and decision against each sample.
+- Do not show placeholder swatches or fake brand/model information as actual products.
+- Support alternate selections with estimated commercial difference only when ERP rate data is available and authorized.
+
+### 19.9 Presentation mode built for one-meeting sign-off
+
+Provide a customer-facing Presentation Mode that hides editing controls, internal notes, cost/margin data and unfinished engineering information.
+
+A guided presentation should assemble:
+1. Customer/project cover page and design brief.
+2. Existing plan / proposed layout comparison where available.
+3. Room-by-room 2D plan and dimensions.
+4. Room-by-room wall elevations.
+5. Photorealistic or best-supported 3D views from useful camera angles.
+6. Material and finish boards with clear product labels.
+7. Module and accessory highlights.
+8. Appliance and service coordination notes.
+9. Key dimensions, assumptions and items requiring site verification.
+10. Room-wise commercial summary using the existing quotation engine.
+11. Included / optional / excluded / additional work summary.
+12. Timeline, validity and customer terms from the existing quotation workflow.
+13. Customer decisions, comments and sign-off record.
+
+Presentation tools:
+- Full-screen room navigation.
+- One-click camera presets (wide view, eye-level, wall view, detail view).
+- Smooth room-to-room navigation and optional walkthrough.
+- Hide/show dimensions, labels, annotations and selected furniture layers.
+- Compare two design options side by side.
+- Highlight changed items between revisions.
+- Capture customer comments against a room, wall, module, material or drawing.
+- Generate a coherent branded PDF presentation and quotation pack without manually arranging every page.
+- Save the exact presentation snapshot shown to the customer.
+
+Do not promise photorealistic quality for a renderer that has not been implemented or tested. Use accurate geometry and materials first; expose render quality/status honestly.
+
+### 19.10 Customer sign-off and decision capture
+
+The application should make it easy to record sign-off in the meeting:
+- Approve/reject/request change at project, room, module, drawing and material level as applicable.
+- Record approver identity, role, date/time and decision.
+- Capture comments and attachments.
+- Record the approved design revision and exact presentation/quotation snapshot.
+- Record customer confirmation of dimensions, layout, appliance information, finishes and scope, with items still subject to site verification clearly identified.
+- Record accepted, optional and excluded items separately.
+- Support a signature/acceptance workflow through an available authorized method; otherwise record the actual written approval evidence and its source. Do not fabricate an electronic signature.
+- Generate a customer approval summary and send/export it through supported channels.
+- A requested change after approval creates a new revision and identifies price/timeline/drawing impact.
+- Never silently change an approved drawing, material or quotation.
+
+### 19.11 Automated completeness and error-prevention gate
+
+Before enabling “Issue for Customer Sign-off”, run a comprehensive checklist across the project.
+
+Check at minimum:
+- Customer/project/quotation linkage exists.
+- All intended rooms are included and categorized.
+- Each room has required dimensions and a survey confidence/status.
+- Walls, doors, windows, openings and obstructions are valid.
+- Module positions, sizes, orientation and wall associations are valid.
+- No blocking overlaps or unresolved critical clearances.
+- Appliance sizes and required clearances are confirmed or explicitly provisional.
+- Shutter, carcass, material, finish, hardware and accessories are specified or intentionally marked pending/not applicable.
+- Countertop and sink/hob positions are consistent.
+- Lighting, ceiling, fans, AC, sockets and service points are coordinated where in scope.
+- Required 2D plans, elevations and 3D views exist.
+- Required technical/detail and onsite sheets are generated where applicable.
+- Material and accessory schedules reconcile with selected design items.
+- Design quantities and commercial lines have a traceable source.
+- Included/optional/excluded/additional scope is explicit.
+- Existing quotation totals reconcile with the design-linked commercial lines.
+- No internal cost/margin data appears in customer documents.
+- All warnings, overrides and assumptions are visible.
+- Customer-facing PDF pages render correctly and contain no blank/overflow/cut-off content.
+- The correct revision is attached to the approval pack.
+- Save/sync status is successful or any offline limitation is prominently disclosed.
+
+Use severity levels:
+- **Blocker:** cannot issue approval pack until resolved.
+- **Warning:** may proceed only after designer acknowledgement and, where appropriate, a reason.
+- **Information:** assumption, pending confirmation or site verification item to disclose.
+
+Provide one consolidated error list with click-to-fix navigation. Do not make the designer hunt through tabs to find errors. Allow a deliberate, permission-controlled override with reason for noncritical warnings; never allow an override to disguise missing customer approval or invalid commercial data.
+
+### 19.12 Automated document and schedule generation
+
+With one command, generate a selected pack from the same saved revision:
+- Customer presentation PDF.
+- Existing ERP quotation/proposal.
+- Room-wise 2D plan and elevations.
+- Furniture technical/detail drawings.
+- Separate onsite execution/coordination sheets.
+- Material and hardware summary.
+- Room-wise and module-wise specifications.
+- Accessories schedule, including pull-out versus rack-only distinction.
+- Estimated material quantity sheet, including board/ply thickness-wise quantities where calculation rules support them.
+- Site requirement/order sheet.
+- Appliance and service point schedule.
+- Drawing register and approval register.
+
+These are design, site and commercial outputs. They must not turn into factory cutting lists, CNC files, nesting or manufacturing BOMs. Clearly label estimated quantities versus verified/ordered quantities.
+
+The output pack must be reproducible from the stored project revision. A change must identify which pages/schedules became outdated and regenerate only the affected documents.
+
+### 19.13 Existing commercial and scope workflow made faster
+
+Integrate with the existing quotation modes and preserve them:
+- Module rates (automatic).
+- Room base pricing (per square foot).
+- Package pricing (flat per room).
+- Internal material costing.
+
+Preserve existing GST, discounts, quotation preview/print, invoices, payment milestones and payment tracking. Design Studio may provide validated quantities and specifications; the existing ERP quotation engine remains authoritative for rates and totals.
+
+The designer must be able to compare design options with their commercial impact without exposing internal purchase cost or margin. Clearly surface:
+- Included in quotation.
+- Optional / separately priced.
+- Excluded.
+- Additional work requested.
+- Awaiting assessment/approval.
+- Approved additional work.
+
+Carry forward the existing customer note/terms for additional services (including additional civil work, floor changes, AC fittings, designer lights, curtains, automation, canopies, electronics, mosquito nets and other value-added services) from the ERP's maintained quotation terms. Do not hardcode a second, potentially outdated terms document in Studio.
+
+### 19.14 Time-saving quality-of-life requirements
+
+- Autosave with visible “Saving / Saved / Offline / Sync error” status and last-saved time.
+- Automatic recovery after tab/browser crash or accidental close.
+- Confirm before destructive actions; provide undo for recoverable actions.
+- Search-anything command palette for rooms, modules, materials, tools and actions.
+- Recent projects, recent designs and favourites.
+- Duplicate project as a template without copying customer-sensitive or commercial records.
+- Copy/paste modules and properties between rooms with compatibility checks.
+- Bulk rename, bulk material assignment and bulk dimension editing.
+- Multi-select move/align/distribute.
+- Snap, guides, alignment lines, grid and dimension constraints.
+- Configurable default units, heights, depths, offsets and standard dimensions.
+- Clear visual indication of selected object, locked object, hidden layer and read-only/approved object.
+- Layer visibility and lock controls for architectural shell, furniture, appliances, ceiling, lighting, electrical, plumbing, HVAC, annotations and dimensions.
+- Per-room notes and global project notes.
+- Automatic file naming, drawing numbering and revision numbering.
+- Batch export and print queue with page preview.
+- Keyboard-friendly operation and tablet/touch-friendly controls.
+- Performance targets and progressive rendering so large projects remain usable.
+- Helpful empty states, tooltips and contextual help; avoid modal dialogs for every routine action.
+- No dead buttons, fake progress indicators or placeholder controls presented as completed features.
+
+---
+
+## 20. Additional design disciplines and details that must not be overlooked
+
+The following are required where relevant to the project scope and data is available:
+
+### Architectural and interior finishes
+- Flooring layout, material, direction/pattern, skirting, transition strips and room-wise area.
+- Wall cladding, panelling, wallpaper, decorative profiles and feature walls.
+- Paint/texture finish and wall-wise area/colour schedule.
+- Doors, frames, architraves and hardware where part of the design.
+- Windows, curtains, blinds and pelmets where in scope.
+- Mirrors, glass partitions and decorative glass.
+- Staircase/railing or other architectural elements only where applicable.
+
+### Ceiling and lighting
+- Reflected ceiling plan with ceiling levels and dimensions.
+- Cove/profile/linear lighting, spotlights, downlights, pendants, chandeliers and task lighting.
+- Fan positions and clearance from lights, wardrobes and tall furniture.
+- Access panels, AC grilles, exhaust and maintenance access.
+- Lighting groups, switching and dimming intent.
+- Fixture schedules with selected/provisional product status.
+
+### Services and appliance coordination
+- Kitchen appliance dimensions, ventilation, exhaust/chimney duct route, gas point, water inlet/drain and dedicated electrical loads.
+- Refrigerator, dishwasher, oven, microwave, hob, chimney, washing machine, geyser and other selected appliances as relevant.
+- Bathroom plumbing points, vanity, mirror lighting, exhaust and service access.
+- Split AC indoor/outdoor location, pipe/drain route and maintenance access.
+- Electrical panel/DB and switchboard references where supplied.
+- Avoid clashes with beams, false ceilings, furniture and doors.
+
+### Furniture design usability
+- Wardrobe hanging zones, drawers, shelves, loft and access.
+- Bed clearances, bedside access and drawer movement.
+- Murphy/foldable furniture where selected.
+- Study desk ergonomics and task lighting.
+- TV viewing position, screen size and cable/power/data points.
+- Kitchen work triangle and practical worktop clearances.
+- Pantry, pull-outs, corner mechanisms, waste bins and appliance integration.
+- Access for cleaning, maintenance, plumbing and electrical repairs.
+- Edge/finish continuity across adjacent modules and rooms.
+
+These details must be configurable, not forced into every project. Do not present generic ergonomic rules as a substitute for site-specific professional judgment.
+
+## 21. Design alternatives and customer decision efficiency
+
+Support at least two or three clearly differentiated alternatives where the designer chooses to present options:
+- Layout alternatives (A/B/C).
+- Finish/material alternatives.
+- Standard / Premium / Luxury specification tiers.
+- Optional add-ons and scope alternatives.
+
+Each alternative must:
+- Share the same verified room shell and survey baseline.
+- Be independently saved without overwriting the primary design.
+- Show visual differences and a concise comparison.
+- Show price delta only from authorized existing ERP rates.
+- Identify changes to quantities, materials, drawings and timeline assumptions.
+- Allow the customer to select one option and record the decision.
+- Preserve rejected options for reference without treating them as approved.
+
+## 22. Error prevention, reliability and operational safeguards
+
+- Validate all project data at entry and before save/export/sync.
+- Use typed, versioned schemas and migrations for project/design data.
+- Prevent invalid dimensions, NaN/zero/negative geometry and unit-conversion errors.
+- Ensure plan/elevation/3D/document outputs derive from the same canonical geometry.
+- Use stable IDs for rooms, walls, modules, openings, materials, accessories and drawings.
+- Maintain an operation history for undo/redo and an audit history for business approvals.
+- Autosave locally and synchronize safely when online.
+- Provide recoverable backups and visible conflict resolution for concurrent edits or offline synchronization.
+- Warn when a catalogue item has been deleted, changed or is unavailable; preserve the approved historical snapshot.
+- Never silently substitute a module, material, accessory, appliance or rate.
+- Make every export reproducible from a named design revision.
+- Provide automated unit tests for geometry/calculations, integration tests for save/reopen and ERP adapter, and end-to-end tests for the full customer sign-off journey.
+- Maintain a known-issues register and release checklist.
+- Keep test/staging and production credentials/data separate.
+
+## 23. Prioritization for the launch target
+
+The owner previously set the launch target as **19 November 2026, 10:00 AM IST**. This is a demanding target; scope must be prioritized transparently rather than claiming every advanced capability is complete.
+
+### Release-critical foundation
+1. New separate Interior Studio shell and reliable project persistence.
+2. Customer/project linkage and existing catalogue access through a safe adapter.
+3. Room setup, verified dimensions, architectural openings and obstacles.
+4. Fast 2D design and synchronized usable 3D.
+5. Catalogue-backed furniture placement and core customization.
+6. Save/reopen, undo/redo, autosave and error reporting.
+7. Customer presentation mode with 2D/3D views and material selections.
+8. Basic approval/revision capture.
+9. Existing quotation engine handoff without duplicate pricing.
+10. Minimum automated completeness checks and regression tests.
+
+### Next essential workflow layer
+- Furniture technical/detail drawings.
+- Separate onsite execution sheets.
+- Material/accessory detail sheets and site requirement schedule.
+- Appliance/service coordination.
+- Alternatives and tiered material options.
+- Advanced shutter/facade/countertop customization.
+- Full approval and document revision controls.
+
+### Advanced enhancements after the safe core
+- More complex irregular geometry and specialized architectural objects.
+- Deeper rendering/material realism and walkthrough quality.
+- Assisted layout suggestions and more extensive automation.
+- Extended offline/desktop packaging.
+- Advanced reporting and project lifecycle integrations.
+
+Do not remove previously agreed scope by placing it in a later phase; phase implementation and clearly label what is delivered in each release.
+
+## 24. End-to-end “designer alone, customer sign-off” acceptance scenario
+
+A release candidate must demonstrate the following realistic scenario without developer intervention:
+
+1. Designer opens the Studio from an existing ERP customer/project or creates the project through the authorized flow.
+2. Enters the brief, budget, room list, preferred style and customer constraints once.
+3. Imports or draws the plan, sets scale/units and records site dimensions, openings and services.
+4. Completes a survey checklist and identifies unverified measurements.
+5. Creates multiple room categories using editable templates.
+6. Fetches the live ERP module/material/accessory catalogue and places the required modules.
+7. Customizes carcass, individual shutters, handles, glass/aluminium, accessories, appliances and countertops.
+8. Coordinates ceiling, lights, fans, electrical points, AC and other relevant services.
+9. Checks plan, elevations, sections and 3D; fixes all blockers and acknowledges permitted warnings.
+10. Creates and compares alternative design/material options if required.
+11. Generates room-wise material boards, technical/detail drawings, onsite coordination sheets and estimated schedules from the same revision.
+12. Sends validated quantities/specifications to the existing quotation engine and previews the customer quotation.
+13. Enters Presentation Mode and navigates the complete project with the customer.
+14. Captures comments, option selection, approvals and any pending site-verification items.
+15. Runs the final sign-off completeness gate.
+16. Generates the branded customer presentation/quotation/approval pack.
+17. Saves the exact approved design and commercial snapshots against the existing ERP project.
+18. Reopens the project and verifies that the saved design, presentation, quotation linkage and approval record are intact.
+
+The acceptance test must include at least one failure case: missing measurement, unavailable catalogue item, save failure, stale data or a design clash. The Studio must clearly detect and recover/report it without corrupting the project.
+
+## 25. Final product principle
+
+The Studio is not merely a 3D modeller. It is a **single-designer interior project completion system**:
+
+**Capture → Plan → Design → Customize → Visualize → Validate → Estimate → Present → Approve → Document → Sync.**
+
+The designer should enter project information once, work from one consistent model, see all outstanding decisions in one place and generate every required customer/site/commercial output from the same approved revision. Speed must come from reusable templates, live catalogues, intelligent assistance and automated checking—not from hiding uncertainty, skipping verification or silently guessing.
