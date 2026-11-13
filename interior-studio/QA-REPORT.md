@@ -32,3 +32,19 @@ Static review of the isolated `interior-studio/index.html` implementation and a 
 
 ## QA disposition
 **NOT APPROVED for production or customer sign-off.** Suitable only as an isolated functional foundation / developer preview. Before production: execute real browser tests, implement ERP adapters, complete the drawing and document workflows, and pass the complete v1.6 acceptance scenario.
+
+
+## Checks actually executed during this increment (13 Nov 2026)
+- Inline JavaScript parse via V8 `new Function(...)`: **PASS** after correcting an invalid numeric object key in the 3D view title map.
+- Static feature-presence checks: **PASS** for multi-room creation, undo/redo handlers, local persistence read/write, validation function, presentation builder, JSON export and same-origin message guard.
+- Scope scan: **PASS** — no factory manufacturing/cutting/CNC/nesting features in the new app.
+- Code review fixes applied:
+  - Rendering now hydrates project/customer/reference fields from the restored local project instead of overwriting restored metadata with initial form defaults.
+  - Validation detail list is rendered when the Checks tab opens.
+  - Isometric room wall-top coordinates use the canonical room dimensions.
+  - Customer decision capture increments the project revision.
+- GitHub file read-back: **PASS** after each committed code update.
+
+## Not executed
+- No real browser runtime, DOM interaction, screenshot, mobile viewport, browser storage quota, print-to-PDF or cross-tab testing was available through the connected GitHub tool session.
+- No Playwright/Cypress/browser CI run was triggered. Do not interpret JavaScript parsing or static checks as an end-to-end test.
