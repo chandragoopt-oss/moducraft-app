@@ -171,3 +171,17 @@ Keep design-level furniture technical drawings and separate onsite execution dra
 ## 9. Current CI finding to resolve
 
 The first Playwright run exposed a test assertion error: the smoke test checked for plan objects while the Checks tab was active, so those SVG/DOM objects were not mounted. This was a test sequencing defect, not evidence that the undo feature failed. The smoke test has been corrected to return to Plan before asserting undo/redo. The rerun must pass before the prototype's basic workflow is called browser-tested.
+
+
+## 10. Confirmed UI/UX direction — supersedes any earlier interpretation
+
+The product direction is now explicitly clarified:
+
+- **Do not use either existing Design experience as the UI/UX reference.** The old ERP Design tab and the existing `studio/` iframe are reference sources for feature discovery and functional parity only. Their layouts, interaction patterns and visual design are not constraints for the new Design Studio.
+- **Use Preview as the primary overall ERP UI/UX reference.** The Preview shell is the baseline for the complete ERP's navigation, visual language, dashboard, page framing and general user experience, excluding the Design section itself.
+- **Build a new professional Design Studio UX.** The new Studio should have its own purpose-built, modern designer workflow and workspace, optimized for speed, clarity, low interaction count and reliable customer presentation. It should be integrated into the Preview ERP shell so it feels like one coherent product, not a separate app embedded awkwardly.
+- **Feature preservation is separate from UI preservation.** Existing running ERP and existing Preview capabilities must be inventoried and reconciled so that useful functionality is not lost. Existing Design-tab and iframe capabilities should be evaluated as functional requirements, not copied as their UI.
+- **Maintain a running-versus-Preview feature reconciliation.** For each ERP feature addition or design-section integration, compare the running app and Preview implementation, record what exists in each, identify the intended source of truth, and close approved gaps before calling the complete ERP feature-complete. Do not silently drop a working feature merely because it is absent from Preview, or assume Preview is current merely because it is the preferred UI/UX reference.
+- **Integration target:** the completed product uses Preview's overall ERP experience plus the new Design Studio's dedicated professional UX. The old Design interfaces remain available for comparison and regression during development; they are not the target design language for the new Studio.
+
+This clarification changes the UI/UX strategy, not the preservation rule: existing ERP business logic, quotation/pricing behaviour, data and useful design capabilities remain protected while the new Design Studio is redesigned and implemented.
