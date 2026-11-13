@@ -41,6 +41,7 @@ try {
   await page.locator('#checkDetail').waitFor();
   assert.ok((await page.locator('#checkDetail').innerText()).includes('overlaps'), 'overlap rule reports intersecting modules');
 
+  await page.locator('[data-view="plan"]').click();
   await page.locator('#undo').click();
   assert.equal(await page.locator('[data-kind="module"]').count(), 1, 'undo reverts the latest module addition');
   await page.locator('#redo').click();
