@@ -48,7 +48,9 @@ try {
   assert.equal(await page.locator('[data-kind="module"]').count(), 2, 'redo restores the module addition');
 
   await page.locator('[data-view="plan"]').click();
-  await page.locator('[data-kind="module"]').first().click();
+  // The second module overlaps the first by design for the validation test;
+  // click the topmost rendered SVG group so Playwright does not hit-test through it.
+  await page.locator('[data-kind="module"]').last().click();
   await page.locator('#p_width').fill('950');
   await page.locator('#applyProps').click();
   await page.locator('#save').click();
