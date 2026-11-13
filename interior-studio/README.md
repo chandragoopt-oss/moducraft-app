@@ -28,3 +28,7 @@ The 3D view is a schematic isometric preview, not photorealistic rendering. Star
 
 ## Safety boundary
 Development only. Do not deploy as production, connect production credentials, or merge into `main` until the ERP adapter, security review, browser QA and end-to-end acceptance scenario pass.
+
+## Browser smoke tests
+
+From this directory run `npm install`, `npx playwright install chromium`, then `npm test`. GitHub Actions runs the same smoke suite on feature-branch changes. A passing syntax parse is not a substitute for a passing browser run.
