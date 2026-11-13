@@ -48,3 +48,8 @@ Static review of the isolated `interior-studio/index.html` implementation and a 
 ## Not executed
 - No real browser runtime, DOM interaction, screenshot, mobile viewport, browser storage quota, print-to-PDF or cross-tab testing was available through the connected GitHub tool session.
 - No Playwright/Cypress/browser CI run was triggered. Do not interpret JavaScript parsing or static checks as an end-to-end test.
+
+- Added a Chromium + Playwright smoke suite at `tests/smoke.mjs` covering fresh start, multi-room creation, module placement, overlap validation, undo/redo, persistence, customer decision capture, presentation and JSON export.
+- Added GitHub Actions workflow `.github/workflows/interior-studio-qa.yml` to run the smoke suite on pushes to this feature branch and relevant pull requests.
+- Workflow dispatch is not available in the connected GitHub action set, and GitHub reports no workflow run yet. The Playwright suite is therefore **added but not yet executed**.
+- Latest inline JavaScript syntax parse after the final fixes: **PASS**.
