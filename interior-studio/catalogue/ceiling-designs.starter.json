@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "catalogueVersion": "0.1.0",
+  "status": "starter-concepts-not-yet-implemented",
+  "sourceNote": "These are generic starter concepts, not extracted from the user's Pinterest board. Pinterest reference review is pending screenshots.",
+  "units": "mm",
+  "designs": [
+    {
+      "id": "ceiling.perimeter-recessed-tray",
+      "name": "Recessed Perimeter Tray",
+      "category": ["perimeter", "tray", "modern-minimal"],
+      "roomTypes": ["living", "bedroom", "dining", "foyer"],
+      "complexity": "low",
+      "parameters": {
+        "perimeterWidth": {"type": "number", "default": 450, "min": 250, "max": 900},
+        "drop": {"type": "number", "default": 100, "min": 75, "max": 250},
+        "cornerRadius": {"type": "number", "default": 0, "min": 0, "max": 300},
+        "coveEnabled": {"type": "boolean", "default": true}
+      },
+      "anchors": ["room-perimeter", "room-centre"],
+      "fitRules": ["offset-perimeter-inward", "preserve-minimum-feature-width", "avoid-obstruction-zones"],
+      "lightingOptions": ["concealed-led-cove", "recessed-downlight"],
+      "drawingViews": ["reflected-ceiling-plan", "dimensioned-plan", "section-perimeter", "lighting-plan"],
+      "constructionDataStatus": "requires-project-specific-verification",
+      "media": []
+    },
+    {
+      "id": "ceiling.floating-central-raft",
+      "name": "Floating Central Raft",
+      "category": ["feature-raft", "contemporary"],
+      "roomTypes": ["living", "bedroom", "dining", "foyer"],
+      "complexity": "medium",
+      "parameters": {
+        "raftLength": {"type": "number", "default": 3000, "min": 1200, "max": 6000},
+        "raftWidth": {"type": "number", "default": 1800, "min": 900, "max": 4000},
+        "drop": {"type": "number", "default": 125, "min": 75, "max": 300},
+        "offsetX": {"type": "number", "default": 0},
+        "offsetY": {"type": "number", "default": 0}
+      },
+      "anchors": ["room-centre", "bed-centre", "dining-table-centre", "designer-point"],
+      "fitRules": ["fit-within-room-bounds", "respect-fixture-clearance", "preserve-proportions-within-limits"],
+      "lightingOptions": ["perimeter-led", "surface-feature-light", "recessed-downlight"],
+      "drawingViews": ["reflected-ceiling-plan", "dimensioned-plan", "section-feature", "lighting-plan"],
+      "constructionDataStatus": "requires-project-specific-verification",
+      "media": []
+    },
+    {
+      "id": "ceiling.parallel-linear-bands",
+      "name": "Parallel Linear Bands",
+      "category": ["linear", "contemporary", "minimal"],
+      "roomTypes": ["living", "bedroom", "study", "commercial"],
+      "complexity": "low",
+      "parameters": {
+        "bandCount": {"type": "integer", "default": 3, "min": 2, "max": 8},
+        "bandWidth": {"type": "number", "default": 150, "min": 75, "max": 350},
+        "gap": {"type": "number", "default": 450, "min": 150, "max": 1200},
+        "drop": {"type": "number", "default": 75, "min": 50, "max": 200},
+        "direction": {"type": "enum", "values": ["along-longest-axis", "along-shortest-axis", "custom"], "default": "along-longest-axis"}
+      },
+      "anchors": ["room-centre", "longest-room-axis", "designer-axis"],
+      "fitRules": ["distribute-bands-evenly", "clip-or-reject-at-invalid-boundary", "avoid-obstruction-zones"],
+      "lightingOptions": ["integrated-linear-led", "recessed-downlight"],
+      "drawingViews": ["reflected-ceiling-plan", "dimensioned-plan", "section-band", "lighting-plan"],
+      "constructionDataStatus": "requires-project-specific-verification",
+      "media": []
+    },
+    {
+      "id": "ceiling.dining-table-feature-island",
+      "name": "Dining Table Feature Island",
+      "category": ["feature-island", "dining"],
+      "roomTypes": ["dining", "open-plan-living-dining"],
+      "complexity": "medium",
+      "parameters": {
+        "islandLength": {"type": "number", "default": 2200, "min": 1200, "max": 4000},
+        "islandWidth": {"type": "number", "default": 1200, "min": 700, "max": 2400},
+        "drop": {"type": "number", "default": 100, "min": 75, "max": 250},
+        "pendantCount": {"type": "integer", "default": 2, "min": 1, "max": 5}
+      },
+      "anchors": ["dining-table-centre", "room-centre", "designer-point"],
+      "fitRules": ["align-to-dining-table", "respect-pendant-and-head-clearance", "fit-within-room-bounds"],
+      "lightingOptions": ["pendant", "concealed-led", "recessed-downlight"],
+      "drawingViews": ["reflected-ceiling-plan", "dimensioned-plan", "section-feature", "lighting-plan"],
+      "constructionDataStatus": "requires-project-specific-verification",
+      "media": []
+    },
+    {
+      "id": "ceiling.service-bulkhead-coordination",
+      "name": "Service Bulkhead Coordination",
+      "category": ["functional", "service-friendly", "kitchen", "utility"],
+      "roomTypes": ["kitchen", "utility", "bathroom", "commercial"],
+      "complexity": "medium",
+      "parameters": {
+        "bulkheadDepth": {"type": "number", "default": 300, "min": 150, "max": 900},
+        "drop": {"type": "number", "default": 150, "min": 75, "max": 450},
+        "accessPanelRequired": {"type": "boolean", "default": true}
+      },
+      "anchors": ["service-route", "wall-alignment", "designer-defined"],
+      "fitRules": ["follow-surveyed-service-route", "maintain-access-zones", "flag-unverified-service-dimensions"],
+      "lightingOptions": ["task-light", "recessed-downlight", "linear-led"],
+      "drawingViews": ["reflected-ceiling-plan", "dimensioned-plan", "section-bulkhead", "service-coordination-plan"],
+      "constructionDataStatus": "requires-site-and-trade-verification",
+      "media": []
+    }
+  ]
+}
