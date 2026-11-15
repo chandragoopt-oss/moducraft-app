@@ -129,8 +129,13 @@ function validatePresentation_(payload) {
     if (String(slide.title).length > 180 || String(slide.body || '').length > APP.MAX_TEXT) {
       throw new Error('Slide ' + (index + 1) + ' exceeds the allowed text length.');
     }
-    if (model.type === 'first-design' && /₹|\bINR\b|\b\d+(?:\.\d+)?\s?(?:mm|cm|m|ft|feet|inch|inches)\b/i.test(String(slide.body || ''))) {
-      throw new Error('First Design presentations must not contain prices or dimensions. Material specifications are allowed.');
+    if (model.type === 'first-design') {
+      const text = String(slide.body || '');
+      if (/₹|\bINR\b/i.test(text)) throw new Error('First Design presentations must not contain prices.');
+      const isMaterialSpecification = /material|finish|specification/i.test(String(slide.title || ''));
+      if (!isMaterialSpecification && /\b\d+(?:\.\d+)?\s?(?:mm|cm|m|ft|feet|inch|inches)\b/i.test(text)) {
+        throw new Error('First Design presentations must not contain dimensions outside material specifications.');
+      }
     }
   });
 
