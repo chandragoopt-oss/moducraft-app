@@ -1,0 +1,52 @@
+name: ModuCraft Upgrade Sprint QA
+on:
+  push:
+    branches: [upgrade-sprint/knowledge-and-feature-consolidation]
+    paths:
+      - 'interior-studio/**'
+      - 'presentation/**'
+      - 'docs/**'
+      - '.github/workflows/upgrade-sprint-qa.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'interior-studio/**'
+      - 'presentation/**'
+      - 'docs/**'
+      - '.github/workflows/upgrade-sprint-qa.yml'
+permissions:
+  contents: read
+jobs:
+  studio-browser-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: interior-studio/package.json
+      - name: Install dependencies
+        working-directory: interior-studio
+        run: npm install
+      - name: Install Chromium
+        working-directory: interior-studio
+        run: npx playwright install --with-deps chromium
+      - name: Browser smoke tests
+        working-directory: interior-studio
+        run: npm test
+  presentation-static-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate presentation JavaScript syntax
+        run: |
+          node --check presentation/js/app.js
+          node --check presentation/js/templates.js
+      - name: Check entry point and styles
+        run: |
+          test -s presentation/index.html
+          test -s presentation/styles/presentation.css
